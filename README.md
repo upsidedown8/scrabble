@@ -10,12 +10,12 @@ real time online multiplayer service powered by
 The project is split into 2 'workspaces' (seperate crates)
 which can be independantly tested.
 
-# `client`
+### `client`
 
 The client end. Provides a web UI (with [Yew](https://yew.rs))
 which communicates with the server using a REST API.
 
-# `server`
+### `server`
 
 The server: runs on a seperate machine and persists user/game
 data, manages multiplayer games etc. The server also handles
@@ -25,5 +25,12 @@ an optimal move in a position.
 
 An sqlite3 database is used (via the
 [sqlx](https://github.com/launchbadge/sqlx) library, to store
-user and game data.
+user and game data. A REST API is provided with the
+[Rocket](https://rocket.rs) library, which is used for
+communication between the client and server.
+
+#### API Spec
+
+The API uses the OpenAPI 3.0 specification
+
 
