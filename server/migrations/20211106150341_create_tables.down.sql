@@ -1,0 +1,7 @@
+DROP TABLE IF EXISTS tbl_user;
+DROP TABLE IF EXISTS tbl_player;
+DROP TABLE IF EXISTS tbl_game;
+DROP TABLE IF EXISTS tbl_move;
+DROP TABLE IF EXISTS tbl_tile;
+DROP TABLE IF EXISTS tbl_word;
+
