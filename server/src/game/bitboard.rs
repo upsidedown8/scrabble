@@ -3,13 +3,12 @@ use std::{
     ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, Not, Shl, ShlAssign, Shr, ShrAssign},
 };
 
-/// Convert from a row and col coordinate to an index from 0..225
+/// Convert from a row and col coordinate to an index from 0..225.
 ///
 /// # Arguments
 ///
 /// * `row` The row from 0..15
 /// * `col` The col from 0..15
-///
 pub fn get_idx(row: usize, col: usize) -> usize {
     assert!(row < ROWS);
     assert!(col < COLS);
@@ -22,12 +21,11 @@ const SIZE: usize = 4;
 const WORD_SIZE: usize = 64;
 
 /// A scrabble board has 15 * 15 = 225 squares. The nearest multiple
-/// of 64 bit integers is 4, giving 256 possible values
+/// of 64 bit integers is 4, giving 256 possible values.
 ///
 /// Using integer types allows for very efficient move generation,
 /// validation and scoring, since these operations can be run with a
 /// single cpu instruction.
-///
 #[derive(Default, Clone, Copy, PartialEq, Debug)]
 pub struct BitBoard {
     /// Use 4 unsigned 64 bit integers to represent a 255 bit board
@@ -35,54 +33,49 @@ pub struct BitBoard {
 }
 
 impl BitBoard {
-    /// Checks whether the bit at `idx` is set
-    /// 
+    /// Checks whether the bit at `idx` is set.
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `idx` The position to check
-    /// 
     pub fn is_bit_set(&self, idx: usize) -> bool {
         assert!(idx < WORD_SIZE * SIZE);
         (self.boards[idx / WORD_SIZE] & (1u64 << (idx % WORD_SIZE))) != 0
     }
-    
-    /// Sets the bit at `idx` to 1
-    /// 
+
+    /// Sets the bit at `idx` to 1.
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `idx` The position to set
-    /// 
     pub fn set_bit(&mut self, idx: usize) {
         assert!(idx < WORD_SIZE * SIZE);
         self.boards[idx / WORD_SIZE] |= 1u64 << (idx % WORD_SIZE);
     }
-    
-    /// Sets the bit at `idx` to 0
-    /// 
+
+    /// Sets the bit at `idx` to 0.
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `idx` The position to set
-    /// 
     pub fn clear_bit(&mut self, idx: usize) {
         assert!(idx < WORD_SIZE * SIZE);
         self.boards[idx / WORD_SIZE] &= !(1u64 << (idx % WORD_SIZE));
     }
 
-    /// Generates a random bitboard
-    /// 
+    /// Generates a random bitboard.
     pub fn random() -> BitBoard {
         BitBoard {
             boards: [
-                rand::random(),
-                rand::random(),
-                rand::random(),
-                rand::random(),
+                fastrand::u64(..),
+                fastrand::u64(..),
+                fastrand::u64(..),
+                fastrand::u64(..),
             ],
         }
     }
 
-    /// Checks whether all the bits are set to zero
-    /// 
+    /// Checks whether all the bits are set to zero.
     pub fn is_zero(&self) -> bool {
         self.boards.iter().all(|&board| board == 0)
     }
