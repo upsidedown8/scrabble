@@ -38,7 +38,9 @@ impl BitBoard {
     /// # Arguments
     ///
     /// * `idx` The position to check
-    pub fn is_bit_set(&self, idx: usize) -> bool {
+    pub fn is_bit_set<T: Into<usize>>(&self, idx: T) -> bool {
+        let idx = idx.into();
+
         assert!(idx < WORD_SIZE * SIZE);
         (self.boards[idx / WORD_SIZE] & (1u64 << (idx % WORD_SIZE))) != 0
     }
@@ -48,7 +50,9 @@ impl BitBoard {
     /// # Arguments
     ///
     /// * `idx` The position to set
-    pub fn set_bit(&mut self, idx: usize) {
+    pub fn set_bit<T: Into<usize>>(&mut self, idx: T) {
+        let idx = idx.into();
+
         assert!(idx < WORD_SIZE * SIZE);
         self.boards[idx / WORD_SIZE] |= 1u64 << (idx % WORD_SIZE);
     }
@@ -58,7 +62,9 @@ impl BitBoard {
     /// # Arguments
     ///
     /// * `idx` The position to set
-    pub fn clear_bit(&mut self, idx: usize) {
+    pub fn clear_bit<T: Into<usize>>(&mut self, idx: T) {
+        let idx = idx.into();
+
         assert!(idx < WORD_SIZE * SIZE);
         self.boards[idx / WORD_SIZE] &= !(1u64 << (idx % WORD_SIZE));
     }
@@ -350,7 +356,7 @@ mod tests {
     #[test]
     fn bits() {
         let mut bb = BitBoard::default();
-        for idx in 0..225 {
+        for idx in 0..225_usize {
             bb.set_bit(idx);
             assert!(bb.is_bit_set(idx));
 
