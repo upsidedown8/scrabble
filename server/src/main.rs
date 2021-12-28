@@ -1,3 +1,5 @@
+use std::io::{BufRead, BufReader};
+
 use server::game::{
     board::{Board, Direction, Pos},
     play::{Play, Word},
@@ -88,4 +90,28 @@ fn main() {
     board.make_play(Play::from_tiles(t.into_iter()));
 
     println!("{}", board);
+
+    // let mut tree = WordTree::default();
+
+    // let file = std::fs::File::open("res/words.txt").unwrap();
+    // let reader = BufReader::new(file);
+
+    // for line in reader.lines() {
+    //     tree.insert(line.unwrap().trim());
+    // }
+
+    // for &child in tree.node(tree.root_idx()).children() {
+    //     println!("{:?}", child);
+    // }
+
+    // let mut buf = String::new();
+    // let stdin = std::io::stdin();
+    // let mut stdin = stdin.lock();
+
+    // loop {
+    //     buf.clear();
+    //     stdin.read_line(&mut buf).unwrap();
+
+    //     println!("{}", tree.contains(buf.trim()));
+    // }
 }

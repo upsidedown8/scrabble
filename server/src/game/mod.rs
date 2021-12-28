@@ -15,9 +15,10 @@ pub mod tile;
 pub mod word_tree;
 
 pub struct Player(String);
+pub struct Score(usize);
 
 pub enum GameStatus {
-    Winner(Player),
+    Winner(Player, Score),
     ToPlay(Player),
 }
 
