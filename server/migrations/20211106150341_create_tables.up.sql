@@ -1,6 +1,7 @@
 CREATE TABLE IF NOT EXISTS tbl_user (
     id_user INTEGER PRIMARY KEY NOT NULL,
     username VARCHAR(20) UNIQUE NOT NULL,
+    email VARCHAR(20) NOT NULL,
     password CHAR(32) NOT NULL,
     salt CHAR(32) NOT NULL
 );
