@@ -4,15 +4,5 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-strum = "0.23"
-strum_macros = "0.23"
-serde = "1"
-serde_derive = "1"
-yew = "0.18"
-gloo = "0.4"
-
-[dependencies.web-sys]
-version = "0.3"
-features = [
-	"HtmlInputElement",
-]
+yew = "0.19"
+yew-router = "0.16"
