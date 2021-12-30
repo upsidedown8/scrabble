@@ -8,7 +8,6 @@ extern crate rocket;
 
 use argon2::{Config, ThreadMode};
 use common::game::word_tree::WordTree;
-use rand::Rng;
 use rocket::{
     tokio::{
         fs::File,
@@ -30,7 +29,6 @@ pub struct AppState<'a> {
     pub pool: SqlitePool,
     pub word_tree: WordTree,
     pub hash_cfg: Config<'a>,
-    pub jwt: JwtSettings,
 }
 
 pub async fn build_rocket() -> anyhow::Result<Rocket<Build>> {
@@ -39,15 +37,8 @@ pub async fn build_rocket() -> anyhow::Result<Rocket<Build>> {
     log::info!("loading env vars");
     let db_url = env::var("DATABASE_URL").expect("expected `DATABASE_URL` environment variable");
     let word_file = env::var("WORDLIST").expect("expected `WORDLIST` environment variable");
-    let jwt_secret = env::var("JWT_SECRET").expect("expected `JWT_SECRET` environment variable");
-    let jwt_secret = hex::decode(&jwt_secret).expect("`JWT_SECRET` should be valid hex");
-    let jwt_expiry_delta: usize = env::var("JWT_EXPIRY")
-        .expect("expected `JWT_EXPIRY` environment variable")
-        .parse()
-        .expect("`JWT_EXPIRY` should be a positive integer");
-    // generate a random number so that the jwt is only
-    // valid for the current server session
-    let jwt_session: usize = rand::thread_rng().gen();
+    // jsut to check it exists, as `JWT_SECRET` is a lzy static
+    let _ = env::var("JWT_SECRET").expect("expected `JWT_SECRET` environment variable");
 
     log::info!("connecting to database: {}", db_url);
     let pool = SqlitePoolOptions::new()
@@ -87,10 +78,5 @@ pub async fn build_rocket() -> anyhow::Result<Rocket<Build>> {
             pool,
             word_tree,
             hash_cfg,
-            jwt: JwtSettings {
-                jwt_secret,
-                jwt_expiry_delta,
-                jwt_session,
-            },
         }))
 }
