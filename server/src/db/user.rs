@@ -40,8 +40,12 @@ impl DbUser {
         hashed_pass: &str,
         pool: &SqlitePool,
     ) -> Option<Uuid> {
+        let uuid = Uuid::new_v4();
+        let id_user = uuid.to_string();
+
         sqlx::query!(
-            "INSERT INTO tbl_user (username, email, hashed_pass) VALUES (?, ?, ?)",
+            "INSERT INTO tbl_user (id_user, username, email, hashed_pass) VALUES (?, ?, ?, ?)",
+            id_user,
             username,
             email,
             hashed_pass
@@ -50,7 +54,7 @@ impl DbUser {
         .await
         .ok()?;
 
-        Self::find_id(username, pool).await
+        Some(uuid)
     }
     pub async fn update(&self, pool: &SqlitePool) -> sqlx::Result<()> {
         sqlx::query!(
