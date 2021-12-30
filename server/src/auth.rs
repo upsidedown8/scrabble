@@ -30,28 +30,29 @@ pub struct Claims {
     pub exp: usize,
     /// Subject (username)
     pub sub: String,
+    /// Ensure the jwt is from the same server session
+    pub session: usize,
 }
 
 /// Generate a JWT.
-pub fn generate_token(jwt_secret: &[u8], jwt_expiry: usize, username: &str) -> Option<Auth> {
+pub fn generate_token(state: &State<AppState>, username: &str) -> Option<Auth> {
     // get current time, and add `jwt_expiry` to get final time
     let timestamp = Utc::now().timestamp() as usize;
-    let exp = timestamp + jwt_expiry;
+    let exp = timestamp + state.jwt.jwt_expiry_delta;
 
     let header = Header::default();
     let claims = Claims {
         exp,
         sub: username.to_string(),
+        session: state.jwt.jwt_session,
     };
-    let key = EncodingKey::from_secret(jwt_secret);
+    let key = EncodingKey::from_secret(&state.jwt.jwt_secret);
 
-    encode(&header, &claims, &key)
-        .map(|token| Auth { token })
-        .ok()
+    encode(&header, &claims, &key).map(Auth).ok()
 }
 
 /// Check whether a user is authorised, provided their token.
-pub fn validate_token(jwt_secret: &[u8], username: &str, token: &str) -> bool {
+pub fn validate_token(state: &State<AppState>, username: &str, token: &str) -> bool {
     log::info!("{}", username);
 
     let validation = Validation {
@@ -59,11 +60,13 @@ pub fn validate_token(jwt_secret: &[u8], username: &str, token: &str) -> bool {
         ..Validation::default()
     };
 
-    let key = DecodingKey::from_secret(jwt_secret);
+    let key = DecodingKey::from_secret(&state.jwt.jwt_secret);
 
     log::info!("{:?}", decode::<Claims>(token, &key, &validation));
 
-    decode::<Claims>(token, &key, &validation).is_ok()
+    decode::<Claims>(token, &key, &validation)
+        .map(|t| t.claims.session == state.jwt.jwt_session)
+        .unwrap_or(false)
 }
 
 /// Used as a request guard for handlers that require login
@@ -94,7 +97,7 @@ impl<'r> FromRequest<'r> for ApiKey<'r> {
 
 impl<'r> ApiKey<'r> {
     pub async fn verify(&self, username: &str, state: &State<AppState<'_>>) -> Result<(), Status> {
-        match auth::validate_token(&state.jwt_secret, username, self.0) {
+        match auth::validate_token(state, username, self.0) {
             true => Ok(()),
             false => Err(Status::Unauthorized),
         }

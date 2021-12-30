@@ -1,9 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Auth {
-    pub token: String,
-}
+pub struct Auth(pub String);
 
 /**--------------------------------------------
  *               Utils
