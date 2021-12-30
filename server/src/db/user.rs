@@ -1,6 +1,6 @@
 use sqlx::SqlitePool;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DbUser {
     pub id_user: i64,
     pub username: String,
@@ -22,5 +22,45 @@ impl DbUser {
         )
         .fetch_one(pool)
         .await
+    }
+    pub async fn insert(
+        username: &str,
+        email: &str,
+        hashed_pass: &str,
+        pool: &SqlitePool,
+    ) -> sqlx::Result<()> {
+        sqlx::query!(
+            "INSERT INTO tbl_user (username, email, hashed_pass) VALUES (?, ?, ?)",
+            username,
+            email,
+            hashed_pass
+        )
+        .execute(pool)
+        .await
+        .map(|_| ())
+    }
+    pub async fn update(&self, pool: &SqlitePool) -> sqlx::Result<()> {
+        sqlx::query!(
+            "
+            UPDATE tbl_user
+            SET
+                username = ?,
+                email = ?,
+                hashed_pass = ?
+            WHERE id_user = ?",
+            self.id_user,
+            self.username,
+            self.email,
+            self.hashed_pass
+        )
+        .execute(pool)
+        .await
+        .map(|_| ())
+    }
+    pub async fn delete(&self, pool: &SqlitePool) -> sqlx::Result<()> {
+        sqlx::query!("DELETE FROM tbl_user WHERE id_user = ?", self.id_user)
+            .execute(pool)
+            .await
+            .map(|_| ())
     }
 }

@@ -53,11 +53,6 @@ pub struct UserCreateResponse {
  *               Get user details route
  *---------------------------------------------**/
 #[derive(Debug, Serialize, Deserialize)]
-pub struct UserInfo {
-    pub auth: Auth,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
 pub struct UserInfoResponse {
     pub user_details: UserDetails,
 }
@@ -67,7 +62,6 @@ pub struct UserInfoResponse {
  *---------------------------------------------**/
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UserUpdate {
-    pub auth: Auth,
     pub old_password: String,
     pub email: Option<String>,
     pub username: Option<String>,
@@ -84,7 +78,6 @@ pub struct UserUpdateResponse {
  *---------------------------------------------**/
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DeleteUser {
-    pub auth: Auth,
     pub password: String,
 }
 
