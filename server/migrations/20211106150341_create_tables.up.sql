@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS tbl_user (
-    id_user INTEGER PRIMARY KEY NOT NULL,
+    id_user TEXT PRIMARY KEY NOT NULL,
     username VARCHAR(20) UNIQUE NOT NULL,
     email VARCHAR(20) NOT NULL,
     hashed_pass TEXT NOT NULL
@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS tbl_user (
 CREATE TABLE IF NOT EXISTS tbl_player(
     id_player INTEGER PRIMARY KEY NOT NULL,
     id_game INTEGER REFERENCES tbl_game(id_game) NOT NULL,
-    id_user INTEGER REFERENCES tbl_user(id_user),
+    id_user TEXT REFERENCES tbl_user(id_user),
     starting_rack CHAR(7) NOT NULL,
     ai_difficulty FLOAT
 );

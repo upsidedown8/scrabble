@@ -16,9 +16,11 @@ rand = "0.8.4"
 rust-argon2 = "0.8.3"
 chrono = "0.4.19"
 jsonwebtoken = "7.2.0"
+lazy_static = "1.4.0"
 
 # database driver
 sqlx = { version = "0.5", features = [ "sqlite", "runtime-tokio-rustls" ] }
+uuid = { version = "0.8", features = ["serde", "v4"] }
 hex = "0.4.3"
 
 # logging
