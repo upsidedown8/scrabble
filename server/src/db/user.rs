@@ -1,22 +1,26 @@
 use sqlx::SqlitePool;
+use uuid::Uuid;
 
 #[derive(Debug, Clone)]
 pub struct DbUser {
-    pub id_user: i64,
+    pub id_user: String,
     pub username: String,
     pub email: String,
     pub hashed_pass: String,
 }
 
 impl DbUser {
-    pub async fn find_id(username: &str, pool: &SqlitePool) -> sqlx::Result<i64> {
+    pub async fn find_id(username: &str, pool: &SqlitePool) -> Option<Uuid> {
         sqlx::query!("SELECT id_user FROM tbl_user WHERE username = ?", username)
             .fetch_one(pool)
             .await
-            .map(|record| record.id_user)
+            .ok()
+            .and_then(|rec| Uuid::parse_str(&rec.id_user).ok())
     }
-    pub async fn find_by_id(id_user: i64, pool: &SqlitePool) -> sqlx::Result<Self> {
-        sqlx::query_as!(DbUser, "SELECT * FROM tbl_user WHERE id_user = ?", id_user)
+    pub async fn find_by_id(id_user: &Uuid, pool: &SqlitePool) -> sqlx::Result<Self> {
+        let uuid = id_user.to_string();
+
+        sqlx::query_as!(DbUser, "SELECT * FROM tbl_user WHERE id_user = ?", uuid)
             .fetch_one(pool)
             .await
     }
@@ -35,7 +39,7 @@ impl DbUser {
         email: &str,
         hashed_pass: &str,
         pool: &SqlitePool,
-    ) -> sqlx::Result<i64> {
+    ) -> Option<Uuid> {
         sqlx::query!(
             "INSERT INTO tbl_user (username, email, hashed_pass) VALUES (?, ?, ?)",
             username,
@@ -43,7 +47,8 @@ impl DbUser {
             hashed_pass
         )
         .execute(pool)
-        .await?;
+        .await
+        .ok()?;
 
         Self::find_id(username, pool).await
     }
