@@ -22,6 +22,7 @@ pub struct UserProfile {
  *---------------------------------------------**/
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UserLogin {
+    pub username: String,
     pub password: String,
 }
 
