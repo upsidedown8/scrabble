@@ -1,3 +1,5 @@
+use common::api::users::Auth;
+use rocket::http::Status;
 use sqlx::SqlitePool;
 use uuid::Uuid;
 
@@ -10,6 +12,12 @@ pub struct DbUser {
 }
 
 impl DbUser {
+    pub fn gen_auth(&self) -> Result<Auth, Status> {
+        Uuid::parse_str(&self.id_user)
+            .ok()
+            .and_then(|id_user| crate::auth::generate_token(&self.username, id_user))
+            .ok_or(Status::Unauthorized)
+    }
     pub async fn find_id(username: &str, pool: &SqlitePool) -> Option<Uuid> {
         sqlx::query!("SELECT id_user FROM tbl_user WHERE username = ?", username)
             .fetch_one(pool)
