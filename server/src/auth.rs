@@ -10,7 +10,7 @@ use rocket::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{auth, AppState};
+use crate::{auth, db::user::DbUser, AppState};
 
 /// Generates a random salt and hashes the password.
 pub fn hash(pass: &[u8]) -> anyhow::Result<String> {
@@ -32,10 +32,13 @@ pub struct Claims {
     pub sub: String,
     /// Ensure the jwt is from the same server session
     pub session: usize,
+    /// Store database id to prevent using token from deleted account with
+    /// matching username
+    pub id: i64,
 }
 
 /// Generate a JWT.
-pub fn generate_token(state: &State<AppState>, username: &str) -> Option<Auth> {
+pub fn generate_token(state: &State<AppState>, username: &str, id: i64) -> Option<Auth> {
     // get current time, and add `jwt_expiry` to get final time
     let timestamp = Utc::now().timestamp() as usize;
     let exp = timestamp + state.jwt.jwt_expiry_delta;
@@ -43,6 +46,7 @@ pub fn generate_token(state: &State<AppState>, username: &str) -> Option<Auth> {
     let header = Header::default();
     let claims = Claims {
         exp,
+        id,
         sub: username.to_string(),
         session: state.jwt.jwt_session,
     };
@@ -52,7 +56,7 @@ pub fn generate_token(state: &State<AppState>, username: &str) -> Option<Auth> {
 }
 
 /// Check whether a user is authorised, provided their token.
-pub fn validate_token(state: &State<AppState>, username: &str, token: &str) -> bool {
+pub fn validate_token(state: &State<AppState>, username: &str, id: i64, token: &str) -> bool {
     log::info!("{}", username);
 
     let validation = Validation {
@@ -65,7 +69,7 @@ pub fn validate_token(state: &State<AppState>, username: &str, token: &str) -> b
     log::info!("{:?}", decode::<Claims>(token, &key, &validation));
 
     decode::<Claims>(token, &key, &validation)
-        .map(|t| t.claims.session == state.jwt.jwt_session)
+        .map(|t| t.claims.session == state.jwt.jwt_session && t.claims.id == id)
         .unwrap_or(false)
 }
 
@@ -97,7 +101,11 @@ impl<'r> FromRequest<'r> for ApiKey<'r> {
 
 impl<'r> ApiKey<'r> {
     pub async fn verify(&self, username: &str, state: &State<AppState<'_>>) -> Result<(), Status> {
-        match auth::validate_token(state, username, self.0) {
+        let id = DbUser::find_id(username, &state.pool)
+            .await
+            .map_err(|_| Status::Unauthorized)?;
+
+        match auth::validate_token(state, username, id, self.0) {
             true => Ok(()),
             false => Err(Status::Unauthorized),
         }

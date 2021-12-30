@@ -20,12 +20,13 @@ pub async fn create(
         Err(Status::InternalServerError)
     } else {
         let hash = auth::hash(req.password.as_bytes()).map_err(|_| Status::InternalServerError)?;
-        DbUser::insert(&req.username, &req.email, &hash, &state.pool)
+        let id = DbUser::insert(&req.username, &req.email, &hash, &state.pool)
             .await
             .map_err(|_| Status::InternalServerError)?;
 
         Ok(Json::from(UserCreateResponse {
-            auth: auth::generate_token(state, &req.username).ok_or(Status::InternalServerError)?,
+            auth: auth::generate_token(state, &req.username, id)
+                .ok_or(Status::InternalServerError)?,
             user_details: UserDetails {
                 username: req.username.clone(),
                 email: req.email.clone(),
@@ -47,7 +48,8 @@ pub async fn login(
         .map_err(|_| Status::Unauthorized)?;
     match auth::verify(&user.hashed_pass, req.password.as_bytes()) {
         true => Response::Ok(Json::from(UserLoginResponse {
-            auth: auth::generate_token(state, &user.username).ok_or(Status::Unauthorized)?,
+            auth: auth::generate_token(state, &user.username, user.id_user)
+                .ok_or(Status::Unauthorized)?,
             user_details: UserDetails {
                 username: user.username,
                 email: user.email,
