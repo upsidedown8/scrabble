@@ -48,10 +48,10 @@ impl DbUser {
                 email = ?,
                 hashed_pass = ?
             WHERE id_user = ?",
-            self.id_user,
             self.username,
             self.email,
-            self.hashed_pass
+            self.hashed_pass,
+            self.id_user,
         )
         .execute(pool)
         .await

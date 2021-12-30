@@ -23,11 +23,9 @@ pub async fn create(
         DbUser::insert(&req.username, &req.email, &hash, &state.pool)
             .await
             .map_err(|_| Status::InternalServerError)?;
-        let auth = auth::generate_token(&state.jwt_secret, state.jwt_expiry, &req.username)
-            .ok_or(Status::InternalServerError)?;
 
         Ok(Json::from(UserCreateResponse {
-            auth,
+            auth: auth::generate_token(state, &req.username).ok_or(Status::InternalServerError)?,
             user_details: UserDetails {
                 username: req.username.clone(),
                 email: req.email.clone(),
@@ -49,8 +47,7 @@ pub async fn login(
         .map_err(|_| Status::Unauthorized)?;
     match auth::verify(&user.hashed_pass, req.password.as_bytes()) {
         true => Response::Ok(Json::from(UserLoginResponse {
-            auth: auth::generate_token(&state.jwt_secret, state.jwt_expiry, &user.username)
-                .ok_or(Status::Unauthorized)?,
+            auth: auth::generate_token(state, &user.username).ok_or(Status::Unauthorized)?,
             user_details: UserDetails {
                 username: user.username,
                 email: user.email,
@@ -99,19 +96,18 @@ pub async fn update(
                 return Err(Status::Unauthorized);
             }
 
-            let mut updated_user = user.clone();
-
-            if let Some(username) = &req.username {
-                updated_user.username = username.clone();
-            }
-            if let Some(email) = &req.email {
-                updated_user.email = email.clone();
-            }
-            if let Some(password) = &req.password {
-                let hash =
-                    auth::hash(password.as_bytes()).map_err(|_| Status::InternalServerError)?;
-                updated_user.hashed_pass = hash;
-            }
+            let updated_user = DbUser {
+                id_user: user.id_user,
+                username: req.username.clone().unwrap_or_else(|| username.clone()),
+                email: req.email.clone().unwrap_or_else(|| user.email.clone()),
+                hashed_pass: auth::hash(
+                    req.password
+                        .as_ref()
+                        .unwrap_or(&req.old_password)
+                        .as_bytes(),
+                )
+                .map_err(|_| Status::InternalServerError)?,
+            };
 
             updated_user
                 .update(&state.pool)
