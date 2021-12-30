@@ -53,6 +53,7 @@ pub struct UserCreateResponse {
  *---------------------------------------------**/
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UserInfoResponse {
+    pub auth: Auth,
     pub user_details: UserDetails,
 }
 
@@ -69,6 +70,7 @@ pub struct UserUpdate {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UserUpdateResponse {
+    pub auth: Auth,
     pub user_details: UserDetails,
 }
 
@@ -82,5 +84,6 @@ pub struct DeleteUser {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DeleteUserResponse {
+    pub auth: Auth,
     pub user_details: UserDetails,
 }

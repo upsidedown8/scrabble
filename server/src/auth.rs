@@ -86,6 +86,12 @@ impl fmt::Display for AuthenticatedUser {
     }
 }
 
+impl AuthenticatedUser {
+    pub fn regen_auth(&self) -> Result<Auth, Status> {
+        generate_token(&self.username, self.id_user).ok_or(Status::InternalServerError)
+    }
+}
+
 #[rocket::async_trait]
 impl<'r> FromRequest<'r> for AuthenticatedUser {
     type Error = LoginError;
