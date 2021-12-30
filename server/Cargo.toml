@@ -4,16 +4,29 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-# for the API
-rocket = "0.5.0-rc.1"
-# for interacting with sqlite
+# api types and game ai
+common = { path = "../common" }
+
+# web server
+serde = { version = "1.0.126", features = ["derive"] }
+rocket = { version = "0.5.0-rc.1", features = ["json"] }
+
+# auth
+rand = "0.8.4"
+rust-argon2 = "0.8.3"
+chrono = "0.4.19"
+jsonwebtoken = "7.2.0"
+
+# database driver
 sqlx = { version = "0.5", features = [ "sqlite", "runtime-tokio-rustls" ] }
-# for loading config in `.env` file
-dotenv = "0.15.0"
-# error handling
-anyhow = "1.0.45"
-# random number generation
-fastrand = "1.5.0"
+hex = "0.4.3"
+
 # logging
 log = "0.4.0"
 env_logger = "0.8.4"
+
+# for loading config in `.env` file
+dotenv = "0.15.0"
+
+# error handling
+anyhow = "1.0.45"
