@@ -1,9 +1,10 @@
-use crate::auth::{self, ApiKey};
+use crate::auth::{self, AuthenticatedUser};
 use crate::db::user::DbUser;
 
 use crate::{routes::Response, AppState};
 use common::api::users::*;
 use rocket::{http::Status, serde::json::Json, State};
+use uuid::Uuid;
 
 #[post("/users", data = "<req>", format = "json")]
 pub async fn create(
@@ -22,11 +23,10 @@ pub async fn create(
         let hash = auth::hash(req.password.as_bytes()).map_err(|_| Status::InternalServerError)?;
         let id = DbUser::insert(&req.username, &req.email, &hash, &state.pool)
             .await
-            .map_err(|_| Status::InternalServerError)?;
+            .ok_or(Status::InternalServerError)?;
 
         Ok(Json::from(UserCreateResponse {
-            auth: auth::generate_token(state, &req.username, id)
-                .ok_or(Status::InternalServerError)?,
+            auth: auth::generate_token(&req.username, id).ok_or(Status::InternalServerError)?,
             user_details: UserDetails {
                 username: req.username.clone(),
                 email: req.email.clone(),
@@ -35,20 +35,21 @@ pub async fn create(
     }
 }
 
-#[post("/users/<username>", data = "<req>", format = "json")]
+#[post("/users/login", data = "<req>", format = "json")]
 pub async fn login(
     state: &State<AppState<'_>>,
-    username: String,
     req: Json<UserLogin>,
 ) -> Response<UserLoginResponse> {
-    log::info!("login user: {}", username);
+    log::info!("login user: {}", req.username);
 
-    let user = DbUser::find_by_username(username.trim(), &state.pool)
+    let user = DbUser::find_by_username(req.username.trim(), &state.pool)
         .await
         .map_err(|_| Status::Unauthorized)?;
     match auth::verify(&user.hashed_pass, req.password.as_bytes()) {
         true => Response::Ok(Json::from(UserLoginResponse {
-            auth: auth::generate_token(state, &user.username, user.id_user)
+            auth: Uuid::parse_str(&user.id_user)
+                .ok()
+                .and_then(|id_user| auth::generate_token(&user.username, id_user))
                 .ok_or(Status::Unauthorized)?,
             user_details: UserDetails {
                 username: user.username,
@@ -59,17 +60,14 @@ pub async fn login(
     }
 }
 
-#[get("/users/<username>")]
+#[get("/user")]
 pub async fn get_details(
     state: &State<AppState<'_>>,
-    username: String,
-    key: ApiKey<'_>,
+    user: AuthenticatedUser,
 ) -> Response<UserInfoResponse> {
-    log::info!("details for user: {}", username);
+    log::info!("details for user: {}", user.username);
 
-    key.verify(&username, state).await?;
-
-    match DbUser::find_by_username(&username, &state.pool).await {
+    match DbUser::find_by_id(&user.id_user, &state.pool).await {
         Ok(user) => Response::Ok(Json::from(UserInfoResponse {
             user_details: UserDetails {
                 username: user.username,
@@ -80,18 +78,15 @@ pub async fn get_details(
     }
 }
 
-#[put("/users/<username>", data = "<req>", format = "json")]
+#[put("/user", data = "<req>", format = "json")]
 pub async fn update(
     state: &State<AppState<'_>>,
-    username: String,
     req: Json<UserUpdate>,
-    key: ApiKey<'_>,
+    user: AuthenticatedUser,
 ) -> Response<UserUpdateResponse> {
-    log::info!("update user: {}", username);
+    log::info!("update user: {}", user);
 
-    key.verify(&username, state).await?;
-
-    match DbUser::find_by_username(&username, &state.pool).await {
+    match DbUser::find_by_id(&user.id_user, &state.pool).await {
         Ok(user) => {
             // check that old password matches
             if !auth::verify(&user.hashed_pass, req.old_password.as_bytes()) {
@@ -100,7 +95,10 @@ pub async fn update(
 
             let updated_user = DbUser {
                 id_user: user.id_user,
-                username: req.username.clone().unwrap_or_else(|| username.clone()),
+                username: req
+                    .username
+                    .clone()
+                    .unwrap_or_else(|| user.username.clone()),
                 email: req.email.clone().unwrap_or_else(|| user.email.clone()),
                 hashed_pass: auth::hash(
                     req.password
@@ -118,7 +116,7 @@ pub async fn update(
 
             Ok(Json::from(UserUpdateResponse {
                 user_details: UserDetails {
-                    username,
+                    username: user.username,
                     email: user.email,
                 },
             }))
@@ -127,18 +125,15 @@ pub async fn update(
     }
 }
 
-#[delete("/users/<username>", data = "<req>", format = "json")]
+#[delete("/user", data = "<req>", format = "json")]
 pub async fn delete(
     state: &State<AppState<'_>>,
-    username: String,
     req: Json<DeleteUser>,
-    key: ApiKey<'_>,
+    user: AuthenticatedUser,
 ) -> Response<DeleteUserResponse> {
-    log::info!("delete user: {}", username);
+    log::info!("delete user: {}", user.username);
 
-    key.verify(&username, state).await?;
-
-    match DbUser::find_by_username(&username, &state.pool).await {
+    match DbUser::find_by_id(&user.id_user, &state.pool).await {
         Ok(user) => {
             // check password to confirm delete
             if !auth::verify(&user.hashed_pass, req.password.as_bytes()) {
@@ -153,7 +148,7 @@ pub async fn delete(
             // return user info
             Ok(Json::from(DeleteUserResponse {
                 user_details: UserDetails {
-                    username,
+                    username: user.username,
                     email: user.email,
                 },
             }))
