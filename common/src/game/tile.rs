@@ -69,7 +69,7 @@ impl From<usize> for Tile {
     fn from(tile: usize) -> Self {
         match tile {
             0..=25 => Tile::Letter(Letter::from(tile)),
-            26 => Tile::Blank(None),
+            _ => Tile::Blank(None),
         }
     }
 }
