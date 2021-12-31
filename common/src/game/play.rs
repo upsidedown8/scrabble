@@ -2,7 +2,7 @@ use std::{collections::HashSet, iter};
 
 use super::{
     bitboard::BitBoard,
-    board::{Direction, Pos},
+    pos::{Direction, Pos},
     tile::{Letter, Tile},
 };
 
