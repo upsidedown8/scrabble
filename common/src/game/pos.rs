@@ -7,6 +7,41 @@ use crate::game::{
 };
 use std::fmt;
 
+/// Additional bonus for certain positions on the board.
+#[derive(Debug, Clone, Copy)]
+pub enum PosBonus {
+    DoubleLetter,
+    TripleLetter,
+    DoubleWord,
+    TripleWord,
+    Start,
+}
+
+impl PosBonus {
+    /// Gets the multiplier for a word placed on a square with
+    /// this bonus.
+    pub fn word_multiplier(&self) -> usize {
+        match self {
+            PosBonus::DoubleLetter => 1,
+            PosBonus::TripleLetter => 1,
+            PosBonus::DoubleWord => 2,
+            PosBonus::TripleWord => 3,
+            PosBonus::Start => 1,
+        }
+    }
+    /// Gets the multiplier for a tile placed on a square with
+    /// this bonus.
+    pub fn letter_multiplier(&self) -> usize {
+        match self {
+            PosBonus::DoubleLetter => 2,
+            PosBonus::TripleLetter => 3,
+            PosBonus::DoubleWord => 1,
+            PosBonus::TripleWord => 1,
+            PosBonus::Start => 2,
+        }
+    }
+}
+
 /// A position on the board. Ranges from `0..=`[`CELLS`].
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Pos(usize);
@@ -39,6 +74,39 @@ impl fmt::Display for Pos {
     }
 }
 impl Pos {
+    /// Gets the `Pos` for the start square.
+    pub fn start() -> Self {
+        Self::from((7, 7))
+    }
+    /// Checks whether the `Pos` is the start square.
+    pub fn is_start(&self) -> bool {
+        *self == Self::start()
+    }
+    /// Gets the optional tile bonus of the `Pos`.
+    pub fn bonus(&self) -> Option<PosBonus> {
+        let (row, col) = self.cartesian();
+
+        // finds positive difference between two unsigned numbers
+        let abs_diff = |a, b| match a > b {
+            true => a - b,
+            false => b - a,
+        };
+
+        // find difference to start square
+        let delta_row = abs_diff(usize::from(row), 7);
+        let delta_col = abs_diff(usize::from(col), 7);
+
+        match (delta_row, delta_col) {
+            (0, 0) => Some(PosBonus::Start),
+            (2, 2) | (2, 6) | (6, 2) => Some(PosBonus::TripleLetter),
+            (0, 4) | (4, 0) | (1, 1) | (1, 5) | (5, 1) | (7, 4) | (4, 7) => {
+                Some(PosBonus::DoubleLetter)
+            }
+            (7, 7) | (0, 7) | (7, 0) => Some(PosBonus::TripleWord),
+            (a, b) if a == b => Some(PosBonus::DoubleWord),
+            _ => None,
+        }
+    }
     /// Gets the vertical cartesian coordinate
     pub fn row(&self) -> Row {
         Row::from((self.0 / COLS) % ROWS)
