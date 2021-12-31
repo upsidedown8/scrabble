@@ -8,12 +8,18 @@ use std::fmt::{Display, Formatter};
 pub struct Letter(usize);
 
 impl Letter {
+    /// Creates a new letter from a `char`, returns [`None`] if the
+    /// `ch` provided is not in the latin alphabet.
     pub fn new(ch: char) -> Option<Self> {
         match ch {
             'a'..='z' => Some(Letter(ch as usize - 97)),
             'A'..='Z' => Some(Letter(ch as usize - 65)),
             _ => None,
         }
+    }
+    /// Returns an iterator over all 26 letters
+    pub fn iter() -> impl Iterator<Item = Letter> {
+        (0..26).map(Letter::from)
     }
 }
 impl From<usize> for Letter {
@@ -49,6 +55,24 @@ impl From<Letter> for Tile {
         Self::Letter(letter)
     }
 }
+impl From<Tile> for usize {
+    fn from(tile: Tile) -> Self {
+        match tile {
+            // a letter is from `0..=25`
+            Tile::Letter(Letter(num)) => num,
+            // a blank is `26`
+            Tile::Blank(_) => 26,
+        }
+    }
+}
+impl From<usize> for Tile {
+    fn from(tile: usize) -> Self {
+        match tile {
+            0..=25 => Tile::Letter(Letter::from(tile)),
+            26 => Tile::Blank(None),
+        }
+    }
+}
 impl Display for Tile {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -56,5 +80,10 @@ impl Display for Tile {
             Tile::Blank(Some(l)) => write!(f, "({})", l),
             Tile::Blank(_) => write!(f, "( )"),
         }
+    }
+}
+impl Tile {
+    pub fn iter() -> impl Iterator<Item = Tile> {
+        (0..27).map(Tile::from)
     }
 }
