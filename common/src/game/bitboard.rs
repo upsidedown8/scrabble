@@ -1,84 +1,46 @@
+use crate::game::pos::{Col, Pos, Row};
 use std::{
     fmt::{Display, Formatter, Result},
     ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, Not, Shl, ShlAssign, Shr, ShrAssign},
 };
 
-/// Convert from a row and col coordinate to an index from 0..225.
-///
-/// # Arguments
-///
-/// * `row` The row from 0..15
-/// * `col` The col from 0..15
-pub fn get_idx(row: usize, col: usize) -> usize {
-    assert!(row < ROWS);
-    assert!(col < COLS);
-    (row * COLS) + col
-}
-
-const ROWS: usize = 15;
-const COLS: usize = 15;
-const SIZE: usize = 4;
+/// [`WORD_SIZE`] = the number of bits in each word. A [`u32`] could have been
+/// used giving [`WORD_SIZE`] = 32.
 const WORD_SIZE: usize = 64;
 
-/// A scrabble board has 15 * 15 = 225 squares. The nearest multiple
-/// of 64 bit integers is 4, giving 256 possible values.
+/// A scrabble board has [`ROWS`] * [`COLS`] = 15 * 15 = 225 squares. The
+/// nearest multiple of 64 bit integers is 4, giving 256 bit values.
 ///
 /// Using integer types allows for very efficient move generation,
 /// validation and scoring, since these operations can be run with a
 /// single cpu instruction.
 #[derive(Default, Clone, Copy, PartialEq, Debug)]
 pub struct BitBoard {
-    /// Use 4 unsigned 64 bit integers to represent a 255 bit board
-    boards: [u64; SIZE],
+    /// The word type used to meet the required size of a bitboard. Any unsigned type could
+    /// be used, but a [`u64`] uses the fewest words so is most efficient.
+    boards: [u64; 4],
 }
 
 impl BitBoard {
-    /// Checks whether the bit at `idx` is set.
-    ///
-    /// # Arguments
-    ///
-    /// * `idx` The position to check
-    pub fn is_bit_set<T: Into<usize>>(&self, idx: T) -> bool {
-        let idx = idx.into();
+    /// Checks whether the bit at `pos` is set.
+    pub fn is_bit_set<T: Into<Pos>>(&self, pos: T) -> bool {
+        let idx = usize::from(pos.into());
 
-        assert!(idx < WORD_SIZE * SIZE);
-        (self.boards[idx / WORD_SIZE] & (1u64 << (idx % WORD_SIZE))) != 0
+        (self.boards[idx / WORD_SIZE] & (1 << (idx % WORD_SIZE))) != 0
     }
 
-    /// Sets the bit at `idx` to 1.
-    ///
-    /// # Arguments
-    ///
-    /// * `idx` The position to set
-    pub fn set_bit<T: Into<usize>>(&mut self, idx: T) {
-        let idx = idx.into();
+    /// Sets the bit at `pos` to 1.
+    pub fn set_bit<T: Into<Pos>>(&mut self, pos: T) {
+        let idx = usize::from(pos.into());
 
-        assert!(idx < WORD_SIZE * SIZE);
-        self.boards[idx / WORD_SIZE] |= 1u64 << (idx % WORD_SIZE);
+        self.boards[idx / WORD_SIZE] |= 1 << (idx % WORD_SIZE);
     }
 
-    /// Sets the bit at `idx` to 0.
-    ///
-    /// # Arguments
-    ///
-    /// * `idx` The position to set
-    pub fn clear_bit<T: Into<usize>>(&mut self, idx: T) {
-        let idx = idx.into();
+    /// Sets the bit at `pos` to 0.
+    pub fn clear_bit<T: Into<Pos>>(&mut self, pos: T) {
+        let idx = usize::from(pos.into());
 
-        assert!(idx < WORD_SIZE * SIZE);
-        self.boards[idx / WORD_SIZE] &= !(1u64 << (idx % WORD_SIZE));
-    }
-
-    /// Generates a random bitboard.
-    pub fn random() -> BitBoard {
-        BitBoard {
-            boards: [
-                fastrand::u64(..),
-                fastrand::u64(..),
-                fastrand::u64(..),
-                fastrand::u64(..),
-            ],
-        }
+        self.boards[idx / WORD_SIZE] &= !(1 << (idx % WORD_SIZE));
     }
 
     /// Checks whether all the bits are set to zero.
@@ -88,15 +50,17 @@ impl BitBoard {
 }
 
 impl Shl<usize> for BitBoard {
-    type Output = BitBoard;
+    type Output = Self;
 
-    fn shl(mut self, rhs: usize) -> BitBoard {
+    fn shl(mut self, rhs: usize) -> Self {
         self <<= rhs;
         self
     }
 }
 impl ShlAssign<usize> for BitBoard {
     fn shl_assign(&mut self, mut rhs: usize) {
+        let words = self.boards.len();
+
         // if the shift is greater than the block size, then shift the
         // boards array by rhs DIV 64
         if rhs >= WORD_SIZE {
@@ -105,7 +69,7 @@ impl ShlAssign<usize> for BitBoard {
             // shift the boards
             self.boards.rotate_left(shift_amount);
             // assign the boards on the right side to zero
-            for i in (SIZE - shift_amount)..SIZE {
+            for i in (words - shift_amount)..words {
                 self.boards[i] = 0;
             }
             // get the remaining shift
@@ -114,7 +78,7 @@ impl ShlAssign<usize> for BitBoard {
 
         // store the remainder from a shift to use in the next shift
         let mut carry = 0;
-        for i in (0..SIZE).rev() {
+        for i in (0..words).rev() {
             // store the current value
             let tmp = self.boards[i];
             // find the shifted value of the board, and add the carry from
@@ -127,15 +91,17 @@ impl ShlAssign<usize> for BitBoard {
 }
 
 impl Shr<usize> for BitBoard {
-    type Output = BitBoard;
+    type Output = Self;
 
-    fn shr(mut self, rhs: usize) -> BitBoard {
+    fn shr(mut self, rhs: usize) -> Self {
         self >>= rhs;
         self
     }
 }
 impl ShrAssign<usize> for BitBoard {
     fn shr_assign(&mut self, mut rhs: usize) {
+        let words = self.boards.len();
+
         // if the shift is greater than the block size, then shift the
         // boards array by rhs DIV 64
         if rhs >= WORD_SIZE {
@@ -153,7 +119,7 @@ impl ShrAssign<usize> for BitBoard {
 
         // store the remainder from a shift to use in the next shift
         let mut carry = 0;
-        for i in 0..SIZE {
+        for i in 0..words {
             // store the current value
             let tmp = self.boards[i];
             // find the shifted value of the board, and add the carry from
@@ -165,43 +131,49 @@ impl ShrAssign<usize> for BitBoard {
     }
 }
 
-impl BitOr<BitBoard> for BitBoard {
-    type Output = BitBoard;
+impl BitOr<Self> for BitBoard {
+    type Output = Self;
 
-    fn bitor(mut self, rhs: BitBoard) -> BitBoard {
+    fn bitor(mut self, rhs: Self) -> Self {
         self |= rhs;
         self
     }
 }
-impl BitOrAssign<BitBoard> for BitBoard {
-    fn bitor_assign(&mut self, rhs: BitBoard) {
-        for i in 0..SIZE {
+impl BitOrAssign<Self> for BitBoard {
+    fn bitor_assign(&mut self, rhs: Self) {
+        let words = self.boards.len();
+
+        for i in 0..words {
             self.boards[i] |= rhs.boards[i];
         }
     }
 }
 
-impl BitAnd<BitBoard> for BitBoard {
-    type Output = BitBoard;
+impl BitAnd<Self> for BitBoard {
+    type Output = Self;
 
-    fn bitand(mut self, rhs: BitBoard) -> BitBoard {
+    fn bitand(mut self, rhs: Self) -> Self {
         self &= rhs;
         self
     }
 }
-impl BitAndAssign<BitBoard> for BitBoard {
-    fn bitand_assign(&mut self, rhs: BitBoard) {
-        for i in 0..SIZE {
+impl BitAndAssign<Self> for BitBoard {
+    fn bitand_assign(&mut self, rhs: Self) {
+        let words = self.boards.len();
+
+        for i in 0..words {
             self.boards[i] &= rhs.boards[i];
         }
     }
 }
 
 impl Not for BitBoard {
-    type Output = BitBoard;
+    type Output = Self;
 
-    fn not(mut self) -> BitBoard {
-        for i in 0..SIZE {
+    fn not(mut self) -> Self {
+        let words = self.boards.len();
+
+        for i in 0..words {
             self.boards[i] = !self.boards[i];
         }
         self
@@ -210,14 +182,18 @@ impl Not for BitBoard {
 
 impl Display for BitBoard {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        // column coords
-        writeln!(f, "  00 01 02 03 04 05 06 07 08 09 10 11 12 13 14")?;
+        // print col headers
+        write!(f, "   ")?;
+        for col in Col::iter() {
+            write!(f, " {} ", col)?;
+        }
+        writeln!(f)?;
 
         // main loop
-        for row in 0..ROWS {
-            write!(f, "{} ", (row as u8 + 65) as char)?;
-            for col in 0..COLS {
-                if self.is_bit_set(get_idx(row, col)) {
+        for row in Row::iter() {
+            write!(f, "{:>2} ", row.to_string())?;
+            for col in Col::iter() {
+                if self.is_bit_set((row, col)) {
                     write!(f, " x ")?;
                 } else {
                     write!(f, "   ")?;
@@ -356,11 +332,11 @@ mod tests {
     #[test]
     fn bits() {
         let mut bb = BitBoard::default();
-        for idx in 0..225_usize {
-            bb.set_bit(idx);
-            assert!(bb.is_bit_set(idx));
+        for pos in Pos::iter() {
+            bb.set_bit(pos);
+            assert!(bb.is_bit_set(pos));
 
-            bb.clear_bit(idx);
+            bb.clear_bit(pos);
             assert!(bb.is_zero());
         }
     }
