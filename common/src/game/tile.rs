@@ -43,7 +43,10 @@ impl Display for Letter {
 /// A scrabble tile, one of the 26 letters or a blank.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Tile {
+    /// The tile is a letter (A..=Z)
     Letter(Letter),
+    /// The tile is a blank, which can act as any single letter,
+    /// but has zero score.
     Blank(Option<Letter>),
 }
 
