@@ -10,10 +10,16 @@ use std::fmt;
 /// Additional bonus for certain positions on the board.
 #[derive(Debug, Clone, Copy)]
 pub enum PosBonus {
+    /// The square doubles the value of the tile placed on it
     DoubleLetter,
+    /// The square triples the value of the tile placed on it
     TripleLetter,
+    /// The square doubles the total value of a word placed on it
     DoubleWord,
+    /// The square triples the total value of a word placed on it
     TripleWord,
+    /// The center square: counts as a double letter. The first word
+    /// must intersect this square.
     Start,
 }
 
@@ -205,12 +211,16 @@ impl Col {
     }
 }
 
-/// The four orthagonal directions from a point
+/// The four orthagonal directions from a [`Pos`].
 #[derive(Debug, Clone, Copy)]
 pub enum Direction {
+    /// Up
     Up,
+    /// Down
     Down,
+    /// Left
     Left,
+    /// Right
     Right,
 }
 impl Direction {

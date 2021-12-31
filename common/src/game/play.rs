@@ -1,3 +1,5 @@
+//! Module representing a [`Play`] (move) made by a player.
+
 use std::{collections::HashSet, iter};
 
 use super::{

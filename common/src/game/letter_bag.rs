@@ -1,6 +1,9 @@
+//! Models the [`LetterBag`].
+
 use crate::game::{rack::RACK_SIZE, tile::Tile};
 use rand::Rng;
 
+/// The number of unique tiles.
 pub const TILE_COUNT: usize = 27;
 
 /// A structure containing a finite number of tiles which can

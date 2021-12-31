@@ -1,3 +1,5 @@
+//! Models the scrabble board.
+
 use crate::game::{
     bitboard::BitBoard,
     play::Play,
@@ -6,10 +8,15 @@ use crate::game::{
 };
 use std::{fmt, mem};
 
+/// The number of rows on the board.
 pub const ROWS: usize = 15;
+/// The number of columns on the board.
 pub const COLS: usize = 15;
+/// The number of squares on the board.
 pub const CELLS: usize = 15 * 15;
 
+/// Represents the 15 x 15 scrabble board, storing the location of
+/// tiles, and allowing [`Play`]s to be made and validated.
 #[derive(Clone, Debug)]
 pub struct Board {
     grid: [Option<Tile>; CELLS],
@@ -40,7 +47,7 @@ impl Board {
 impl Default for Board {
     fn default() -> Self {
         Self {
-            grid: [None; 225],
+            grid: [None; CELLS],
             occupancy: BitBoard::default(),
         }
     }
