@@ -1,7 +1,7 @@
 use crate::game::{rack::RACK_SIZE, tile::Tile};
 use rand::Rng;
 
-const TILE_COUNT: usize = 27;
+pub const TILE_COUNT: usize = 27;
 
 /// A structure containing a finite number of tiles which can
 /// be used during the game. Since there are 27 tiles, an array
