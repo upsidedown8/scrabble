@@ -19,12 +19,6 @@ use routes::{users, words};
 use sqlx::{sqlite::SqlitePoolOptions, SqlitePool};
 use std::env;
 
-pub struct JwtSettings {
-    pub jwt_secret: Vec<u8>,
-    pub jwt_expiry_delta: usize,
-    pub jwt_session: usize,
-}
-
 pub struct AppState<'a> {
     pub pool: SqlitePool,
     pub word_tree: WordTree,
