@@ -146,7 +146,6 @@ pub async fn delete(
 
             // return user info
             Ok(Json::from(DeleteUserResponse {
-                auth: user.regen_auth()?,
                 user_details: UserDetails {
                     username: db_user.username,
                     email: db_user.email,

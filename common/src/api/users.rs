@@ -84,6 +84,5 @@ pub struct DeleteUser {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DeleteUserResponse {
-    pub auth: Auth,
     pub user_details: UserDetails,
 }
