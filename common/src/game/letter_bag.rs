@@ -1,13 +1,14 @@
+use crate::game::{rack::RACK_SIZE, tile::Tile};
 use rand::Rng;
 
-use super::tile::Tile;
+const TILE_COUNT: usize = 27;
 
 /// A structure containing a finite number of tiles which can
 /// be used during the game. Since there are 27 tiles, an array
 /// with 27 elements is used to keep count.
 pub struct LetterBag {
     /// Count for each tile
-    counts: [usize; 27],
+    counts: [usize; TILE_COUNT],
     /// Total of `counts`
     total: usize,
 }
@@ -15,7 +16,7 @@ pub struct LetterBag {
 impl Default for LetterBag {
     fn default() -> Self {
         // Uses the initial counts from the official game.
-        let mut counts = [0; 27];
+        let mut counts = [0; TILE_COUNT];
         for (idx, tile) in Tile::iter().enumerate() {
             counts[idx] = Self::initial_count(tile);
         }
@@ -23,8 +24,8 @@ impl Default for LetterBag {
         Self::from(counts)
     }
 }
-impl From<[usize; 27]> for LetterBag {
-    fn from(counts: [usize; 27]) -> Self {
+impl From<[usize; TILE_COUNT]> for LetterBag {
+    fn from(counts: [usize; TILE_COUNT]) -> Self {
         Self {
             counts,
             total: counts.iter().sum(),
@@ -52,7 +53,7 @@ impl LetterBag {
     /// Gets the initial count for `tile` in the official version
     /// of scrabble.
     pub fn initial_count(tile: Tile) -> usize {
-        const INIT_COUNTS: [usize; 27] = [
+        const INIT_COUNTS: [usize; TILE_COUNT] = [
             9,  // A
             2,  // B
             2,  // C
@@ -105,7 +106,7 @@ impl LetterBag {
                 }
 
                 // since `idx` < `total`, this assertion should never fail
-                assert!(tile_idx < 27);
+                assert!(tile_idx < TILE_COUNT);
 
                 // decrement the count for the chosen tile, and the overall total
                 self.counts[tile_idx] -= 1;
@@ -115,16 +116,16 @@ impl LetterBag {
             }),
         }
     }
-    /// Draws `min(count, total, 7)` tiles from the bag as an
-    /// iterator. ie. At most 7 tiles, no more than the total
+    /// Draws `min(count, total, RACK_SIZE)` tiles from the bag as an
+    /// iterator. ie. At most [`RACK_SIZE`] tiles, no more than the total
     /// number of tiles, and no more than `count` tiles.
     pub fn draw_many(&mut self, count: usize) -> impl Iterator<Item = Tile> + '_ {
-        (0..7).filter_map(|_| self.draw()).take(count)
+        (0..RACK_SIZE).filter_map(|_| self.draw()).take(count)
     }
-    /// Adds up to 7 tiles from the provided iterator back into
+    /// Adds up to [`RACK_SIZE`] tiles from the provided iterator back into
     /// the bag, returning the number of tiles that were added.
     pub fn add_tiles(&mut self, tiles: impl Iterator<Item = Tile>) -> usize {
-        (0..7)
+        (0..RACK_SIZE)
             .zip(tiles)
             .map(|(_, tile)| {
                 self.counts[usize::from(tile)] += 1;
@@ -136,26 +137,28 @@ impl LetterBag {
 
 #[cfg(test)]
 mod tests {
-    use crate::game::tile::Tile;
-
-    use super::LetterBag;
+    use crate::game::{
+        letter_bag::{LetterBag, TILE_COUNT},
+        rack::RACK_SIZE,
+        tile::Tile,
+    };
 
     #[test]
     fn draw_limits() {
         let mut letter_bag = LetterBag::default();
         assert_eq!(letter_bag.draw_many(0).count(), 0);
-        assert_eq!(letter_bag.draw_many(100).count(), 7);
+        assert_eq!(letter_bag.draw_many(100).count(), RACK_SIZE);
         assert_eq!(letter_bag.total(), 93);
     }
 
     #[test]
     fn empty_bag() {
         let mut letter_bag = LetterBag::default();
-        let mut counts = [0; 27];
+        let mut counts = [0; TILE_COUNT];
         let mut removed = vec![];
 
         while !letter_bag.is_empty() {
-            for tile in letter_bag.draw_many(7) {
+            for tile in letter_bag.draw_many(RACK_SIZE) {
                 counts[usize::from(tile)] += 1;
                 removed.push(tile);
             }
@@ -169,7 +172,7 @@ mod tests {
         while len < 100 {
             letter_bag.add_tiles(removed[len..].iter().copied().take(7));
 
-            len = (len + 7).min(100);
+            len = (len + RACK_SIZE).min(100);
         }
 
         assert_eq!(letter_bag.total(), len);
