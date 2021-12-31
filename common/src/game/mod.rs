@@ -1,15 +1,22 @@
-//! Module for handling game logic.
+//! Module for handling abstract game representation and player
+//! interaction (uncoupled from DB, UI and API).
+//!
+//! Game logic is shared between the client and server, so that
+//! API calls can be minimised, (only for actually making moves)
+//! by performing the majority of validation on the client side.
+//! The types exposed in this module are also useful for modelling
+//! state for the UI.
 
 use std::{
     io::{self, BufRead, BufReader},
     path::Path,
 };
-
 use {board::Board, rack::Rack, word_tree::WordTree};
 
 pub mod bitboard;
 pub mod board;
 pub mod play;
+pub mod pos;
 pub mod rack;
 pub mod tile;
 pub mod word_tree;
