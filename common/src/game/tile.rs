@@ -1,5 +1,9 @@
+//! Module modelling the scrabble tile.
+
 use std::fmt::{Display, Formatter};
 
+/// A letter `A..=Z`. Represented as a newtype containing an unsigned
+/// integer from `0..=25` to make game operations easier.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Letter(usize);
 
@@ -28,6 +32,7 @@ impl Display for Letter {
     }
 }
 
+/// A scrabble tile, one of the 26 letters or a blank.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Tile {
     Letter(Letter),
