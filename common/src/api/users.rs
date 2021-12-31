@@ -3,9 +3,9 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Auth(pub String);
 
-/**--------------------------------------------
- *               Utils
- *---------------------------------------------**/
+//--------------------------------------------
+//               Utils
+//--------------------------------------------
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UserDetails {
     pub username: String,
@@ -17,9 +17,9 @@ pub struct UserProfile {
     pub username: String,
 }
 
-/**--------------------------------------------
- *               Login route
- *---------------------------------------------**/
+//--------------------------------------------
+//               Login route
+//--------------------------------------------
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UserLogin {
     pub username: String,
@@ -32,9 +32,9 @@ pub struct UserLoginResponse {
     pub user_details: UserDetails,
 }
 
-/**--------------------------------------------
- *               Create user route
- *---------------------------------------------**/
+//--------------------------------------------
+//               Create user route
+//--------------------------------------------
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UserCreate {
     pub username: String,
@@ -48,18 +48,18 @@ pub struct UserCreateResponse {
     pub user_details: UserDetails,
 }
 
-/**--------------------------------------------
- *               Get user details route
- *---------------------------------------------**/
+//--------------------------------------------
+//               Get user details route
+//--------------------------------------------
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UserInfoResponse {
     pub auth: Auth,
     pub user_details: UserDetails,
 }
 
-/**--------------------------------------------
- *               Update user info route
- *---------------------------------------------**/
+//--------------------------------------------
+//               Update user info route
+//--------------------------------------------
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UserUpdate {
     pub old_password: String,
@@ -74,9 +74,9 @@ pub struct UserUpdateResponse {
     pub user_details: UserDetails,
 }
 
-/**--------------------------------------------
- *               Delete user route
- *---------------------------------------------**/
+//--------------------------------------------
+//               Delete user route
+//--------------------------------------------
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DeleteUser {
     pub password: String,
