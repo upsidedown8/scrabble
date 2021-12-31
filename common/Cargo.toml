@@ -4,4 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+# serialize / deserialize api types
 serde = { version = "1.0.132", features = ["derive"] }
+# rng for letter bag / player selection
+rand = "0.8.4"
+# for wasm support
+getrandom = { version = "0.2", features = ["js"] }
