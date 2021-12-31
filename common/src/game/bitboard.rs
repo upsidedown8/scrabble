@@ -1,3 +1,6 @@
+//! Module containing a bitboard implementation to represent
+//! the occupancy on the 15 x 15 board.
+
 use crate::game::pos::{Col, Pos, Row};
 use std::{
     fmt::{Display, Formatter, Result},
