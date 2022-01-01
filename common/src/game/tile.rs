@@ -88,6 +88,17 @@ impl Display for Tile {
     }
 }
 impl Tile {
+    /// Checks whether `self` is a blank tile.
+    pub fn is_blank(&self) -> bool {
+        matches!(self, Tile::Blank(_))
+    }
+    /// Gets the optional letter that the tile represents.
+    pub fn letter(&self) -> Option<Letter> {
+        match self {
+            Tile::Letter(l) => Some(*l),
+            Tile::Blank(opt) => *opt,
+        }
+    }
     /// Returns an iterator over all 27 tiles.
     pub fn iter() -> impl Iterator<Item = Tile> {
         (0..TILE_COUNT).map(Tile::from)
