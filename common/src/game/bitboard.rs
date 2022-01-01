@@ -10,6 +10,41 @@ use std::{
 /// [`WORD_SIZE`] = the number of bits in each word. A [`u32`] could have been
 /// used giving [`WORD_SIZE`] = 32.
 const WORD_SIZE: usize = 64;
+/// Since the bitboard has 64 * 4 = 256 bits, but only 225 are used, there
+/// are 256 - 225 = 31 bits extra. These extra bits can sometimes be filled
+/// with leftover data from bitwise operations. To ensure that this does not
+/// affect the results, after each operation any leftover data is erased by
+/// an AND operation with this mask on the final 64 bit word. This mask is the
+/// NOT of ((2 << 33) - 1).
+const FINAL_WORD_MASK: u64 = 0x1ffffffff;
+
+/// Used to iterate over the bits in a [`BitBoard`].
+pub struct Bits {
+    boards: [u64; 4],
+    word_idx: usize,
+}
+
+impl Iterator for Bits {
+    type Item = Pos;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        while self.word_idx < 4 {
+            let word = self.boards[self.word_idx];
+
+            if word == 0 {
+                self.word_idx += 1;
+            } else {
+                let rev = word.reverse_bits();
+                let trailing_zeros = rev.leading_zeros() as usize;
+                self.boards[self.word_idx] &= !(1 << trailing_zeros);
+
+                return Some(Pos::from(trailing_zeros + WORD_SIZE * self.word_idx));
+            }
+        }
+
+        None
+    }
+}
 
 /// A scrabble board has [`ROWS`] * [`COLS`] = 15 * 15 = 225 squares. The
 /// nearest multiple of 64 bit integers is 4, giving 256 bit values.
@@ -25,30 +60,96 @@ pub struct BitBoard {
 }
 
 impl BitBoard {
+    /// A bitboard with all bits set to 0.
+    pub const fn zero() -> Self {
+        Self { boards: [0; 4] }
+    }
+    /// A bitboard with all bits set to 1.
+    pub const fn full() -> Self {
+        Self {
+            boards: [u64::MAX, u64::MAX, u64::MAX, FINAL_WORD_MASK],
+        }
+    }
+    /// A bitboard where the top row is set to 1.
+    pub const fn top_row() -> Self {
+        Self {
+            boards: [32767, 0, 0, 0],
+        }
+    }
+    /// A bitboard where the bottom row is set to 1.
+    pub const fn bottom_row() -> Self {
+        Self {
+            boards: [0, 0, 0, 8589672448],
+        }
+    }
+    /// A bitboard where the leftmost row is set to 1.
+    pub const fn leftmost_col() -> Self {
+        Self {
+            boards: [
+                1152956690052710401,
+                72059793128294400,
+                4503737070518400,
+                262152,
+            ],
+        }
+    }
+    /// A bitboard where the leftmost row is set to 1.
+    pub const fn rightmost_col() -> Self {
+        Self {
+            boards: [
+                576478345026355200,
+                36029896564147200,
+                2251868535259200,
+                4295098372,
+            ],
+        }
+    }
+
     /// Checks whether the bit at `pos` is set.
     pub fn is_bit_set<T: Into<Pos>>(&self, pos: T) -> bool {
         let idx = usize::from(pos.into());
 
         (self.boards[idx / WORD_SIZE] & (1 << (idx % WORD_SIZE))) != 0
     }
-
     /// Sets the bit at `pos` to 1.
     pub fn set_bit<T: Into<Pos>>(&mut self, pos: T) {
         let idx = usize::from(pos.into());
 
         self.boards[idx / WORD_SIZE] |= 1 << (idx % WORD_SIZE);
     }
-
     /// Sets the bit at `pos` to 0.
     pub fn clear_bit<T: Into<Pos>>(&mut self, pos: T) {
         let idx = usize::from(pos.into());
 
         self.boards[idx / WORD_SIZE] &= !(1 << (idx % WORD_SIZE));
     }
-
     /// Checks whether all the bits are set to zero.
     pub fn is_zero(&self) -> bool {
         self.boards.iter().all(|&board| board == 0)
+    }
+    /// Checks whether the current board and `other` contain any
+    /// intersecting bits.
+    pub fn intersects(&self, other: &Self) -> bool {
+        self.boards
+            .iter()
+            .zip(other.boards)
+            .any(|(&a, b)| a & b != 0)
+    }
+    /// Counts the number of bits that are set on the board.
+    pub fn bit_count(&self) -> usize {
+        self.boards.iter().map(|b| b.count_ones() as usize).sum()
+    }
+}
+
+impl IntoIterator for BitBoard {
+    type Item = Pos;
+    type IntoIter = Bits;
+
+    fn into_iter(self) -> Self::IntoIter {
+        Bits {
+            boards: self.boards,
+            word_idx: 0,
+        }
     }
 }
 
@@ -61,35 +162,41 @@ impl Shl<usize> for BitBoard {
     }
 }
 impl ShlAssign<usize> for BitBoard {
-    fn shl_assign(&mut self, mut rhs: usize) {
+    fn shl_assign(&mut self, rhs: usize) {
         let words = self.boards.len();
 
-        // if the shift is greater than the block size, then shift the
-        // boards array by rhs DIV 64
-        if rhs >= WORD_SIZE {
-            // how many 64 bit units to shift by
-            let shift_amount = rhs / WORD_SIZE;
-            // shift the boards
-            self.boards.rotate_left(shift_amount);
-            // assign the boards on the right side to zero
-            for i in (words - shift_amount)..words {
-                self.boards[i] = 0;
+        // for rhs > WORD_SIZE, the shift is equal to `n * WORD_SIZE + k`,
+        // where k < WORD_SIZE. This can be carried out as a shift by k,
+        // followed by a shift by n * WORD_SIZE. k = rhs % WORD_SIZE.
+
+        // perform shift by k
+        let k = rhs % WORD_SIZE;
+
+        if k > 0 {
+            // store the remainder from a shift to use in the next shift
+            let mut carry = 0;
+            for word_idx in 0..words {
+                // store the current value
+                let tmp = self.boards[word_idx];
+                // find the shifted value of the board, and add the carry from
+                // the previous iteration
+                self.boards[word_idx] = (tmp << k) | carry;
+                // find the carry from the shift
+                carry = tmp >> (WORD_SIZE - k);
             }
-            // get the remaining shift
-            rhs %= WORD_SIZE;
         }
 
-        // store the remainder from a shift to use in the next shift
-        let mut carry = 0;
-        for i in (0..words).rev() {
-            // store the current value
-            let tmp = self.boards[i];
-            // find the shifted value of the board, and add the carry from
-            // the previous iteration
-            self.boards[i] = (tmp << rhs) | carry;
-            // find the carry from the shift
-            carry = tmp >> (WORD_SIZE - rhs);
-        }
+        // perform shift by n * WORD_SIZE
+        let n = (rhs / WORD_SIZE) % words;
+
+        // rotate right = shift upwards
+        self.boards.rotate_right(n);
+
+        // set all boards below n to zero
+        self.boards[0..n].fill(0);
+
+        // fix any extra bits
+        self.boards[3] &= FINAL_WORD_MASK;
     }
 }
 
@@ -102,35 +209,33 @@ impl Shr<usize> for BitBoard {
     }
 }
 impl ShrAssign<usize> for BitBoard {
-    fn shr_assign(&mut self, mut rhs: usize) {
+    fn shr_assign(&mut self, rhs: usize) {
         let words = self.boards.len();
 
-        // if the shift is greater than the block size, then shift the
-        // boards array by rhs DIV 64
-        if rhs >= WORD_SIZE {
-            // how many 64 bit units to shift by
-            let shift_amount = rhs / WORD_SIZE;
-            // shift the boards
-            self.boards.rotate_right(shift_amount);
-            // assign the boards on the left side to zero
-            for i in 0..shift_amount {
-                self.boards[i] = 0;
+        let k = rhs % WORD_SIZE;
+
+        if k > 0 {
+            // store the remainder from a shift to use in the next shift
+            let mut carry = 0;
+            for i in (0..words).rev() {
+                // store the current value
+                let tmp = self.boards[i];
+                // find the shifted value of the board, and add the carry from
+                // the previous iteration
+                self.boards[i] = (tmp >> k) | carry;
+                // find the carry from the shift
+                carry = tmp << (WORD_SIZE - k);
             }
-            // get the remaining shift
-            rhs %= WORD_SIZE;
         }
 
-        // store the remainder from a shift to use in the next shift
-        let mut carry = 0;
-        for i in 0..words {
-            // store the current value
-            let tmp = self.boards[i];
-            // find the shifted value of the board, and add the carry from
-            // the previous iteration
-            self.boards[i] = (tmp >> rhs) | carry;
-            // find the carry from the shift
-            carry = tmp << (WORD_SIZE - rhs);
-        }
+        // perform shift by n * WORD_SIZE
+        let n = (rhs / WORD_SIZE) % words;
+
+        // rotate left = shift downwards
+        self.boards.rotate_left(n);
+
+        // set all boards above and including n to zero
+        self.boards[(words - n)..].fill(0);
     }
 }
 
@@ -179,6 +284,10 @@ impl Not for BitBoard {
         for i in 0..words {
             self.boards[i] = !self.boards[i];
         }
+
+        // fix any extra bits
+        self.boards[3] &= FINAL_WORD_MASK;
+
         self
     }
 }
