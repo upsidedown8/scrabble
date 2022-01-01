@@ -28,7 +28,7 @@ impl fmt::Display for Play {
         match self {
             Play::Pass => write!(f, "Pass"),
             Play::Redraw(tiles) => {
-                write!(f, "Redraw(",);
+                write!(f, "Redraw(",)?;
 
                 for t in tiles {
                     write!(f, "{},", t.to_string().trim())?;
@@ -99,19 +99,12 @@ impl Word {
         // Filter out anything that is not a letter.
         let letters: Vec<_> = word.chars().filter_map(Letter::new).collect();
 
-        match start.offset(dir, letters.len()) {
-            // Return None if the final letter is not on the board.
-            None => None,
-            // Otherwise find the position of each tile.
-            Some(_) => Some({
-                let tile_positions: Vec<_> =
-                    iter::successors(Some(start), |pos| pos.offset(dir, 1))
-                        .zip(letters.into_iter().map(Tile::from))
-                        .collect();
-
-                Self { tile_positions }
-            }),
-        }
+        start.offset(dir, letters.len()).map(|_| Self {
+            // convert each letter to a tile and combine with its board position.
+            tile_positions: iter::successors(Some(start), |pos| pos.offset(dir, 1))
+                .zip(letters.into_iter().map(Tile::from))
+                .collect(),
+        })
     }
     /// Changes the tile at `pos` to be a blank. Return value indicates success.
     /// This may fail if the letter at `pos` has already been set to a blank,
@@ -135,9 +128,9 @@ impl Word {
     /// rather than the actual position of the tile to change to a
     /// blank.
     pub fn use_blank_at_offset(&mut self, offset: usize) -> bool {
-        match self.tile_positions.get(offset) {
+        match self.tile_positions.get(offset).copied() {
             None => false,
-            Some((pos, _)) => self.use_blank_at(*pos),
+            Some((pos, _)) => self.use_blank_at(pos),
         }
     }
 }
