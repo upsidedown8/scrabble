@@ -174,6 +174,14 @@ impl fmt::Display for Row {
     }
 }
 impl Row {
+    /// The first row
+    pub fn first() -> Self {
+        Self::from(0)
+    }
+    /// The last row
+    pub fn last() -> Self {
+        Self::from(ROWS - 1)
+    }
     /// Returns an iterator over all columns
     pub fn iter() -> impl Iterator<Item = Self> {
         (0..ROWS).map(Row::from)
@@ -205,6 +213,14 @@ impl fmt::Display for Col {
     }
 }
 impl Col {
+    /// The first column
+    pub fn first() -> Self {
+        Self::from(0)
+    }
+    /// The last column
+    pub fn last() -> Self {
+        Self::from(COLS - 1)
+    }
     /// Returns an iterator over all columns
     pub fn iter() -> impl Iterator<Item = Self> {
         (0..COLS).map(Col::from)
