@@ -40,7 +40,7 @@ impl fmt::Display for Play {
                 write!(f, "Place(")?;
 
                 for (pos, tile) in tile_positions {
-                    write!(f, "({},{})", pos, tile.to_string().trim())?;
+                    write!(f, "({},{}),", pos, tile.to_string().trim())?;
                 }
 
                 write!(f, ")")
