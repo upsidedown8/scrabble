@@ -2,8 +2,6 @@
 
 use std::fmt::{Display, Formatter};
 
-use super::letter_bag::TILE_COUNT;
-
 /// A letter `A..=Z`. Represented as a newtype containing an unsigned
 /// integer from `0..=25` to make game operations easier.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -101,7 +99,7 @@ impl Tile {
     }
     /// Returns an iterator over all 27 tiles.
     pub fn iter() -> impl Iterator<Item = Tile> {
-        (0..TILE_COUNT).map(Tile::from)
+        (0..27).map(Tile::from)
     }
     /// Gets the score of the tile
     pub fn score(&self) -> usize {
