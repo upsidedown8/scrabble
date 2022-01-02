@@ -124,8 +124,8 @@ impl Board {
     fn clockwise_90(pos: Pos) -> Pos {
         let (r, c) = pos.cartesian();
 
-        let r_prime = Row::from(14 - usize::from(c));
-        let c_prime = Col::from(usize::from(r));
+        let r_prime = Row::from(usize::from(c));
+        let c_prime = Col::from(14 - usize::from(r));
 
         Pos::from((r_prime, c_prime))
     }
@@ -168,6 +168,7 @@ impl Board {
                         }
 
                         let real_pos = map_pos(pos);
+
                         let tile = self.at(real_pos).expect("An occupied square");
                         let letter = tile.letter().expect("A letter");
 
@@ -313,17 +314,27 @@ impl Board {
         // perform tile placement validation
         Self::validate_occ(occ_h)?;
 
-        // the placement of tiles has now been validated, now
-        // the words formed by the tiles must be validated.
-        let score = self.score_words(occ_h, new_tiles_h, word_tree, |pos| pos)?
-            + self.score_words(occ_v, new_tiles_v, word_tree, Self::clockwise_90)?;
-
         // everything has now been validated: place the tiles on the board.
-        for (pos, tile) in tile_positions {
+        for &(pos, tile) in &tile_positions {
             self.grid[usize::from(pos)] = Some(tile);
         }
 
-        Ok(score)
+        // the placement of tiles has now been validated, now
+        // the words formed by the tiles must be validated.
+        let score_h = self.score_words(occ_h, new_tiles_h, word_tree, |pos| pos);
+        let score_v = self.score_words(occ_v, new_tiles_v, word_tree, Self::clockwise_90);
+
+        match score_h.and_then(|sh| score_v.map(|sv| sv + sh)) {
+            Ok(score) => Ok(score),
+            Err(e) => {
+                // clear all the modified squares
+                tile_positions
+                    .into_iter()
+                    .for_each(|(pos, _)| self.grid[usize::from(pos)] = None);
+
+                Err(e)
+            }
+        }
     }
 }
 impl Default for Board {
