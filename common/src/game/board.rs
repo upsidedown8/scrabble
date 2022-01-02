@@ -318,9 +318,18 @@ impl Board {
         let all_tiles = tile_positions.len() == 7;
 
         match score_h.and_then(|sh| score_v.map(|sv| sv + sh)) {
-            // 50 point bonus if all 7 tiles are used
-            Ok(score) if all_tiles => Ok(score + 50),
-            Ok(score) => Ok(score),
+            Ok(score) => {
+                // update bitboards
+                self.occupancy_h = occ_h;
+                self.occupancy_v = occ_v;
+
+                if all_tiles {
+                    // 50 point bonus if all 7 tiles are used
+                    Ok(score + 50)
+                } else {
+                    Ok(score)
+                }
+            }
             Err(e) => {
                 // clear all the modified squares
                 tile_positions
