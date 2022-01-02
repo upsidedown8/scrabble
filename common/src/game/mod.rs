@@ -15,7 +15,6 @@ use self::{
     rack::Rack,
     word_tree::WordTree,
 };
-use std::collections::HashMap;
 
 pub mod bitboard;
 pub mod board;
@@ -27,45 +26,30 @@ pub mod rack;
 pub mod tile;
 pub mod word_tree;
 
+/// The reason that the game has ended.
+#[derive(Clone, Debug)]
+pub enum Reason {
+    /// A player has emptied their rack with no letters remaining in the bag.
+    EmptyRack,
+    /// All players have passed for 6 consecutive rounds.
+    SixPasses,
+}
+
+/// The current state of the game.
+#[derive(Clone, Debug)]
 pub enum GameStatus {
-    Winner(Player, usize),
-    ToPlay(Player),
+    /// One or more players have one
+    Over(Vec<PlayerId>, Reason),
+    /// The game is ongoing.
+    ToPlay(PlayerId),
 }
 
 /// Used to identify a player.
 #[derive(Hash, Clone, Copy, Debug, PartialEq, Eq)]
 pub struct PlayerId(usize);
-
-/// Models the game state for each player. Namely their Rack
-/// and their score.
-#[derive(Debug)]
-pub struct Player {
-    rack: Rack,
-    score: usize,
-}
-impl Player {
-    /// Creates a new `Player`, using the `letter_bag` to fill their rack.
-    pub fn new(letter_bag: &mut LetterBag) -> Self {
-        Self {
-            rack: Rack::new(letter_bag),
-            score: 0,
-        }
-    }
-    /// Borrows the player's rack mutably
-    pub fn rack_mut(&mut self) -> &mut Rack {
-        &mut self.rack
-    }
-    /// Gets the player's score.
-    pub fn score(&self) -> usize {
-        self.score
-    }
-    /// Adds a quantity to the player's score.
-    pub fn add_score(&mut self, score: usize) {
-        self.score += score;
-    }
-    /// Subtracts a quantity from the player's score.
-    pub fn sub_score(&mut self, score: usize) {
-        self.score -= score;
+impl From<PlayerId> for usize {
+    fn from(PlayerId(id): PlayerId) -> Self {
+        id
     }
 }
 
@@ -74,12 +58,16 @@ impl Player {
 /// game is over, calculating scores and determining the winner.
 pub struct Game<'a> {
     word_tree: &'a WordTree,
-    player_count: usize,
+
     board: Board,
     letter_bag: LetterBag,
-    players: HashMap<PlayerId, Player>,
+    scores: Vec<usize>,
+    racks: Vec<Rack>,
+
     to_play: PlayerId,
     pass_count: usize,
+    player_count: usize,
+    status: GameStatus,
 }
 
 impl<'a> Game<'a> {
@@ -88,18 +76,21 @@ impl<'a> Game<'a> {
     pub fn new(word_tree: &'a WordTree, player_count: usize) -> Self {
         let mut letter_bag = LetterBag::default();
 
-        let players = (0..player_count)
-            .map(|id| (PlayerId(id), Player::new(&mut letter_bag)))
-            .collect::<HashMap<_, _>>();
+        let to_play = PlayerId(0);
+        let racks = (0..player_count)
+            .map(|_| Rack::new(&mut letter_bag))
+            .collect();
 
         Self {
             word_tree,
             letter_bag,
-            to_play: PlayerId(0),
-            players,
+            to_play,
             board: Board::default(),
             pass_count: 0,
             player_count,
+            status: GameStatus::ToPlay(to_play),
+            scores: vec![0; player_count],
+            racks,
         }
     }
     /// Gets the id of the current player.
@@ -108,19 +99,31 @@ impl<'a> Game<'a> {
     }
     /// Gets the id of the next player.
     pub fn next_player(&self) -> PlayerId {
-        PlayerId((self.to_play.0 + 1) % self.player_count)
+        PlayerId((usize::from(self.to_play) + 1) % self.player_count)
     }
     /// Pops the most recent play from the history and undoes it.
     pub fn undo_play(&mut self) {
         todo!()
     }
-    /// Gets the current status of the game.
-    pub fn status(&self) -> GameStatus {
-        todo!()
+    /// Gets an iterator over the player ids.
+    pub fn player_ids(&self) -> impl Iterator<Item = PlayerId> {
+        (0..self.player_count).map(PlayerId)
+    }
+    /// Borrows a player's rack by id.
+    pub fn rack(&self, id: PlayerId) -> &Rack {
+        &self.racks[usize::from(id)]
+    }
+    /// Gets a player's score by id.
+    pub fn score(&self, id: PlayerId) -> usize {
+        self.scores[usize::from(id)]
+    }
+    /// Borrows the current status of the game.
+    pub fn status(&self) -> &GameStatus {
+        &self.status
     }
     /// Checks whether the game is over.
     pub fn is_over(&self) -> bool {
-        todo!()
+        matches!(self.status(), GameStatus::Over(_, _))
     }
     /// Attempts to make a [`Play`].
     pub fn make_play(&mut self, play: Play) -> GameResult<()> {
@@ -128,10 +131,8 @@ impl<'a> Game<'a> {
             return Err(GameError::Over);
         }
 
-        let player = self
-            .players
-            .get_mut(&self.to_play())
-            .expect("Current player should be present");
+        let id = usize::from(self.to_play());
+        let rack = &mut self.racks[id];
 
         match &play {
             Play::Pass => self.pass_count += 1,
@@ -142,7 +143,7 @@ impl<'a> Game<'a> {
                 }
 
                 // attempt to swap out tiles
-                player.rack.exchange_tiles(tiles, &mut self.letter_bag)?;
+                rack.exchange_tiles(tiles, &mut self.letter_bag)?;
 
                 // not a pass so set pas count to zero
                 self.pass_count = 0;
@@ -154,19 +155,19 @@ impl<'a> Game<'a> {
                 }
 
                 // check whether rack contains tiles
-                if !player.rack.contains(tile_positions.iter().map(|(_, t)| *t)) {
+                if !rack.contains(tile_positions.iter().map(|(_, t)| *t)) {
                     return Err(GameError::NotInRack);
                 }
 
                 // attempt to make the placement
                 let score = self.board.make_placement(tile_positions, self.word_tree)?;
-                player.add_score(score);
+                self.scores[id] += score;
 
                 // remove letters from rack
-                player.rack.remove(tile_positions.iter().map(|(_, t)| *t));
+                rack.remove(tile_positions.iter().map(|(_, t)| *t));
 
                 // refill rack
-                player.rack.refill(&mut self.letter_bag);
+                rack.refill(&mut self.letter_bag);
 
                 // not a pass so set pas count to zero
                 self.pass_count = 0;
@@ -175,6 +176,66 @@ impl<'a> Game<'a> {
 
         // update current player
         self.to_play = self.next_player();
+
+        // Check whether any player has an empty rack
+        let empty_rack = self
+            .player_ids()
+            .map(|id| self.rack(id))
+            .any(|rack| rack.is_empty());
+
+        // If there have been 6 rounds of passes in a row,
+        // or a player has no letters on their rack,
+        // then the game is over.
+        let reason = if self.pass_count == 6 * self.player_count {
+            Some(Reason::SixPasses)
+        } else if empty_rack {
+            Some(Reason::EmptyRack)
+        } else {
+            None
+        };
+
+        self.status = match reason {
+            None => {
+                // Game is ongoing
+                GameStatus::ToPlay(self.to_play)
+            }
+            Some(reason) => {
+                let mut rack_sum = 0;
+
+                // Compute initial scores:
+                // = (the running score of each player) - (the total of tiles on their rack)
+                for id in self.player_ids() {
+                    let id = usize::from(id);
+                    let rack_total = self.racks[id]
+                        .iter()
+                        .map(|tile| tile.score())
+                        .sum::<usize>();
+                    let final_score = (self.scores[id] as i32 - rack_total as i32).max(0) as usize;
+
+                    self.scores[id] = final_score as usize;
+
+                    rack_sum += rack_total;
+                }
+
+                // Compute final scores:
+                // the final score of any player with no remaining tiles is increased
+                // by the sum of the remaining tiles
+                for id in 0..self.player_count {
+                    // if the player's rack was empty then this is true
+                    if self.racks[id].is_empty() {
+                        self.scores[id] += rack_sum;
+                    }
+                }
+
+                let max_score = self.scores.iter().copied().max().unwrap_or(0);
+                let winners = self
+                    .player_ids()
+                    .filter(|&id| self.scores[usize::from(id)] == max_score)
+                    .collect();
+
+                GameStatus::Over(winners, reason)
+            }
+        };
 
         Ok(())
     }
