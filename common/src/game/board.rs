@@ -274,24 +274,15 @@ impl Board {
     /// returns the score from placing the new tiles.
     pub fn make_placement(
         &mut self,
-        tile_positions: Vec<(Pos, Tile)>,
+        tile_positions: &[(Pos, Tile)],
         word_tree: &WordTree,
     ) -> GameResult<usize> {
-        if tile_positions.is_empty() {
-            return Err(GameError::ZeroTilesPlaced);
-        }
-
-        // at most 7 tiles can be placed
-        if tile_positions.len() > 7 {
-            return Err(GameError::MaximumTilesExceeded);
-        }
-
         // new tiles for horizontal words
         let mut new_tiles_h = BitBoard::default();
         // new tiles for vertical words: rotated 90deg anticlockwise
         let mut new_tiles_v = BitBoard::default();
 
-        for &(pos_h, _) in &tile_positions {
+        for &(pos_h, _) in tile_positions {
             // if the bit has already been set then `tile_positions` contains
             // a duplicate tile.
             if new_tiles_h.is_bit_set(pos_h) {
@@ -315,7 +306,7 @@ impl Board {
         Self::validate_occ(occ_h)?;
 
         // everything has now been validated: place the tiles on the board.
-        for &(pos, tile) in &tile_positions {
+        for &(pos, tile) in tile_positions {
             self.grid[usize::from(pos)] = Some(tile);
         }
 
@@ -324,13 +315,17 @@ impl Board {
         let score_h = self.score_words(occ_h, new_tiles_h, word_tree, |pos| pos);
         let score_v = self.score_words(occ_v, new_tiles_v, word_tree, Self::clockwise_90);
 
+        let all_tiles = tile_positions.len() == 7;
+
         match score_h.and_then(|sh| score_v.map(|sv| sv + sh)) {
+            // 50 point bonus if all 7 tiles are used
+            Ok(score) if all_tiles => Ok(score + 50),
             Ok(score) => Ok(score),
             Err(e) => {
                 // clear all the modified squares
                 tile_positions
-                    .into_iter()
-                    .for_each(|(pos, _)| self.grid[usize::from(pos)] = None);
+                    .iter()
+                    .for_each(|(pos, _)| self.grid[usize::from(*pos)] = None);
 
                 Err(e)
             }
