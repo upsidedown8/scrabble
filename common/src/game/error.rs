@@ -6,10 +6,16 @@ pub type GameResult<T> = std::result::Result<T, GameError>;
 /// The error type for the game module.
 #[derive(Debug)]
 pub enum GameError {
+    /// The letter bag does not contain enough letters to redraw the requested tiles.
+    NotEnoughLetters,
+    /// Attempted to play a tile which was not in the player's rack.
+    NotInRack,
+    /// Cannot make a play as the game is over.
+    Over,
     /// A placed word was not in the word list.
     InvalidWord,
-    /// Expected at least one tile to place.
-    ZeroTilesPlaced,
+    /// Expected at least one and no more than 7 tiles to place.
+    PlacementCount,
     /// The tiles added during a play would have overlayed the existing tiles.
     CoincedentTiles,
     /// At least one pair of tiles added during a play were placed on the same square.
@@ -22,8 +28,6 @@ pub enum GameError {
     WordsNeedTwoLetters,
     /// Every tile should have a neighbour above, below, left or right.
     NotConnected,
-    /// At most 7 tiles can be placed during a play.
-    MaximumTilesExceeded,
 }
 
 impl Error for GameError {}
