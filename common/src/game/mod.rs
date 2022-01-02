@@ -15,7 +15,6 @@ use self::{
     rack::Rack,
     word_tree::WordTree,
 };
-use rand::Rng;
 use std::collections::HashMap;
 
 pub mod bitboard;
@@ -75,13 +74,12 @@ impl Player {
 /// game is over, calculating scores and determining the winner.
 pub struct Game<'a> {
     word_tree: &'a WordTree,
+    player_count: usize,
     board: Board,
     letter_bag: LetterBag,
-    to_play: PlayerId,
     players: HashMap<PlayerId, Player>,
-    history: Vec<(PlayerId, Play)>,
+    to_play: PlayerId,
     pass_count: usize,
-    player_count: usize,
 }
 
 impl<'a> Game<'a> {
@@ -90,7 +88,6 @@ impl<'a> Game<'a> {
     pub fn new(word_tree: &'a WordTree, player_count: usize) -> Self {
         let mut letter_bag = LetterBag::default();
 
-        let to_play = PlayerId(rand::thread_rng().gen_range(0..player_count));
         let players = (0..player_count)
             .map(|id| (PlayerId(id), Player::new(&mut letter_bag)))
             .collect::<HashMap<_, _>>();
@@ -98,37 +95,12 @@ impl<'a> Game<'a> {
         Self {
             word_tree,
             letter_bag,
-            to_play,
+            to_play: PlayerId(0),
             players,
             board: Board::default(),
-            history: vec![],
             pass_count: 0,
             player_count,
         }
-    }
-    /// Attempts to make a [`Play`].
-    pub fn make_play(&mut self, play: Play) -> GameResult<()> {
-        match play {
-            Play::Pass => self.pass_count += 1,
-            Play::Redraw(tiles) => {
-                if !(1..=7).contains(&tiles.len()) {
-                    return Err(GameError::RedrawCount);
-                }
-            }
-            Play::Place(tile_positions) => {
-                let score = self.board.make_placement(tile_positions, self.word_tree)?;
-
-                if let Some(player) = self.players.get_mut(&self.to_play) {
-                    player.add_score(score);
-                }
-
-                println!("{}", self.board);
-            }
-        };
-
-        self.to_play = self.next_player();
-
-        todo!()
     }
     /// Gets the id of the current player.
     pub fn to_play(&self) -> PlayerId {
@@ -145,5 +117,65 @@ impl<'a> Game<'a> {
     /// Gets the current status of the game.
     pub fn status(&self) -> GameStatus {
         todo!()
+    }
+    /// Checks whether the game is over.
+    pub fn is_over(&self) -> bool {
+        todo!()
+    }
+    /// Attempts to make a [`Play`].
+    pub fn make_play(&mut self, play: Play) -> GameResult<()> {
+        if self.is_over() {
+            return Err(GameError::Over);
+        }
+
+        let player = self
+            .players
+            .get_mut(&self.to_play())
+            .expect("Current player should be present");
+
+        match &play {
+            Play::Pass => self.pass_count += 1,
+            Play::Redraw(tiles) => {
+                // check number of tiles
+                if !(1..=7).contains(&tiles.len()) {
+                    return Err(GameError::RedrawCount);
+                }
+
+                // attempt to swap out tiles
+                player.rack.exchange_tiles(tiles, &mut self.letter_bag)?;
+
+                // not a pass so set pas count to zero
+                self.pass_count = 0;
+            }
+            Play::Place(tile_positions) => {
+                // check number of tiles
+                if !(1..=7).contains(&tile_positions.len()) {
+                    return Err(GameError::PlacementCount);
+                }
+
+                // check whether rack contains tiles
+                if !player.rack.contains(tile_positions.iter().map(|(_, t)| *t)) {
+                    return Err(GameError::NotInRack);
+                }
+
+                // attempt to make the placement
+                let score = self.board.make_placement(tile_positions, self.word_tree)?;
+                player.add_score(score);
+
+                // remove letters from rack
+                player.rack.remove(tile_positions.iter().map(|(_, t)| *t));
+
+                // refill rack
+                player.rack.refill(&mut self.letter_bag);
+
+                // not a pass so set pas count to zero
+                self.pass_count = 0;
+            }
+        };
+
+        // update current player
+        self.to_play = self.next_player();
+
+        Ok(())
     }
 }
