@@ -18,7 +18,7 @@ pub enum PosBonus {
     DoubleWord,
     /// The square triples the total value of a word placed on it
     TripleWord,
-    /// The center square: counts as a double letter. The first word
+    /// The center square: counts as a double word. The first word
     /// must intersect this square.
     Start,
 }
@@ -32,7 +32,7 @@ impl PosBonus {
             PosBonus::TripleLetter => 1,
             PosBonus::DoubleWord => 2,
             PosBonus::TripleWord => 3,
-            PosBonus::Start => 1,
+            PosBonus::Start => 2,
         }
     }
     /// Gets the multiplier for a tile placed on a square with
@@ -43,7 +43,7 @@ impl PosBonus {
             PosBonus::TripleLetter => 3,
             PosBonus::DoubleWord => 1,
             PosBonus::TripleWord => 1,
-            PosBonus::Start => 2,
+            PosBonus::Start => 1,
         }
     }
 }
