@@ -5,7 +5,7 @@ use crate::game::{
     board::{CELLS, COLS, ROWS},
     tile::Letter,
 };
-use std::fmt;
+use std::{fmt, ops::Sub};
 
 /// Additional bonus for certain positions on the board.
 #[derive(Debug, Clone, Copy)]
@@ -49,7 +49,7 @@ impl PosBonus {
 }
 
 /// A position on the board. Ranges from `0..=`[`CELLS`].
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash, PartialOrd)]
 pub struct Pos(usize);
 
 impl<R, C> From<(R, C)> for Pos
@@ -146,6 +146,13 @@ impl Pos {
     /// Returns an iterator over all board positions.
     pub fn iter() -> impl Iterator<Item = Self> {
         (0..CELLS).map(Pos::from)
+    }
+}
+impl Sub<Pos> for Pos {
+    type Output = Pos;
+
+    fn sub(self, rhs: Pos) -> Self::Output {
+        Self(self.0 - rhs.0)
     }
 }
 
