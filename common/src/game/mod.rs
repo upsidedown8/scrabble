@@ -7,6 +7,8 @@
 //! The types exposed in this module are also useful for modelling
 //! state for the UI.
 
+use std::fmt;
+
 use self::{
     board::Board,
     error::{GameError, GameResult},
@@ -236,6 +238,23 @@ impl<'a> Game<'a> {
                 GameStatus::Over(winners, reason)
             }
         };
+
+        Ok(())
+    }
+}
+impl<'a> fmt::Display for Game<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.board)?;
+
+        for id in self.player_ids() {
+            writeln!(
+                f,
+                "{:?}: score = {}, rack = {}",
+                id,
+                self.score(id),
+                self.rack(id)
+            )?;
+        }
 
         Ok(())
     }
