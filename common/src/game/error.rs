@@ -14,6 +14,8 @@ pub enum GameError {
     CoincedentTiles,
     /// At least one pair of tiles added during a play were placed on the same square.
     DuplicatePosition,
+    /// At least one and no more than 7 tiles may be redrawn from the bag.
+    RedrawCount,
     /// There must be a tile on the start square.
     MustIntersectStart,
     /// Every word needs at least two letters.
