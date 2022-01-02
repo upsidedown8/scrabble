@@ -10,6 +10,7 @@ pub const RACK_SIZE: usize = 7;
 /// Each player has a rack with up to 7 tiles on it.
 /// The rack is modelled as a vector containing up
 /// to 7 [`tiles`](Tile).
+#[derive(Debug)]
 pub struct Rack {
     tiles: Vec<Tile>,
 }
