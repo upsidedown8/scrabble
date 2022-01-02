@@ -95,11 +95,14 @@ impl WordTree {
     /// Traces a path of letters described by `word`, starting from the node
     /// referred to by `root`. If the path exists, the final node is returned,
     /// otherwise [`None`] is returned.
-    pub fn trace_word(&self, root: NodeIndex, word: &str) -> Option<NodeIndex> {
+    pub fn trace_word<I>(&self, root: NodeIndex, iter: I) -> Option<NodeIndex>
+    where
+        I: Iterator<Item = Letter>,
+    {
         let mut curr_idx = root;
 
         // follow a path along the tree defined by the word.
-        for letter in word.chars().filter_map(Letter::new) {
+        for letter in iter {
             curr_idx = self.node(curr_idx).get_child(letter)?;
         }
 
@@ -129,7 +132,14 @@ impl WordTree {
     }
     /// Checks whether a full word is contained within the tree.
     pub fn contains(&self, word: &str) -> bool {
-        match self.trace_word(self.root_idx(), word) {
+        self.contains_letters(word.chars().filter_map(Letter::new))
+    }
+    /// Checks whether a sequence of [`Letter`]s is a valid word.
+    pub fn contains_letters<I>(&self, letters: I) -> bool
+    where
+        I: Iterator<Item = Letter>,
+    {
+        match self.trace_word(self.root_idx(), letters) {
             Some(idx) => self.node(idx).is_terminal(),
             None => false,
         }
