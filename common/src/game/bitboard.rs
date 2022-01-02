@@ -329,7 +329,7 @@ mod tests {
                 0x00ff_00ff_00ff_00ff_u64,
                 0xaa00_aa00_aa00_aa00_u64,
                 0x00ff_00ff_00ff_00ff_u64,
-                0xaa00_aa00_aa00_aa00_u64,
+                0xaa00_aa00_aa00_aa00_u64 & FINAL_WORD_MASK,
             ],
         };
         let not_bb = !bb;
@@ -339,54 +339,15 @@ mod tests {
                 0xff00_ff00_ff00_ff00_u64,
                 0x55ff_55ff_55ff_55ff_u64,
                 0xff00_ff00_ff00_ff00_u64,
-                0x55ff_55ff_55ff_55ff_u64,
+                0x55ff_55ff_55ff_55ff_u64 & FINAL_WORD_MASK,
             ]
         );
     }
 
     #[test]
-    fn shl() {
-        let mut bb = BitBoard {
-            boards: [
-                0x00ff_00ff_00ff_00ff_u64,
-                0xaa00_aa00_aa00_aa00_u64,
-                0x00ff_00ff_00ff_00ff_u64,
-                0xaa00_aa00_aa00_aa00_u64,
-            ],
-        };
-        bb <<= 8;
-        assert_eq!(
-            bb.boards,
-            [
-                0xff00_ff00_ff00_ffaa_u64,
-                0x00aa_00aa_00aa_0000_u64,
-                0xff00_ff00_ff00_ffaa_u64,
-                0x00aa_00aa_00aa_0000_u64,
-            ]
-        );
-    }
-
-    #[test]
-    fn shr() {
-        let mut bb = BitBoard {
-            boards: [
-                0x00ff_00ff_00ff_00ff_u64,
-                0xaa00_aa00_aa00_aa00_u64,
-                0x00ff_00ff_00ff_00ff_u64,
-                0xaa00_aa00_aa00_aa00_u64,
-            ],
-        };
-
-        bb >>= 8;
-        assert_eq!(
-            bb.boards,
-            [
-                0x0000_ff00_ff00_ff00_u64,
-                0xffaa_00aa_00aa_00aa_u64,
-                0x0000_ff00_ff00_ff00_u64,
-                0xffaa_00aa_00aa_00aa_u64,
-            ]
-        );
+    fn shift() {
+        assert_eq!(BitBoard::top_row() << (15 * 14), BitBoard::bottom_row());
+        assert_eq!(BitBoard::leftmost_col() << 14, BitBoard::rightmost_col());
     }
 
     #[test]
@@ -396,7 +357,7 @@ mod tests {
                 0xaa00_aa00_aa00_aa00_u64,
                 0x00bb_00bb_00bb_00bb_u64,
                 0xaa00_aa00_aa00_aa00_u64,
-                0x00bb_00bb_00bb_00bb_u64,
+                0x00bb_00bb_00bb_00bb_u64 & FINAL_WORD_MASK,
             ],
         };
         let other = BitBoard {
@@ -404,7 +365,7 @@ mod tests {
                 0x00aa_00aa_00aa_00aa_u64,
                 0xbb00_bb00_bb00_bb00_u64,
                 0x00aa_00aa_00aa_00aa_u64,
-                0xbb00_bb00_bb00_bb00_u64,
+                0xbb00_bb00_bb00_bb00_u64 & FINAL_WORD_MASK,
             ],
         };
         let or = bb | other;
@@ -414,7 +375,7 @@ mod tests {
                 0xaaaa_aaaa_aaaa_aaaa_u64,
                 0xbbbb_bbbb_bbbb_bbbb_u64,
                 0xaaaa_aaaa_aaaa_aaaa_u64,
-                0xbbbb_bbbb_bbbb_bbbb_u64,
+                0xbbbb_bbbb_bbbb_bbbb_u64 & FINAL_WORD_MASK,
             ]
         );
     }
@@ -426,7 +387,7 @@ mod tests {
                 0xaa00_aa00_aa00_aa00_u64,
                 0x00bb_00bb_00bb_00bb_u64,
                 0xaa00_aa00_aa00_aa00_u64,
-                0x00bb_00bb_00bb_00bb_u64,
+                0x00bb_00bb_00bb_00bb_u64 & FINAL_WORD_MASK,
             ],
         };
         let other = BitBoard {
@@ -434,7 +395,7 @@ mod tests {
                 0xaa00_aa00_aa00_aa00_u64,
                 0x00bb_00bb_00bb_00bb_u64,
                 0xaa00_aa00_aa00_aa00_u64,
-                0x00bb_00bb_00bb_00bb_u64,
+                0x00bb_00bb_00bb_00bb_u64 & FINAL_WORD_MASK,
             ],
         };
         let and = bb & other;
