@@ -1,25 +1,24 @@
 //! Models the [`LetterBag`].
 
-use crate::game::{rack::RACK_SIZE, tile::Tile};
+use crate::game::{
+    rack::{TileCounts, RACK_SIZE},
+    tile::Tile,
+};
 use rand::Rng;
-
-/// The number of unique tiles.
-pub const TILE_COUNT: usize = 27;
+use std::iter::once;
 
 /// A structure containing a finite number of tiles which can
 /// be used during the game. Since there are 27 tiles, an array
 /// with 27 elements is used to keep count.
+#[derive(Debug)]
 pub struct LetterBag {
-    /// Count for each tile
-    counts: [usize; TILE_COUNT],
-    /// Total of `counts`
-    total: usize,
+    counts: TileCounts,
 }
 
 impl Default for LetterBag {
     fn default() -> Self {
         // Uses the initial counts from the official game.
-        let mut counts = [0; TILE_COUNT];
+        let mut counts = [0; 27];
         for (idx, tile) in Tile::iter().enumerate() {
             counts[idx] = Self::initial_count(tile);
         }
@@ -27,36 +26,26 @@ impl Default for LetterBag {
         Self::from(counts)
     }
 }
-impl From<[usize; TILE_COUNT]> for LetterBag {
-    fn from(counts: [usize; TILE_COUNT]) -> Self {
+impl From<[usize; 27]> for LetterBag {
+    fn from(counts: [usize; 27]) -> Self {
         Self {
-            counts,
-            total: counts.iter().sum(),
+            counts: TileCounts::from(counts),
         }
     }
 }
 impl LetterBag {
     /// Checks whether the bag is empty.
     pub fn is_empty(&self) -> bool {
-        self.total() == 0
-    }
-    /// Gets the number of a specific tile remaining in the bag.
-    pub fn count(&self, tile: Tile) -> usize {
-        self.counts[usize::from(tile)]
+        self.counts.is_empty()
     }
     /// Returns the total number of tiles remaining in the bag.
-    pub fn total(&self) -> usize {
-        self.total
-    }
-    /// Returns an iterator over each tile and its corresponding
-    /// count.
-    pub fn iter(&self) -> impl Iterator<Item = (Tile, usize)> + '_ {
-        Tile::iter().map(|tile| (tile, self.count(tile)))
+    pub fn len(&self) -> usize {
+        self.counts.len()
     }
     /// Gets the initial count for `tile` in the official version
     /// of scrabble.
     pub fn initial_count(tile: Tile) -> usize {
-        const INIT_COUNTS: [usize; TILE_COUNT] = [
+        const INIT_COUNTS: [usize; 27] = [
             9,  // A
             2,  // B
             2,  // C
@@ -91,31 +80,32 @@ impl LetterBag {
     /// Dras a randomly selected letter from the bag.
     /// Returns [`None`]
     pub fn draw(&mut self) -> Option<Tile> {
-        match self.total() {
+        match self.len() {
             0 => None,
-            total => Some({
+            len => Some({
                 // Generate a random index, as though all tiles
                 // in the bag were layed out in a single array.
-                let idx = rand::thread_rng().gen_range(0..total);
+                let idx = rand::thread_rng().gen_range(0..len);
                 // traverse the tiles until `idx` is reached
-                let mut count = self.count(Tile::from(0));
                 let mut tile_idx = 0;
+                let mut count = self.counts.count(tile_idx);
 
                 // idx + 1 is the number of tiles in where the chosen card
                 // exists, so use <= instead of <.
                 while count <= idx {
                     tile_idx += 1;
-                    count += self.count(Tile::from(tile_idx));
+                    count += self.counts.count(tile_idx);
                 }
 
                 // since `idx` < `total`, this assertion should never fail
-                assert!(tile_idx < TILE_COUNT);
+                assert!(tile_idx < 27);
+
+                let tile = Tile::from(tile_idx);
 
                 // decrement the count for the chosen tile, and the overall total
-                self.counts[tile_idx] -= 1;
-                self.total -= 1;
+                self.counts.remove(once(tile));
 
-                Tile::from(tile_idx)
+                tile
             }),
         }
     }
@@ -128,36 +118,28 @@ impl LetterBag {
     /// Adds up to [`RACK_SIZE`] tiles from the provided iterator back into
     /// the bag, returning the number of tiles that were added.
     pub fn add_tiles(&mut self, tiles: impl Iterator<Item = Tile>) -> usize {
-        (0..RACK_SIZE)
-            .zip(tiles)
-            .map(|(_, tile)| {
-                self.counts[usize::from(tile)] += 1;
-                self.total += 1;
-            })
-            .count()
+        let len = self.len();
+        self.counts.insert(tiles.take(RACK_SIZE));
+        self.len() - len
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::game::{
-        letter_bag::{LetterBag, TILE_COUNT},
-        rack::RACK_SIZE,
-        tile::Tile,
-    };
+    use crate::game::{letter_bag::LetterBag, rack::RACK_SIZE, tile::Tile};
 
     #[test]
     fn draw_limits() {
         let mut letter_bag = LetterBag::default();
         assert_eq!(letter_bag.draw_many(0).count(), 0);
         assert_eq!(letter_bag.draw_many(100).count(), RACK_SIZE);
-        assert_eq!(letter_bag.total(), 93);
+        assert_eq!(letter_bag.len(), 93);
     }
 
     #[test]
     fn empty_bag() {
         let mut letter_bag = LetterBag::default();
-        let mut counts = [0; TILE_COUNT];
+        let mut counts = [0; 27];
         let mut removed = vec![];
 
         while !letter_bag.is_empty() {
@@ -178,6 +160,6 @@ mod tests {
             len = (len + RACK_SIZE).min(100);
         }
 
-        assert_eq!(letter_bag.total(), len);
+        assert_eq!(letter_bag.len(), len);
     }
 }
