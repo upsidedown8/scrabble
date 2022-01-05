@@ -244,7 +244,7 @@ impl<'a> Game<'a> {
 }
 impl<'a> fmt::Display for Game<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.board)?;
+        writeln!(f, "{}", self.board)?;
 
         for id in self.player_ids() {
             writeln!(

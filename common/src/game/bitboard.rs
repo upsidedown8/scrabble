@@ -1,10 +1,13 @@
 //! Module containing a bitboard implementation to represent
 //! the occupancy on the 15 x 15 board.
 
-use crate::game::pos::{Col, Pos, Row};
+use crate::game::{board::write_grid, pos::Pos};
 use std::{
-    fmt::{Display, Formatter, Result},
-    ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, Not, Shl, ShlAssign, Shr, ShrAssign},
+    fmt,
+    ops::{
+        BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Not, Shl, ShlAssign, Shr,
+        ShrAssign,
+    },
 };
 
 /// [`WORD_SIZE`] = the number of bits in each word. A [`u32`] could have been
@@ -60,6 +63,34 @@ pub struct BitBoard {
 }
 
 impl BitBoard {
+    /// Gets a bitboard containing the set of squares that
+    /// are directly above the squares in `self`.
+    pub fn up(self) -> BitBoard {
+        self >> 15
+    }
+    /// Gets a bitboard containing the set of squares that
+    /// are directly below the squares in `self`.
+    pub fn down(self) -> BitBoard {
+        self << 15
+    }
+    /// Gets a bitboard containing the set of squares that
+    /// are directly below the squares in `self`.
+    pub fn left(mut self) -> BitBoard {
+        // discard the leftmost column to prevent overflow
+        self &= !Self::leftmost_col();
+        self >> 1
+    }
+    pub fn right(mut self) -> BitBoard {
+        // discard the rightmost column to prevent overflow
+        self &= !Self::rightmost_col();
+        self << 1
+    }
+    /// Gets a bitboard containing the set of squares that
+    /// are adjacent in one of the 4 orthagonal directions,
+    /// to the bits in `self`.
+    pub fn neighbours(self) -> BitBoard {
+        (self.up() | self.down() | self.left() | self.right()) & !self
+    }
     /// A bitboard with all bits set to 0.
     pub const fn zero() -> Self {
         Self { boards: [0; 4] }
@@ -249,11 +280,10 @@ impl BitOr<Self> for BitBoard {
 }
 impl BitOrAssign<Self> for BitBoard {
     fn bitor_assign(&mut self, rhs: Self) {
-        let words = self.boards.len();
-
-        for i in 0..words {
-            self.boards[i] |= rhs.boards[i];
-        }
+        self.boards
+            .iter_mut()
+            .zip(rhs.boards)
+            .for_each(|(a, b)| *a |= b);
     }
 }
 
@@ -267,11 +297,27 @@ impl BitAnd<Self> for BitBoard {
 }
 impl BitAndAssign<Self> for BitBoard {
     fn bitand_assign(&mut self, rhs: Self) {
-        let words = self.boards.len();
+        self.boards
+            .iter_mut()
+            .zip(rhs.boards)
+            .for_each(|(a, b)| *a &= b);
+    }
+}
 
-        for i in 0..words {
-            self.boards[i] &= rhs.boards[i];
-        }
+impl BitXor<Self> for BitBoard {
+    type Output = Self;
+
+    fn bitxor(mut self, rhs: Self) -> Self::Output {
+        self ^= rhs;
+        self
+    }
+}
+impl BitXorAssign<Self> for BitBoard {
+    fn bitxor_assign(&mut self, rhs: Self) {
+        self.boards
+            .iter_mut()
+            .zip(rhs.boards)
+            .for_each(|(a, b)| *a ^= b);
     }
 }
 
@@ -292,29 +338,12 @@ impl Not for BitBoard {
     }
 }
 
-impl Display for BitBoard {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        // print col headers
-        write!(f, "   ")?;
-        for col in Col::iter() {
-            write!(f, " {} ", col)?;
-        }
-        writeln!(f)?;
-
-        // main loop
-        for row in Row::iter() {
-            write!(f, "{:>2} ", row.to_string())?;
-            for col in Col::iter() {
-                if self.is_bit_set((row, col)) {
-                    write!(f, " x ")?;
-                } else {
-                    write!(f, "   ")?;
-                }
-            }
-            writeln!(f)?;
-        }
-
-        Ok(())
+impl fmt::Display for BitBoard {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write_grid(f, |pos| match self.is_bit_set(pos) {
+            true => " x ",
+            false => "   ",
+        })
     }
 }
 

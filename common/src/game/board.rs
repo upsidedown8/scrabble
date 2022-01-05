@@ -105,9 +105,9 @@ impl WordBoundary {
 pub struct Board {
     grid: [Option<Tile>; CELLS],
     /// regular occupancy, for finding horizontal words.
-    occupancy_h: BitBoard,
+    occ_h: BitBoard,
     /// vertical occupancy, rotated 90deg. For finding vertical words.
-    occupancy_v: BitBoard,
+    occ_v: BitBoard,
 }
 impl Board {
     /// Rotates a `pos` 90 degrees anticlockwise about the center square.
@@ -131,10 +131,11 @@ impl Board {
     }
     /// Finds the sum of the scores of each word. If an invalid word is
     /// encountered, returns an error, otherwise returns the sum of the
-    /// scores of all words containing new letters. `occ` is the combined
-    /// occupancy of the board and new tiles. `map_pos` is used to rotate
+    /// scores of all words containing new letters. `map_pos` is used to rotate
     /// the bit positions back to the standard grid for the rotated vertical
-    /// bitboard.
+    /// bitboard. `new` is the set of added tiles, which should ave been
+    /// rotated previously for vertical words. `occ` is the set of existing
+    /// tiles, which should also have been rotated.
     fn score_words<F>(
         &self,
         occ: BitBoard,
@@ -152,6 +153,9 @@ impl Board {
 
         // a word has at most 15 letters.
         let mut letter_multipliers = [1; 15];
+
+        // find the combined occupancy
+        let occ = occ | new;
 
         for word in WordBoundaries::new(occ) {
             if let Some(pos) = curr_bit {
@@ -204,37 +208,45 @@ impl Board {
 
         Ok(sum)
     }
-    /// Calculates the set of tiles with at least one neighbour in any
-    /// of the 4 directions. (up,down,left,right).
-    fn neighbours(occ: BitBoard) -> BitBoard {
-        let mut tiles_with_neighbours = BitBoard::full();
+    /// Computes the combined score for horizontal and vertical words, adding
+    /// the 50 point bonus where appropriate.
+    fn score_and_validate(
+        &self,
+        new_h: BitBoard,
+        new_v: BitBoard,
+        word_tree: &WordTree,
+    ) -> GameResult<usize> {
+        // Find the score for horizontal and vertical words.
+        let score_h = self.score_words(self.occ_h, new_h, word_tree, |pos| pos)?;
+        let score_v = self.score_words(self.occ_v, new_v, word_tree, Self::clockwise_90)?;
 
-        // finds set of tiles with neighbours in a direction.
-        let neighbours = |mask: BitBoard, shift: i32| {
-            let masked = occ & !mask;
-            let shifted = if shift < 0 {
-                masked >> (-shift) as usize
-            } else {
-                masked << shift as usize
-            };
-            occ & shifted
-        };
+        // Find combined score
+        let score = score_h + score_v;
 
-        tiles_with_neighbours |= neighbours(BitBoard::bottom_row(), 15);
-        tiles_with_neighbours |= neighbours(BitBoard::top_row(), -15);
-        tiles_with_neighbours |= neighbours(BitBoard::rightmost_col(), 1);
-        tiles_with_neighbours |= neighbours(BitBoard::leftmost_col(), -1);
-
-        tiles_with_neighbours
+        // If the bitcount for `new_h` is 7, add a 50 point bonus
+        match new_h.bit_count() {
+            7 => Ok(score + 50),
+            _ => Ok(score),
+        }
     }
     /// Validates a position based on the locations of the tiles.
+    /// Bitboards provided should be horizontal, ie. the natural
+    /// layout of the board.
     ///
     /// Ensures that these conditions are met:
+    /// * The new tiles cannot intersect the old tiles.
     /// * The set of all tiles must always contain the start tile.
-    /// * Each tile must be adjacent to another which can be to its
-    ///   left, right, above or below.
-    /// * Every word has at least 2 letters
-    fn validate_occ(occ: BitBoard) -> GameResult<()> {
+    /// * There must be a path from the start tile to any other tile.
+    /// * Every word has at least 2 letters.
+    pub fn validate_occ_h(occ_h: BitBoard, mut new_h: BitBoard) -> GameResult<()> {
+        // Check whether the new tiles intersect the old tiles
+        if occ_h.intersects(&new_h) {
+            return Err(GameError::CoincedentTiles);
+        }
+
+        // Find the combined occupancy
+        let occ = occ_h | new_h;
+
         // there must be a tile on the start square.
         if !occ.is_bit_set(Pos::start()) {
             return Err(GameError::MustIntersectStart);
@@ -246,13 +258,44 @@ impl Board {
             return Err(GameError::WordsNeedTwoLetters);
         }
 
-        // every tile must have a neighbour in one of the 4 directions
-        let without_neighbours = !Self::neighbours(occ);
-        if !without_neighbours.is_zero() {
-            return Err(GameError::NotConnected);
-        }
+        // Every tile must be connected. However, it can be assumed
+        // that the existing tiles (`occ_h`) are already connected,
+        // so consider the neighbouring tiles in `new_h`. Since there are at
+        // most 7 new tiles, this loop will run at most 7 times.
 
-        Ok(())
+        // Start with the current occupancy (assume that `occ_h` is connected).
+        let mut connected = occ_h;
+
+        // Set the start bit, required for first move when occupancy
+        // is zero.
+        connected.set_bit(Pos::start());
+
+        // remove the start bit from `new_h`
+        new_h.clear_bit(Pos::start());
+
+        // Keep looping until there are no neighbours
+        loop {
+            // Find the set of new tiles which neighbours the connected
+            // set of tiles.
+            let neighbours = connected.neighbours() & new_h;
+
+            // Remove the tiles from the set of tiles to consider
+            new_h ^= neighbours;
+            // Add the tiles to the set of connected tiles.
+            connected |= neighbours;
+
+            // if there are no neighbouring tiles, then exit the loop
+            if neighbours.is_zero() {
+                // exits the loop and returns a value
+                break match new_h.is_zero() {
+                    // if there are still tiles remaining in `new_h` then
+                    // the tiles are not connected.
+                    false => Err(GameError::NotConnected),
+                    // otherwise all tiles are connected.
+                    true => Ok(()),
+                };
+            }
+        }
     }
     /// Gets the tile at `pos`
     pub fn at<T>(&self, pos: T) -> Option<Tile>
@@ -265,8 +308,8 @@ impl Board {
     pub fn undo_placement(&mut self, tile_positions: Vec<Pos>) {
         for pos in tile_positions {
             self.grid[usize::from(pos)] = None;
-            self.occupancy_h.clear_bit(pos);
-            self.occupancy_v.clear_bit(Self::anti_clockwise_90(pos));
+            self.occ_h.clear_bit(pos);
+            self.occ_v.clear_bit(Self::anti_clockwise_90(pos));
         }
     }
     /// Attempts to perform a [`Play::Place`] on the board. (All
@@ -278,60 +321,44 @@ impl Board {
         word_tree: &WordTree,
     ) -> GameResult<usize> {
         // new tiles for horizontal words
-        let mut new_tiles_h = BitBoard::default();
+        let mut new_h = BitBoard::default();
         // new tiles for vertical words: rotated 90deg anticlockwise
-        let mut new_tiles_v = BitBoard::default();
+        let mut new_v = BitBoard::default();
 
         for &(pos_h, _) in tile_positions {
             // if the bit has already been set then `tile_positions` contains
             // a duplicate tile.
-            if new_tiles_h.is_bit_set(pos_h) {
+            if new_h.is_bit_set(pos_h) {
                 return Err(GameError::DuplicatePosition);
             }
 
-            new_tiles_h.set_bit(pos_h);
-            new_tiles_v.set_bit(Self::anti_clockwise_90(pos_h));
+            new_h.set_bit(pos_h);
+            new_v.set_bit(Self::anti_clockwise_90(pos_h));
         }
-
-        // check whether the new tiles overlay the current tiles.
-        if self.occupancy_h.intersects(&new_tiles_h) {
-            return Err(GameError::CoincedentTiles);
-        }
-
-        // find a combined set of tiles
-        let occ_h = self.occupancy_h | new_tiles_h;
-        let occ_v = self.occupancy_v | new_tiles_v;
 
         // perform tile placement validation
-        Self::validate_occ(occ_h)?;
+        Self::validate_occ_h(self.occ_h, new_h)?;
 
-        // everything has now been validated: place the tiles on the board.
+        // Tiles positions have now been validated: place the tiles on the board.
+        // Word validation requires that these tiles are present. If an invalid
+        // word exists on the board, the tiles will be removed.
         for &(pos, tile) in tile_positions {
             self.grid[usize::from(pos)] = Some(tile);
         }
 
-        // the placement of tiles has now been validated, now
-        // the words formed by the tiles must be validated.
-        let score_h = self.score_words(occ_h, new_tiles_h, word_tree, |pos| pos);
-        let score_v = self.score_words(occ_v, new_tiles_v, word_tree, Self::clockwise_90);
-
-        let all_tiles = tile_positions.len() == 7;
-
-        match score_h.and_then(|sh| score_v.map(|sv| sv + sh)) {
+        // checks that words are valid then returns the score
+        match self.score_and_validate(new_h, new_v, word_tree) {
+            // everything was valid, update the bitboards.
             Ok(score) => {
                 // update bitboards
-                self.occupancy_h = occ_h;
-                self.occupancy_v = occ_v;
+                self.occ_h |= new_h;
+                self.occ_v |= new_v;
 
-                if all_tiles {
-                    // 50 point bonus if all 7 tiles are used
-                    Ok(score + 50)
-                } else {
-                    Ok(score)
-                }
+                Ok(score)
             }
+            // error occured, reverse the state change
             Err(e) => {
-                // clear all the modified squares
+                // clear all modified squares
                 tile_positions
                     .iter()
                     .for_each(|(pos, _)| self.grid[usize::from(*pos)] = None);
@@ -345,34 +372,53 @@ impl Default for Board {
     fn default() -> Self {
         Self {
             grid: [None; CELLS],
-            occupancy_h: BitBoard::default(),
-            occupancy_v: BitBoard::default(),
+            occ_h: BitBoard::default(),
+            occ_v: BitBoard::default(),
         }
     }
 }
 impl fmt::Display for Board {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // print col headers
+        write_grid(f, |pos| match self.at(pos) {
+            Some(tile) => format!("{}", tile),
+            None => " . ".to_string(),
+        })
+    }
+}
+
+/// Utility function for displaying a grid, which prints row
+/// and column headers. `at_pos` should return a string of length
+/// 3 which represents the cell at the provided position.
+///
+/// This function is used for implementing [`fmt::Display`] for [`Board`]
+/// and [`BitBoard`].
+pub fn write_grid<F, T>(f: &mut fmt::Formatter, at_pos: F) -> fmt::Result
+where
+    F: Fn(Pos) -> T,
+    T: fmt::Display,
+{
+    fn write_col_headers(f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "   ")?;
         for col in Col::iter() {
             write!(f, " {} ", col)?;
         }
-        writeln!(f)?;
-
-        for row in Row::iter() {
-            // print row header
-            write!(f, "{:>2} ", row.to_string())?;
-
-            for col in Col::iter() {
-                match self.at((row, col)) {
-                    Some(tile) => write!(f, "{}", tile)?,
-                    None => write!(f, " . ")?,
-                }
-            }
-
-            writeln!(f)?;
-        }
 
         Ok(())
     }
+
+    write_col_headers(f)?;
+
+    writeln!(f)?;
+
+    for row in Row::iter() {
+        write!(f, "{:>2} ", row.to_string())?;
+
+        for col in Col::iter() {
+            write!(f, "{}", at_pos(Pos::from((row, col))))?;
+        }
+
+        writeln!(f, " {:<2}", row.to_string())?;
+    }
+
+    write_col_headers(f)
 }
