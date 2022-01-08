@@ -32,9 +32,14 @@ impl From<Letter> for usize {
         letter.0
     }
 }
+impl From<Letter> for char {
+    fn from(letter: Letter) -> Self {
+        (letter.0 + 65) as u8 as char
+    }
+}
 impl Display for Letter {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", (self.0 + 65) as u8 as char)
+        write!(f, "{}", char::from(*self))
     }
 }
 
