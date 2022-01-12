@@ -44,13 +44,10 @@ impl WordBoundaries {
     /// traversal can then be used to find all words.
     pub fn word_boundaries(occ: BitBoard) -> BitBoard {
         // finds all squares which start a horizontal word
-        let horizontal_starts = (occ << 1) & !(occ >> 1) & !BitBoard::rightmost_col();
-        let horizontal_ends = (occ >> 1) & !(occ << 1) & !BitBoard::leftmost_col();
+        let horizontal_starts = (occ << 1) & !BitBoard::rightmost_col();
+        let horizontal_ends = (occ >> 1) & !BitBoard::leftmost_col();
 
-        // simplified with boolean algebra:
-        // (occ & horizontal_starts) | (occ & vertical_starts)
-        // = occ & (horizontal_starts | vertical_starts)
-        occ & (horizontal_starts | horizontal_ends)
+        occ & (horizontal_starts ^ horizontal_ends)
     }
 }
 impl Iterator for WordBoundaries {
