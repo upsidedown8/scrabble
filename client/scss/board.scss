@@ -1,0 +1,45 @@
+//! Styling for the board component
+
+.board {
+    $background: #e1d8c7;
+    $border: #666666;
+    $start: #c86c03;
+    $double-letter: #628e7c;
+    $triple-letter: #eb6c5d;
+    $double-word: #c76a00;
+    $triple-word: #9b6464;
+    $hover: #c9c9c9;
+
+    width: 60vw;
+    height: 60vw;
+    text-align: center;
+    margin: auto;
+
+    .board-row {
+        height: calc(100% / 15);
+
+        .square {
+            background-color: $background;
+            float: left;
+            height: calc(100%);
+            width: calc(100% / 15);
+            outline: 1px solid $border;
+        }
+
+        .start {
+            background-color: $start;
+        }
+        .double-letter {
+            background-color: $double-letter;
+        }
+        .triple-letter {
+            background-color: $triple-letter;
+        }
+        .double-word {
+            background-color: $double-word;
+        }
+        .triple-word {
+            background-color: $triple-word;
+        }
+    }
+}
