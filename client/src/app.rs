@@ -1,25 +1,34 @@
+use crate::routes::home::HomeRoute;
+use uuid::Uuid;
 use yew::prelude::*;
 use yew_router::prelude::*;
 
-/// scrabble.rs/game/view/20
-
 #[derive(Debug, Clone, Copy, PartialEq, Routable)]
 pub enum Route {
+    /// Home page
+    #[at("/")]
+    Home,
     /// Login page
     #[at("/login")]
     Login,
     /// Create account page
-    #[at("/create")]
+    #[at("/create-account")]
     CreateAccount,
     /// Manage account page
     #[at("/account")]
     Account,
     /// Play a live game (with id)
-    #[at("/play/:id")]
-    Play { id: usize },
-    /// View a game
+    #[at("/live/:id")]
+    Live { id: Uuid },
+    /// View a past game
     #[at("/game/:id")]
-    ViewGame { id: usize },
+    ViewGame { id: Uuid },
+    /// Play a local game
+    #[at("/local")]
+    Local,
+    /// View performance statistics
+    #[at("/stats")]
+    Stats,
 
     /// 404 page
     #[not_found]
@@ -27,26 +36,25 @@ pub enum Route {
     NotFound,
 }
 
-pub struct App {}
-
-impl Component for App {
-    type Message = ();
-    type Properties = ();
-
-    fn create(ctx: &Context<Self>) -> Self {
-        Self {}
-    }
-
-    fn view(&self, ctx: &Context<Self>) -> Html {
-        todo!()
+fn switch(route: &Route) -> Html {
+    match route {
+        Route::Home => html! { <HomeRoute /> },
+        Route::Login => todo!(),
+        Route::CreateAccount => todo!(),
+        Route::Account => todo!(),
+        Route::Live { id } => todo!(),
+        Route::ViewGame { id } => todo!(),
+        Route::Local => todo!(),
+        Route::Stats => todo!(),
+        Route::NotFound => todo!(),
     }
 }
 
-fn switch(route: &Route) -> Html {
-    match route {
-        Route::Home => html! { <h1>{ "Home" }</h1> },
-        Route::Play { id } => html! { <h1>{ "Live game" }</h1> },
-        Route::ViewGame { id } => html! { <h1>{ "Game" }</h1> },
-        Route::NotFound => todo!(),
+#[function_component(App)]
+pub fn app() -> Html {
+    html! {
+        <BrowserRouter>
+            <Switch<Route> render={Switch::render(switch)} />
+        </BrowserRouter>
     }
 }
