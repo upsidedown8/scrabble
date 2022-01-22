@@ -4,5 +4,14 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+# for displaying the web page
 yew = "0.19"
 yew-router = "0.16"
+
+# core game types and AI logic
+scrabble = { path = "../scrabble" }
+
+# for communicating with api
+api = { path = "../api" }
+uuid = { version = "0.8", features = ["serde", "v4"] }
+serde = { version = "1.0.126" }
