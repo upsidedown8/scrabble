@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 # api types and game ai
-common = { path = "../common" }
+scrabble = { path = "../scrabble" }
 
 # web server
 serde = { version = "1.0.126", features = ["derive"] }
