@@ -1,4 +1,4 @@
-use crate::routes::home::HomeRoute;
+use crate::routes::{home::HomeRoute, login::LoginRoute};
 use uuid::Uuid;
 use yew::prelude::*;
 use yew_router::prelude::*;
@@ -39,14 +39,14 @@ pub enum Route {
 fn switch(route: &Route) -> Html {
     match route {
         Route::Home => html! { <HomeRoute /> },
-        Route::Login => todo!(),
+        Route::Login => html! { <LoginRoute /> },
         Route::CreateAccount => todo!(),
         Route::Account => todo!(),
         Route::Live { id } => todo!(),
         Route::ViewGame { id } => todo!(),
         Route::Local => todo!(),
         Route::Stats => todo!(),
-        Route::NotFound => todo!(),
+        Route::NotFound => html! { "Not found" },
     }
 }
 
