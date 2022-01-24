@@ -1,4 +1,4 @@
-use common::game::{
+use scrabble::game::{
     play::{Play, Word},
     pos::{Col, Direction, Row},
     word_tree::WordTree,
