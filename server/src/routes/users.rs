@@ -2,7 +2,7 @@ use crate::auth::{self, AuthenticatedUser};
 use crate::db::user::DbUser;
 
 use crate::{routes::Response, AppState};
-use common::api::users::*;
+use api::users::*;
 use rocket::{http::Status, serde::json::Json, State};
 
 #[post("/users", data = "<req>", format = "json")]

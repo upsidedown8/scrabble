@@ -38,6 +38,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ee10e43ae4a853c0a3591d4e2ada1719e553be18199d9da9d4a83f5927c2f5c7"
 
 [[package]]
+name = "api"
+version = "0.1.0"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "arrayref"
 version = "0.3.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -207,15 +214,6 @@ dependencies = [
  "num-traits",
  "time 0.1.43",
  "winapi",
-]
-
-[[package]]
-name = "common"
-version = "0.1.0"
-dependencies = [
- "getrandom",
- "rand",
- "serde",
 ]
 
 [[package]]
@@ -1350,6 +1348,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d29ab0c6d3fc0ee92fe66e2d99f700eab17a8d57d1c1d3b748380fb20baa78cd"
 
 [[package]]
+name = "scrabble"
+version = "0.1.0"
+dependencies = [
+ "getrandom",
+ "rand",
+]
+
+[[package]]
 name = "sct"
 version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1410,8 +1416,8 @@ name = "server"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "api",
  "chrono",
- "common",
  "dotenv",
  "env_logger",
  "hex",
@@ -1421,6 +1427,7 @@ dependencies = [
  "rand",
  "rocket",
  "rust-argon2",
+ "scrabble",
  "serde",
  "sqlx",
  "uuid",

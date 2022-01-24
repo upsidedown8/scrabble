@@ -7,7 +7,6 @@ pub mod routes;
 extern crate rocket;
 
 use argon2::{Config, ThreadMode};
-use common::game::word_tree::WordTree;
 use rocket::{
     tokio::{
         fs::File,
@@ -16,6 +15,7 @@ use rocket::{
     Build, Rocket,
 };
 use routes::{users, words};
+use scrabble::game::word_tree::WordTree;
 use sqlx::{sqlite::SqlitePoolOptions, SqlitePool};
 use std::env;
 

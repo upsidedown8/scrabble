@@ -1,6 +1,6 @@
+use api::users::Auth;
 use argon2::Config;
 use chrono::{Duration, Utc};
-use common::api::users::Auth;
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use lazy_static::lazy_static;
 use rand::Rng;

@@ -1,4 +1,4 @@
-use common::api::users::Auth;
+use api::users::Auth;
 use rocket::http::Status;
 use sqlx::SqlitePool;
 use uuid::Uuid;
