@@ -80,6 +80,25 @@ impl fmt::Display for Pos {
     }
 }
 impl Pos {
+    /// Rotates a `pos` 90 degrees anticlockwise about the center square.
+    pub fn anti_clockwise90(&self) -> Pos {
+        let (r, c) = self.row_col();
+
+        let r_prime = Row::from(14 - usize::from(c));
+        let c_prime = Col::from(usize::from(r));
+
+        Pos::from((r_prime, c_prime))
+    }
+    /// Rotates a `pos` 90 degrees clockwise about the center square. Inverse
+    /// functon of `rotate_90_anti_clockwise`.
+    pub fn clockwise90(&self) -> Pos {
+        let (r, c) = self.row_col();
+
+        let r_prime = Row::from(usize::from(c));
+        let c_prime = Col::from(14 - usize::from(r));
+
+        Pos::from((r_prime, c_prime))
+    }
     /// Gets the `Pos` for the start square.
     pub fn start() -> Self {
         Self::from((7, 7))
@@ -90,7 +109,7 @@ impl Pos {
     }
     /// Gets the optional tile bonus of the `Pos`.
     pub fn bonus(&self) -> Option<PosBonus> {
-        let (row, col) = self.cartesian();
+        let (row, col) = self.row_col();
 
         // finds positive difference between two unsigned numbers
         let abs_diff = |a, b| match a > b {
@@ -113,16 +132,16 @@ impl Pos {
             _ => None,
         }
     }
-    /// Gets the vertical cartesian coordinate
+    /// Gets the row number
     pub fn row(&self) -> Row {
         Row::from((self.0 / COLS) % ROWS)
     }
-    /// Gets the horizontal cartesian coordinate
+    /// Gets the column number
     pub fn col(&self) -> Col {
         Col::from(self.0 % COLS)
     }
-    /// Gets the cartesian coordinates as a pair
-    pub fn cartesian(&self) -> (Row, Col) {
+    /// Gets the pair (row, col) for the coordinate
+    pub fn row_col(&self) -> (Row, Col) {
         (self.row(), self.col())
     }
     /// Finds the pos in the grid, offset by `count` in direction `dir`
@@ -130,7 +149,7 @@ impl Pos {
         let vector = dir.vector(count as i32);
 
         // current coordinates
-        let (row, col) = self.cartesian();
+        let (row, col) = self.row_col();
 
         // calculate new coordinates
         let row = i32::from(row) + vector.0;

@@ -27,27 +27,7 @@ impl WordBoundaries {
     /// read left to right so for vertical words, the occupancy must
     /// first be rotated 90degrees anticlockwise.
     pub fn new(occ: BitBoard) -> Self {
-        Self(Self::word_boundaries(occ).into_iter())
-    }
-
-    /// Calculates the set of tiles which start a word.
-    ///
-    /// In general, a letter is the start of a word if, in its
-    /// row or column (depending on direction of the word), it
-    /// is (preceded by an empty square OR is an edge square)
-    /// AND (is succeeded by a non-empty square in the same row
-    /// or column).
-    ///
-    /// This function is also used for vertical word boundaries,
-    /// but the vertical occupancy is rotated by 90deg anticlockwise
-    /// so that vertical words read left to right. A single bitwise
-    /// traversal can then be used to find all words.
-    pub fn word_boundaries(occ: BitBoard) -> BitBoard {
-        // finds all squares which start a horizontal word
-        let horizontal_starts = (occ << 1) & !BitBoard::rightmost_col();
-        let horizontal_ends = (occ >> 1) & !BitBoard::leftmost_col();
-
-        occ & (horizontal_starts ^ horizontal_ends)
+        Self(occ.word_boundaries().into_iter())
     }
 }
 impl Iterator for WordBoundaries {
@@ -107,25 +87,6 @@ pub struct Board {
     occ_v: BitBoard,
 }
 impl Board {
-    /// Rotates a `pos` 90 degrees anticlockwise about the center square.
-    fn anti_clockwise_90(pos: Pos) -> Pos {
-        let (r, c) = pos.cartesian();
-
-        let r_prime = Row::from(14 - usize::from(c));
-        let c_prime = Col::from(usize::from(r));
-
-        Pos::from((r_prime, c_prime))
-    }
-    /// Rotates a `pos` 90 degrees clockwise about the center square. Inverse
-    /// functon of `rotate_90_anti_clockwise`.
-    fn clockwise_90(pos: Pos) -> Pos {
-        let (r, c) = pos.cartesian();
-
-        let r_prime = Row::from(usize::from(c));
-        let c_prime = Col::from(14 - usize::from(r));
-
-        Pos::from((r_prime, c_prime))
-    }
     /// Finds the sum of the scores of each word. If an invalid word is
     /// encountered, returns an error, otherwise returns the sum of the
     /// scores of all words containing new letters. `map_pos` is used to rotate
@@ -215,7 +176,7 @@ impl Board {
     ) -> GameResult<usize> {
         // Find the score for horizontal and vertical words.
         let score_h = self.score_words(self.occ_h, new_h, word_tree, |pos| pos)?;
-        let score_v = self.score_words(self.occ_v, new_v, word_tree, Self::clockwise_90)?;
+        let score_v = self.score_words(self.occ_v, new_v, word_tree, |pos| pos.clockwise90())?;
 
         // Find combined score
         let score = score_h + score_v;
@@ -235,7 +196,7 @@ impl Board {
     /// * The set of all tiles must always contain the start tile.
     /// * There must be a path from the start tile to any other tile.
     /// * Every word has at least 2 letters.
-    pub fn validate_occ_h(occ_h: BitBoard, mut new_h: BitBoard) -> GameResult<()> {
+    fn validate_occ_h(occ_h: BitBoard, mut new_h: BitBoard) -> GameResult<()> {
         // Check whether the new tiles intersect the old tiles
         if occ_h.intersects(&new_h) {
             return Err(GameError::CoincedentTiles);
@@ -306,7 +267,7 @@ impl Board {
         for pos in tile_positions {
             self.grid[usize::from(pos)] = None;
             self.occ_h.clear_bit(pos);
-            self.occ_v.clear_bit(Self::anti_clockwise_90(pos));
+            self.occ_v.clear_bit(pos.anti_clockwise90());
         }
     }
     /// Attempts to perform a [`Play::Place`] on the board. (All
@@ -330,7 +291,7 @@ impl Board {
             }
 
             new_h.set_bit(pos_h);
-            new_v.set_bit(Self::anti_clockwise_90(pos_h));
+            new_v.set_bit(pos_h.anti_clockwise90());
         }
 
         // perform tile placement validation
