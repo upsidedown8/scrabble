@@ -63,6 +63,25 @@ pub struct BitBoard {
 }
 
 impl BitBoard {
+    /// Calculates the set of tiles which start a word.
+    ///
+    /// In general, a letter is the start of a word if, in its
+    /// row or column (depending on direction of the word), it
+    /// is (preceded by an empty square OR is an edge square)
+    /// AND (is succeeded by a non-empty square in the same row
+    /// or column).
+    ///
+    /// This function is also used for vertical word boundaries,
+    /// but the vertical occupancy is rotated by 90deg anticlockwise
+    /// so that vertical words read left to right. A single bitwise
+    /// traversal can then be used to find all words.
+    pub fn word_boundaries(self) -> BitBoard {
+        // finds all squares which start a horizontal word
+        let horizontal_starts = (self << 1) & !BitBoard::rightmost_col();
+        let horizontal_ends = (self >> 1) & !BitBoard::leftmost_col();
+
+        self & (horizontal_starts ^ horizontal_ends)
+    }
     /// Gets a bitboard containing the set of squares that
     /// are directly above the squares in `self`.
     pub fn up(self) -> BitBoard {
