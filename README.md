@@ -1,4 +1,4 @@
-![Scrabble AI](./scrabble.png)
+# Scrabble AI
 
 A Level Computer Science NEA project. This project
 provides a Scrabble computer opponent, and a
