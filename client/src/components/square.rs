@@ -29,10 +29,9 @@ pub fn square(props: &SquareProps) -> Html {
             PosBonus::Start => "start",
         },
     };
-    let class = format!("square {}", bonus);
 
     html! {
-        <div {class}>
+        <div class={classes!(bonus, "square")}>
             if let Some(tile) = props.tile {
                 <tile::Tile {tile} />
             }
