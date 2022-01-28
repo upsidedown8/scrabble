@@ -13,29 +13,15 @@ pub struct BoardProps {
 /// The scrabble board.
 #[function_component(Board)]
 pub fn board(props: &BoardProps) -> Html {
-    let build_row = |row| {
-        Col::iter()
-            .map(|col| Pos::from((row, col)))
-            .map(|pos| {
-                html! {
-                    <Square
-                        pos={pos}
-                        tile={props.tiles[usize::from(pos)]}
-                    />
-                }
-            })
-            .collect::<Html>()
-    };
-
-    let rows = Row::iter()
-        .map(|row| {
-            html! {
-                <div class="board-row">{build_row(row)}</div>
-            }
-        })
-        .collect::<Html>();
-
     html! {
-        <div class="board">{rows}</div>
+        <div class="board">
+        { for Row::iter().map(|row| html! {
+            <div class="board-row">
+            { for Col::iter().map(|col| Pos::from((row, col))).map(|pos| html! {
+                <Square {pos} tile={props.tiles[usize::from(pos)]} />
+            })}
+            </div>
+        })}
+        </div>
     }
 }
