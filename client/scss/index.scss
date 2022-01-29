@@ -5,6 +5,11 @@ html {
     overflow: hidden;
     padding: 0;
     margin: 0;
+    height: 100%;
+}
+
+body {
+    height: 100%;
 }
 
 @import 'bulma/bulma.sass';
