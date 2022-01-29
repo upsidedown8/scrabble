@@ -1,3 +1,5 @@
 mod auth;
 
-pub use auth::{use_auth_context, AuthContext, AuthProvider};
+pub use auth::{
+    get_token, is_logged_in, set_token, use_auth_context, AuthContextHandle, AuthProvider,
+};
