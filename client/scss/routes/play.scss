@@ -1,0 +1,12 @@
+.play-route {
+    @media (max-width: 768px) {
+        .board {
+            width: 100vw;
+            height: 100vw;
+        }
+        background-color: red;
+    }
+    @media (min-width: 769px) {
+        background-color: blue;
+    }
+}

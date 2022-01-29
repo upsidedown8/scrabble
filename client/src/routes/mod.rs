@@ -1,6 +1,7 @@
 pub mod account;
 pub mod login;
 pub mod not_found;
+pub mod play;
 pub mod signup;
 
 use yew::prelude::*;
@@ -10,6 +11,7 @@ use crate::contexts::is_logged_in;
 use account::AccountRoute;
 use login::LoginRoute;
 use not_found::NotFoundRoute;
+use play::PlayRoute;
 use signup::SignUpRoute;
 
 #[derive(Debug, Clone, Copy, PartialEq, Routable)]
@@ -23,6 +25,9 @@ pub enum AppRoute {
     /// Create account
     #[at("/user/signup")]
     SignUp,
+    /// Play a game
+    #[at("/play")]
+    Play,
     /// 404 page
     #[not_found]
     #[at("/404")]
@@ -38,6 +43,7 @@ impl AppRoute {
             AppRoute::SignUp => html! { <SignUpRoute /> },
             _ if not_logged_in => html! { <NotFoundRoute /> },
 
+            AppRoute::Play => html! { <PlayRoute /> },
             AppRoute::Account => html! { <AccountRoute /> },
             AppRoute::NotFound => html! { <NotFoundRoute /> },
         }

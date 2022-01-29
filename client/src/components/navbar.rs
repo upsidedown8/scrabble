@@ -23,7 +23,7 @@ pub fn navbar() -> Html {
     };
 
     html! {
-        <nav class="navbar is-dark" role="navigation" aria-label="main navigation">
+        <nav class="navbar is-dark is-fixed-top" role="navigation" aria-label="main navigation">
             <div class="navbar-brand">
                 {"scrabble"}
 
@@ -37,11 +37,13 @@ pub fn navbar() -> Html {
             <div class={classes!("navbar-menu", is_active)}>
                 <div class="navbar-start">
                     <a class="navbar-item">
-                        { "Home" }
-                    </a>
-
-                    <a class="navbar-item">
-                        { "Page 1" }
+                        <div class="buttons">
+                            if is_logged_in() {
+                                <Link<AppRoute> classes="button is-primary" to={AppRoute::Play}>
+                                    { "Play" }
+                                </Link<AppRoute>>
+                            }
+                        </div>
                     </a>
                 </div>
 
