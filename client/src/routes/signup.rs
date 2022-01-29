@@ -2,7 +2,7 @@ use crate::{contexts::use_auth_context, services::users};
 use api::users::UserCreate;
 use web_sys::HtmlInputElement;
 use yew::prelude::*;
-use yew_hooks::use_async;
+use yew_hooks::{use_async, use_bool_toggle};
 
 #[function_component(SignUpRoute)]
 pub fn sign_up_route() -> Html {
@@ -10,11 +10,13 @@ pub fn sign_up_route() -> Html {
     let username_ref = use_node_ref();
     let email_ref = use_node_ref();
     let password_ref = use_node_ref();
+    let existing_username = use_bool_toggle(false);
 
-    let async_req = {
+    let signup_req = {
         let username_ref = username_ref.clone();
         let email_ref = email_ref.clone();
         let password_ref = password_ref.clone();
+        let existing_username = existing_username.clone();
 
         use_async(async move {
             let username = username_ref.cast::<HtmlInputElement>().unwrap().value();
@@ -30,6 +32,8 @@ pub fn sign_up_route() -> Html {
                 .await
                 .map_err(|_| String::from("error"));
 
+            existing_username.set(res.is_err());
+
             if let Ok(res) = &res {
                 auth_ctx.login_signup(res.clone())
             }
@@ -39,13 +43,18 @@ pub fn sign_up_route() -> Html {
     };
 
     let onclick = {
-        let async_req = async_req.clone();
+        let signup_req = signup_req.clone();
 
         Callback::from(move |_| {
-            let async_req = async_req.clone();
+            let signup_req = signup_req.clone();
 
-            async_req.run();
+            signup_req.run();
         })
+    };
+    let onclick_delete = {
+        let existing_username = existing_username.clone();
+
+        Callback::from(move |_| existing_username.toggle())
     };
 
     html! {
@@ -88,10 +97,15 @@ pub fn sign_up_route() -> Html {
                     </div>
                 </div>
 
-                <button {onclick} class="button is-primary">{ "Sign up" }</button>
+                <button {onclick} disabled={signup_req.loading} class="button is-primary">{ "Sign up" }</button>
 
-                if async_req.loading {
+                if signup_req.loading {
                     <progress class="progress is-small is-primary" max="100">{ "15%" }</progress>
+                } else if *existing_username {
+                    <div class="notification is-danger my-2">
+                        <button onclick={onclick_delete} class="delete" />
+                        { "Username already exists" }
+                    </div>
                 }
             </div>
         </div>

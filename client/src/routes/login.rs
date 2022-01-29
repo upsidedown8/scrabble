@@ -44,6 +44,11 @@ pub fn login_route() -> Html {
             login_req.run();
         })
     };
+    let onclick_delete = {
+        let incorrect_details = incorrect_details.clone();
+
+        Callback::from(move |_| incorrect_details.toggle())
+    };
 
     html! {
         <>
@@ -73,7 +78,7 @@ pub fn login_route() -> Html {
                     </div>
                 </div>
 
-                <button {onclick} class="button is-primary">
+                <button {onclick} disabled={login_req.loading} class="button is-primary">
                     { "Sign in" }
                 </button>
 
@@ -81,12 +86,11 @@ pub fn login_route() -> Html {
                     <progress class="progress is-small is-primary my-2" max="100">
                         { "10%" }
                     </progress>
-                }
-
-                if *incorrect_details {
-                    <p class="has-text-danger my-2">
+                } else if *incorrect_details {
+                    <div class="notification is-danger my-2">
+                        <button onclick={onclick_delete} class="delete" />
                         { "Incorrect username or password" }
-                    </p>
+                    </div>
                 }
             </div>
         </div>

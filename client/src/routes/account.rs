@@ -1,19 +1,18 @@
 use api::users::DeleteUser;
 use web_sys::HtmlInputElement;
 use yew::prelude::*;
-use yew_hooks::use_async;
+use yew_hooks::{use_async, use_bool_toggle};
 
-use crate::{
-    contexts::{get_token, use_auth_context},
-    services::users,
-};
+use crate::{contexts::use_auth_context, services::users};
 
 #[function_component(AccountRoute)]
 pub fn account_route() -> Html {
     let auth_ctx = use_auth_context();
     let password_ref = use_node_ref();
+    let incorrect_pass = use_bool_toggle(false);
 
     let delete_async = {
+        let incorrect_pass = incorrect_pass.clone();
         let auth_ctx = auth_ctx.clone();
         let password_ref = password_ref.clone();
 
@@ -25,7 +24,11 @@ pub fn account_route() -> Html {
                 .await
                 .map_err(|_| String::from("error"));
 
-            auth_ctx.logout();
+            incorrect_pass.set(res.is_err());
+
+            if res.is_ok() {
+                auth_ctx.logout();
+            }
 
             res
         })
@@ -40,19 +43,18 @@ pub fn account_route() -> Html {
             delete_async.run();
         })
     };
+    let onclick_delete = {
+        let incorrect_pass = incorrect_pass.clone();
+
+        Callback::from(move |_| incorrect_pass.set(false))
+    };
 
     html! {
-        <div class="account-route">
-            <h1>{ "The account route" }</h1>
-
-            <p>{ "username: " }{ &auth_ctx.username }</p>
-            <p>{ "email: " }{ &auth_ctx.email }</p>
-
-            if let Some(t) = get_token() {
-                <p>{ "token: " }{ t }</p>
-            }
-
+        <div class="account-route columns is-flex is-vcentered is-centered">
             <div class="box">
+                <p>{ "username: " }{ &auth_ctx.username }</p>
+                <p>{ "email: " }{ &auth_ctx.email }</p>
+
                 <div class="field">
                     <label class="label">{ "Password" }</label>
                     <div class="control">
@@ -65,9 +67,20 @@ pub fn account_route() -> Html {
                     </div>
                 </div>
 
-                <a class="button is-danger" onclick={ondelete}>
+                <a disabled={delete_async.loading} class="button is-danger" onclick={ondelete}>
                     { "Delete account" }
                 </a>
+
+                if delete_async.loading {
+                    <progress class="progress is-small is-primary my-2" max="100">
+                        { "10%" }
+                    </progress>
+                } else if *incorrect_pass {
+                    <div class="notification is-danger my-2">
+                        <button onclick={onclick_delete} class="delete" />
+                        { "Incorrect password" }
+                    </div>
+                }
             </div>
         </div>
     }
