@@ -11,10 +11,11 @@ api = { path = "../api" }
 # web server
 serde = { version = "1.0.126", features = ["derive"] }
 rocket = { version = "0.5.0-rc.1", features = ["json"] }
+rocket_cors = "0.6.0-alpha1"
 
 # auth
 rand = "0.8.4"
-rust-argon2 = "0.8.3"
+rust-argon2 = "1.0.0"
 chrono = "0.4.19"
 jsonwebtoken = "7.2.0"
 lazy_static = "1.4.0"
@@ -26,7 +27,7 @@ hex = "0.4.3"
 
 # logging
 log = "0.4.0"
-env_logger = "0.8.4"
+env_logger = "0.9.0"
 
 # for loading config in `.env` file
 dotenv = "0.15.0"

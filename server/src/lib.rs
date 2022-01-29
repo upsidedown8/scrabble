@@ -14,6 +14,7 @@ use rocket::{
     },
     Build, Rocket,
 };
+use rocket_cors::CorsOptions;
 use routes::{users, words};
 use scrabble::game::word_tree::WordTree;
 use sqlx::{sqlite::SqlitePoolOptions, SqlitePool};
@@ -56,6 +57,8 @@ pub async fn build_rocket() -> anyhow::Result<Rocket<Build>> {
         ..Config::default()
     };
 
+    let cors = CorsOptions::default().to_cors().unwrap();
+
     Ok(Rocket::build()
         .mount(
             "/api",
@@ -68,6 +71,7 @@ pub async fn build_rocket() -> anyhow::Result<Rocket<Build>> {
                 words::check,
             ],
         )
+        .attach(cors)
         .manage(AppState {
             pool,
             word_tree,
