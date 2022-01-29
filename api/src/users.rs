@@ -1,12 +1,12 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct Auth(pub String);
 
 //--------------------------------------------
 //               Utils
 //--------------------------------------------
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Default, Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct UserDetails {
     pub username: String,
     pub email: String,
@@ -26,7 +26,7 @@ pub struct UserLogin {
     pub password: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct UserLoginResponse {
     pub auth: Auth,
     pub user_details: UserDetails,
@@ -42,7 +42,7 @@ pub struct UserCreate {
     pub password: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct UserCreateResponse {
     pub auth: Auth,
     pub user_details: UserDetails,
@@ -82,7 +82,7 @@ pub struct DeleteUser {
     pub password: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct DeleteUserResponse {
     pub user_details: UserDetails,
 }
