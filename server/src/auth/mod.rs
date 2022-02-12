@@ -3,9 +3,10 @@ use warp::{hyper::HeaderMap, Filter, Rejection};
 
 mod hex;
 mod jwt;
-pub mod password;
+mod password;
 
 pub use jwt::{Jwt, Role};
+pub use password::{check_password_strength, hash, verify};
 
 const AUTHORIZATION: &str = "Authorization";
 const BEARER: &str = "Bearer ";
