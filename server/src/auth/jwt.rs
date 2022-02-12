@@ -43,6 +43,23 @@ pub enum Role {
     Admin,
 }
 
+impl Role {
+    /// Parses a role.
+    pub fn parse(role: &str) -> Role {
+        match role {
+            "Admin" => Role::Admin,
+            _ => Role::User,
+        }
+    }
+    /// Converts the role to a string.
+    pub fn to_string(&self) -> String {
+        String::from(match self {
+            Role::User => "User",
+            Role::Admin => "Admin",
+        })
+    }
+}
+
 impl Default for Role {
     fn default() -> Role {
         Role::User
@@ -89,8 +106,8 @@ impl Jwt {
         }
     }
     /// Gets the `id_user` claims field.
-    pub fn to_user_id(self) -> Uuid {
-        self.0.id_user
+    pub fn id_user(&self) -> &Uuid {
+        &self.0.id_user
     }
     /// Encodes the JWT, using the secret and expiry time
     /// from the `.env` file.
