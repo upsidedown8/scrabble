@@ -1,7 +1,6 @@
-#[rocket::main]
-async fn main() -> anyhow::Result<()> {
+#[tokio::main]
+async fn main() {
     env_logger::init();
-    server::build_rocket().await?.launch().await?;
-
-    Ok(())
+    dotenv::dotenv().expect("`.env` file to be present");
+    server::serve(([127, 0, 0, 1], 3030)).await;
 }

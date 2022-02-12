@@ -1,80 +1,50 @@
-#[doc = include_str!("../../README.md")]
-pub mod auth;
-pub mod db;
-pub mod routes;
-
-#[macro_use]
-extern crate rocket;
-
-use argon2::{Config, ThreadMode};
-use rocket::{
-    tokio::{
-        fs::File,
-        io::{AsyncBufReadExt, BufReader},
-    },
-    Build, Rocket,
-};
-use rocket_cors::CorsOptions;
-use routes::{users, words};
 use scrabble::game::word_tree::WordTree;
 use sqlx::{sqlite::SqlitePoolOptions, SqlitePool};
 use std::env;
+use std::net::SocketAddr;
+use tokio::{
+    fs::File,
+    io::{AsyncBufReadExt, BufReader},
+};
 
-pub struct AppState<'a> {
-    pub pool: SqlitePool,
-    pub word_tree: WordTree,
-    pub hash_cfg: Config<'a>,
+mod auth;
+mod error;
+mod models;
+mod routes;
+
+/// Starts the server on the given address.
+pub async fn serve(addr: impl Into<SocketAddr>) {
+    let db = connect_db().await.unwrap();
+
+    warp::serve(routes::all(db)).run(addr).await;
 }
 
-pub async fn build_rocket() -> anyhow::Result<Rocket<Build>> {
-    dotenv::dotenv().expect("`.env` should be present in working directory");
-
-    log::info!("loading env vars");
-    let db_url = env::var("DATABASE_URL").expect("expected `DATABASE_URL` environment variable");
-    let word_file = env::var("WORDLIST").expect("expected `WORDLIST` environment variable");
-    // jsut to check it exists, as `JWT_SECRET` is a lzy static
-    let _ = env::var("JWT_SECRET").expect("expected `JWT_SECRET` environment variable");
+/// Connects to the database at $DATABASE_URL.
+async fn connect_db() -> sqlx::Result<SqlitePool> {
+    let db_url = env::var("DATABASE_URL").expect("`DATABASE_URL` env variable");
 
     log::info!("connecting to database: {}", db_url);
-    let pool = SqlitePoolOptions::new()
+    SqlitePoolOptions::new()
         .max_connections(5)
         .connect(&db_url)
-        .await?;
+        .await
+}
+
+/// Loads the word tree from the $WORD_LIST directory.
+async fn load_word_tree() -> tokio::io::Result<WordTree> {
+    let word_file = env::var("WORD_LIST").expect("`WORD_LIST` env variable");
 
     log::info!("building word tree from file: {}", word_file);
+
     let mut word_tree = WordTree::default();
     let file = File::open(word_file)
         .await
-        .expect("word file should exist at `WORDLIST` dir");
+        .expect("word file should exist at `WORD_LIST` dir");
     let mut lines = BufReader::new(file).lines();
 
     while let Some(line) = lines.next_line().await? {
         word_tree.insert(line.trim());
     }
 
-    let hash_cfg = Config {
-        thread_mode: ThreadMode::Parallel,
-        ..Config::default()
-    };
-
-    let cors = CorsOptions::default().to_cors().unwrap();
-
-    Ok(Rocket::build()
-        .mount(
-            "/api",
-            routes![
-                users::create,
-                users::login,
-                users::update,
-                users::delete,
-                users::get_details,
-                words::check,
-            ],
-        )
-        .attach(cors)
-        .manage(AppState {
-            pool,
-            word_tree,
-            hash_cfg,
-        }))
+    Ok(word_tree)
 }

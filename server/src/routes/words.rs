@@ -1,3 +1,5 @@
+/*
+
 use crate::{routes::Response, AppState};
 use rocket::{http::Status, serde::json::Json, State};
 
@@ -8,3 +10,6 @@ pub fn check(state: &State<AppState>, word: String) -> Response<()> {
         false => Response::Err(Status::NotFound),
     }
 }
+
+
+*/

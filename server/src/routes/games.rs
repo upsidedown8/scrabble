@@ -1,3 +1,5 @@
+/*
+
 use crate::auth::{self, AuthenticatedUser};
 use crate::db::user::DbUser;
 
@@ -75,3 +77,6 @@ pub async fn join_game(
 ) -> Response<GameJoinResponse> {
     todo!()
 }
+
+
+*/
