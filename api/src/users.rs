@@ -19,13 +19,13 @@ pub struct UserProfile {
 //               Login route
 //--------------------------------------------
 #[derive(Debug, Serialize, Deserialize)]
-pub struct UserLogin {
+pub struct Login {
     pub username: String,
     pub password: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct UserLoginResponse {
+pub struct LoginResponse {
     pub auth: Auth,
     pub user_details: UserDetails,
 }
@@ -34,14 +34,14 @@ pub struct UserLoginResponse {
 //               Create user route
 //--------------------------------------------
 #[derive(Debug, Serialize, Deserialize)]
-pub struct UserCreate {
+pub struct SignUp {
     pub username: String,
     pub email: String,
     pub password: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct UserCreateResponse {
+pub struct SignUpResponse {
     pub auth: Auth,
     pub user_details: UserDetails,
 }
@@ -50,7 +50,7 @@ pub struct UserCreateResponse {
 //               Get user details route
 //--------------------------------------------
 #[derive(Debug, Serialize, Deserialize)]
-pub struct UserInfoResponse {
+pub struct ProfileResponse {
     pub auth: Auth,
     pub user_details: UserDetails,
 }
@@ -59,7 +59,7 @@ pub struct UserInfoResponse {
 //               Update user info route
 //--------------------------------------------
 #[derive(Debug, Serialize, Deserialize)]
-pub struct UserUpdate {
+pub struct UpdateAccount {
     pub old_password: String,
     pub email: Option<String>,
     pub username: Option<String>,
@@ -67,20 +67,14 @@ pub struct UserUpdate {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct UserUpdateResponse {
+pub struct UpdateAccountResponse {
     pub auth: Auth,
-    pub user_details: UserDetails,
 }
 
 //--------------------------------------------
 //               Delete user route
 //--------------------------------------------
 #[derive(Debug, Serialize, Deserialize)]
-pub struct DeleteUser {
+pub struct DeleteAccount {
     pub password: String,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct DeleteUserResponse {
-    pub user_details: UserDetails,
 }
