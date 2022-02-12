@@ -2,3 +2,4 @@
 //! to communicate.
 
 pub mod users;
+pub mod games;
