@@ -1,15 +1,23 @@
-/*
+use scrabble::game::word_tree::WordTree;
+use warp::{Filter, Rejection, Reply};
 
-use crate::{routes::Response, AppState};
-use rocket::{http::Status, serde::json::Json, State};
+pub fn all(
+    word_tree: &WordTree,
+) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone + '_ {
+    let check_route = warp::any()
+        .map(move || word_tree)
+        .and(warp::path::param())
+        .and(warp::get())
+        .and_then(check);
 
-#[get("/words/<word>")]
-pub fn check(state: &State<AppState>, word: String) -> Response<()> {
-    match state.word_tree.contains(&word) {
-        true => Response::Ok(Json::from(())),
-        false => Response::Err(Status::NotFound),
-    }
+    let routes = check_route;
+
+    warp::path("words").and(routes)
 }
 
-
-*/
+async fn check(word_tree: &WordTree, word: String) -> Result<impl Reply, Rejection> {
+    match word_tree.contains(&word) {
+        true => Ok(warp::reply::reply()),
+        false => Err(warp::reject::not_found()),
+    }
+}
