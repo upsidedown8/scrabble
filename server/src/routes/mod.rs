@@ -10,7 +10,7 @@ mod words;
 
 /// Gets a filter for all routes
 pub fn all(db: Db) -> impl Filter<Extract = (impl Reply,), Error = Infallible> + Clone {
-    let routes = users::all(db);
+    let routes = users::all(db.clone()).or(games::all(db));
 
     warp::path("api").and(routes).recover(handle_rejection)
 }

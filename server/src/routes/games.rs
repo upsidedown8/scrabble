@@ -1,82 +1,128 @@
-/*
+use std::{convert::Infallible, io::BufRead};
 
-use crate::auth::{self, AuthenticatedUser};
-use crate::db::user::DbUser;
-
-use crate::{routes::Response, AppState};
-use api::{users::*, games::*};
+use crate::{
+    auth::{self, authenticated_user, Jwt},
+    models::{with_db, Db},
+};
+use futures::{FutureExt, StreamExt};
+use serde::{Deserialize, Serialize};
+use tokio::sync::mpsc;
 use uuid::Uuid;
-use rocket::{http::Status, serde::json::Json, State};
+use warp::{
+    ws::{Message, WebSocket, Ws},
+    Filter, Rejection, Reply,
+};
 
-#[post("/games", data = "<req>", format = "json")]
-pub async fn create_game(
-    state: &State<AppState<'_>>,
-    req: Json<GameCreate>,
-    user: AuthenticatedUser,
-) -> Response<GameCreateResponse> {
-    todo!()
+pub fn all(db: Db) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone {
+    // let create_game_route = warp::any()
+    //     .and(warp::post())
+    //     .and(with_db(db.clone()))
+    //     .and(authenticated_user())
+    //     .and(warp::body::json())
+    //     .and_then(create_game);
+    // let delete_game_route = warp::any()
+    //     .and(warp::delete())
+    //     .and(with_db(db.clone()))
+    //     .and(authenticated_user())
+    //     .and(warp::path::param())
+    //     .and_then(delete_game);
+    // let make_play_route = warp::any()
+    //     .and(warp::post())
+    //     .and(with_db(db.clone()))
+    //     .and(authenticated_user())
+    //     .and(warp::path::param())
+    //     .and(warp::body::json())
+    //     .and_then(make_play);
+    // let get_plays_route = warp::any()
+    //     .and(warp::get())
+    //     .and(with_db(db.clone()))
+    //     .and(authenticated_user())
+    //     .and(warp::path::param())
+    //     .and(warp::query::query())
+    //     .and_then(get_plays);
+
+    // let routes = create_game_route
+    //     .or(delete_game_route)
+    //     .or(make_play_route)
+    //     .or(get_plays_route);
+
+    let web_socket_route = warp::path("ws")
+        .and(with_db(db))
+        .and(warp::ws())
+        .and_then(web_socket);
+
+    let routes = web_socket_route;
+
+    warp::path("games").and(routes)
 }
 
-#[delete("/games/<game_id>")]
-pub async fn delete_game(
-    state: &State<AppState>,
-    req: Json<GameDelete>,
-    user: AuthenticatedUser,
-    game_id: Uuid,
-) -> Response<GameDeleteResponse> {
-    todo!()
+async fn web_socket(db: Db, ws: Ws) -> Result<impl Reply, Infallible> {
+    log::info!("web_socket handler");
+
+    Ok(ws.on_upgrade(move |socket| client_connection(socket)))
 }
 
-#[post("/games/<game_id>/plays", data = "req", format = "json")]
-pub async fn make_play(
-    state: &State<AppState>,
-    req: Json<GameMakePlay>,
-    user: AuthenticatedUser,
-    game_id: Uuid,
-) -> Response<GameMakePlayResponse> {
-    todo!()
+pub async fn client_connection(ws: WebSocket) {
+    log::info!("establishing client connection... {:#?}", ws);
+
+    let (tx, rx) = ws.split();
+
+    rx.forward(tx)
+        .map(|result| {
+            if let Err(e) = result {
+                eprintln!("ws error: {:?}", e);
+            }
+        })
+        .await;
 }
 
-#[get("/games/<game_id>/plays&count=0")]
-pub async fn get_plays(
-    state: &State<AppState>,
-    req: Json<GameGetPlays>,
-    user: AuthenticatedUser,
-    count: usize,
-    game_id: Uuid,
-) -> Response<GameGetPlaysResponse> {
-    todo!()
-}
+// /// POST /api/games [+Auth]
+// async fn create_game(db: Db, jwt: Jwt, create_game: CreateGame) -> Result<impl Reply, Rejection> {
+//     todo!()
+// }
 
-#[get("/games/<game_id>/players")]
-pub async fn get_players(
-    state: &State<AppState>,
-    req: Json<GameGetPlayers>,
-    user: AuthenticatedUser,
-    game_id: Uuid,
-) -> Response<GameGetPlayersResponse> {
-    todo!()
-}
+// /// DELETE /api/games/:game_id [+Auth]
+// async fn delete_game(db: Db, jwt: Jwt, game_id: Uuid) -> Result<impl Reply, Rejection> {
+//     todo!()
+// }
 
-#[post("/games/<game_id>/players")]
-pub async fn join_game(
-    state: &State<AppState>,
-    req: Json<GameJoin>,
-    user: AuthenticatedUser,
-    game_id: Uuid,
-) -> Response<GameJoinResponse> {
-    todo!()
-}
+// /// POST /api/games/:game_id/plays [+Auth]
+// async fn make_play(
+//     db: Db,
+//     jwt: Jwt,
+//     game_id: Uuid,
+//     make_play: MakePlay,
+// ) -> Result<impl Reply, Rejection> {
+//     todo!()
+// }
 
-#[delete("/games/<game_id>/players")]
-pub async fn join_game(
-    state: &State<AppState>,
-    req: Json<GameJoin>,
-    user: AuthenticatedUser,
-    game_id: Uuid,
-) -> Response<GameJoinResponse> {
-    todo!()
-}
+// #[derive(Deserialize)]
+// struct GetPlaysQuery {
+//     count: Option<usize>,
+//     offset: Option<usize>,
+// }
 
+// /// GET /api/games/:game_id/plays&count=0&offset=0
+// async fn get_plays(
+//     db: Db,
+//     jwt: Jwt,
+//     game_id: Uuid,
+//     query: GetPlaysQuery,
+// ) -> Result<impl Reply, Rejection> {
+//     todo!()
+// }
 
-*/
+// /// GET /api/games/:game_id/players [+Auth]
+// async fn get_players(db: Db, jwt: Jwt, game_id: Uuid) -> Result<impl Reply, Rejection> {]
+//     todo!()
+// }
+
+// /// DELETE /api/games/:game_id/players
+// async fn leave_game(db: Db, jwt: Jwt, game_id: Uuid) -> Result<impl Reply, Rejection> {
+//     todo!()
+// }
+
+// /// POST /api/games/:game_id/players
+// async fn join_game(db: Db, jwt: Jwt, game_id: Uuid) -> Result<impl Reply, Rejection> {
+//     todo!()
+// }
