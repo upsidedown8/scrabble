@@ -1,1 +1,1 @@
-docker run -p 3030:3030 -t server
+docker run -d -p 8080:8080 server
