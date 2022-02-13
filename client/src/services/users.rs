@@ -11,13 +11,13 @@ pub async fn sign_up(req: &SignUp) -> anyhow::Result<SignUpResponse> {
 }
 
 pub async fn delete(req: &DeleteAccount) -> anyhow::Result<()> {
-    make_request("/user", req, Method::DELETE).await
+    make_request("/users", req, Method::DELETE).await
 }
 
 pub async fn update(req: &UpdateAccount) -> anyhow::Result<UpdateAccountResponse> {
-    make_request("/user", req, Method::PUT).await
+    make_request("/users", req, Method::PUT).await
 }
 
 pub async fn get() -> anyhow::Result<ProfileResponse> {
-    make_request("/user", &(), Method::GET).await
+    make_request("/users", &(), Method::GET).await
 }
