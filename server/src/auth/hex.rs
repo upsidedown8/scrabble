@@ -36,7 +36,7 @@ pub fn decode(hex: &str) -> Vec<u8> {
         byte = (byte << 4) | value;
 
         if i % 2 == 0 {
-            bytes.push(byte & 0xff);
+            bytes.push(byte);
         }
     }
 
