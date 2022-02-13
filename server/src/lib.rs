@@ -6,6 +6,7 @@ use tokio::{
     fs::File,
     io::{AsyncBufReadExt, BufReader},
 };
+use warp::{http::Method, Filter};
 
 mod auth;
 mod error;
@@ -16,7 +17,19 @@ mod routes;
 pub async fn serve(addr: impl Into<SocketAddr>) {
     let db = connect_db().await.unwrap();
 
-    warp::serve(routes::all(db)).run(addr).await;
+    let routes = routes::all(db);
+    let cors = warp::cors()
+        .allow_any_origin()
+        .allow_methods(&[
+            Method::GET,
+            Method::OPTIONS,
+            Method::POST,
+            Method::DELETE,
+            Method::PUT,
+        ])
+        .allow_headers(vec!["authorization", "content-type"]);
+
+    warp::serve(routes.with(cors)).run(addr).await;
 }
 
 /// Connects to the database at $DATABASE_URL.
