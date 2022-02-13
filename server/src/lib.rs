@@ -15,6 +15,9 @@ mod routes;
 
 /// Starts the server on the given address.
 pub async fn serve(addr: impl Into<SocketAddr>) {
+    let cert_path = env::var("CERT_PATH").expect("`CERT_PATH` env variable to be set");
+    let key_path = env::var("KEY_PATH").expect("`KEY_PATH` env variable to be set");
+
     let db = connect_db().await.unwrap();
     let routes = routes::all(db);
     let cors = warp::cors()
@@ -28,7 +31,12 @@ pub async fn serve(addr: impl Into<SocketAddr>) {
         ])
         .allow_headers(vec!["authorization", "content-type"]);
 
-    warp::serve(routes.with(cors)).tls().run(addr).await;
+    warp::serve(routes.with(cors))
+        .tls()
+        .cert_path(cert_path)
+        .key_path(key_path)
+        .run(addr)
+        .await;
 }
 
 /// Connects to the database at $DATABASE_URL.
