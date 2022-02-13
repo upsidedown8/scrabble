@@ -89,11 +89,12 @@ pub struct Jwt(Claims);
 impl Jwt {
     /// Creates a new json web token from a user id and role.
     pub fn new(id_user: Uuid, role: Role) -> Self {
-        // get current time, and add `JWT_EXPIRY_SECONDS` to get final time
-        let exp_time = Utc::now() + *JWT_EXPIRY_DURATION;
-        let exp = exp_time.timestamp() as usize;
-
-        Jwt(Claims { exp, id_user, role })
+        // exp is set when `to_auth` is called
+        Jwt(Claims {
+            exp: 0,
+            id_user,
+            role,
+        })
     }
     /// Validates and decodes the JWT.
     pub fn from_auth_token(token: &str, role: Role) -> Result<Self> {
@@ -115,9 +116,13 @@ impl Jwt {
     pub fn id_user(&self) -> &Uuid {
         &self.0.id_user
     }
-    /// Encodes the JWT, using the secret and expiry time
+    /// Encodes the JWT, using the secret and expiry time offset
     /// from the `.env` file.
-    pub fn to_auth(&self) -> Result<Auth> {
+    pub fn to_auth(mut self) -> Result<Auth> {
+        // get current time, and add `JWT_EXPIRY_SECONDS` to get final time
+        let exp_time = Utc::now() + *JWT_EXPIRY_DURATION;
+        self.0.exp = exp_time.timestamp() as usize;
+
         let claims = &self.0;
 
         encode(&HEADER, claims, &ENCODING_KEY)
