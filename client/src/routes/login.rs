@@ -1,5 +1,5 @@
 use crate::{contexts::use_auth_context, services::users};
-use api::users::UserLogin;
+use api::users::Login;
 use web_sys::HtmlInputElement;
 use yew::prelude::*;
 use yew_hooks::{use_async, use_bool_toggle};
@@ -19,7 +19,7 @@ pub fn login_route() -> Html {
         use_async(async move {
             let username = username_ref.cast::<HtmlInputElement>().unwrap().value();
             let password = password_ref.cast::<HtmlInputElement>().unwrap().value();
-            let user_login = UserLogin { username, password };
+            let user_login = Login { username, password };
 
             let res = users::login(&user_login)
                 .await

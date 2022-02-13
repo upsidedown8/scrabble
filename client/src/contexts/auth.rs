@@ -1,7 +1,7 @@
 //! Provides a context to store the user details, and API token.
 
 use crate::routes::AppRoute;
-use api::users::{UserCreateResponse, UserDetails, UserLoginResponse};
+use api::users::{LoginResponse, SignUpResponse, UserDetails};
 use gloo::storage::{LocalStorage, Storage};
 use std::{ops::Deref, sync::RwLock};
 use yew::prelude::*;
@@ -59,13 +59,13 @@ impl AuthContextHandle {
     /// Logins in a user using the response from the
     /// corresponding api route and navigates to the
     /// [`Account`](AppRoute::Account) page.
-    pub fn login(&self, response: UserLoginResponse) {
+    pub fn login(&self, response: LoginResponse) {
         set_token(Some(response.auth.0));
         self.auth_state.set(response.user_details);
         self.history.push(AppRoute::Account);
     }
-    pub fn login_signup(&self, response: UserCreateResponse) {
-        let response = UserLoginResponse {
+    pub fn login_signup(&self, response: SignUpResponse) {
+        let response = LoginResponse {
             auth: response.auth,
             user_details: response.user_details,
         };

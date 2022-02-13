@@ -1,5 +1,5 @@
 use crate::{contexts::use_auth_context, services::users};
-use api::users::UserCreate;
+use api::users::SignUp;
 use web_sys::HtmlInputElement;
 use yew::prelude::*;
 use yew_hooks::{use_async, use_bool_toggle};
@@ -22,13 +22,13 @@ pub fn sign_up_route() -> Html {
             let username = username_ref.cast::<HtmlInputElement>().unwrap().value();
             let email = email_ref.cast::<HtmlInputElement>().unwrap().value();
             let password = password_ref.cast::<HtmlInputElement>().unwrap().value();
-            let user_create = UserCreate {
+            let user_create = SignUp {
                 username,
                 email,
                 password,
             };
 
-            let res = users::create(&user_create)
+            let res = users::sign_up(&user_create)
                 .await
                 .map_err(|_| String::from("error"));
 

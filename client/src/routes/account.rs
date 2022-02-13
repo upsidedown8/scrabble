@@ -1,4 +1,4 @@
-use api::users::DeleteUser;
+use api::users::DeleteAccount;
 use web_sys::HtmlInputElement;
 use yew::prelude::*;
 use yew_hooks::{use_async, use_bool_toggle};
@@ -18,7 +18,7 @@ pub fn account_route() -> Html {
 
         use_async(async move {
             let password = password_ref.cast::<HtmlInputElement>().unwrap().value();
-            let user_delete = DeleteUser { password };
+            let user_delete = DeleteAccount { password };
 
             let res = users::delete(&user_delete)
                 .await

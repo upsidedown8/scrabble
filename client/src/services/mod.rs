@@ -4,7 +4,7 @@ use serde::{de::DeserializeOwned, Serialize};
 
 pub mod users;
 
-static API_URL: &str = "http://localhost:8000/api";
+static API_URL: &str = "http://localhost:3030/api";
 
 pub async fn make_request<T, U>(url: &str, data: &T, method: Method) -> anyhow::Result<U>
 where
