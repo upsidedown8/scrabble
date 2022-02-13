@@ -3,3 +3,5 @@ target/
 *.db
 *.db-wal
 *.db-shm
+*.rsa
+*.pem
