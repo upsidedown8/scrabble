@@ -39,7 +39,7 @@ pub fn all(db: Db) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + 
         .and_then(delete);
     let update_route = warp::any()
         .and(warp::put())
-        .and(with_db(db.clone()))
+        .and(with_db(db))
         .and(authenticated_user())
         .and(warp::body::json())
         .and_then(update);
@@ -64,7 +64,7 @@ async fn login(db: Db, login: Login) -> Result<impl Reply, Rejection> {
 
     Ok(warp::reply::json(&ProfileResponse {
         auth: jwt.to_auth()?,
-        user_details: user.to_user_details(),
+        user_details: user.into_user_details(),
     }))
 }
 
@@ -87,7 +87,7 @@ async fn sign_up(db: Db, sign_up: SignUp) -> Result<impl Reply, Rejection> {
 
     Ok(warp::reply::json(&SignUpResponse {
         auth: jwt.to_auth()?,
-        user_details: user.to_user_details(),
+        user_details: user.into_user_details(),
     }))
 }
 
@@ -104,13 +104,11 @@ async fn sign_up_admin(db: Db, jwt: Jwt, sign_up: SignUp) -> Result<impl Reply, 
         role: Role::Admin.to_string(),
     };
 
-    let jwt = Jwt::new(id_user, Role::User);
-
     user.insert(&db).await?;
 
     Ok(warp::reply::json(&SignUpResponse {
         auth: jwt.to_auth()?,
-        user_details: user.to_user_details(),
+        user_details: user.into_user_details(),
     }))
 }
 
@@ -120,7 +118,7 @@ async fn profile(db: Db, jwt: Jwt) -> Result<impl Reply, Rejection> {
 
     Ok(warp::reply::json(&ProfileResponse {
         auth: jwt.to_auth()?,
-        user_details: user.to_user_details(),
+        user_details: user.into_user_details(),
     }))
 }
 
@@ -137,11 +135,10 @@ async fn update(db: Db, jwt: Jwt, update: UpdateAccount) -> Result<impl Reply, R
     };
 
     let updated_user = User {
-        id_user: user.id_user.clone(),
         username: update.username.unwrap_or_else(|| user.username.clone()),
         email: update.email.unwrap_or_else(|| user.email.clone()),
         hashed_pass,
-        role: user.role.clone(),
+        ..user.clone()
     };
 
     updated_user.update(&db).await?;
