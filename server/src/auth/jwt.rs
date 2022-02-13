@@ -6,7 +6,7 @@ use api::auth::Auth;
 use chrono::{Duration, Utc};
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
-use std::env;
+use std::{env, fmt};
 use uuid::Uuid;
 
 lazy_static::lazy_static! {
@@ -51,12 +51,18 @@ impl Role {
             _ => Role::User,
         }
     }
-    /// Converts the role to a string.
-    pub fn to_string(&self) -> String {
-        String::from(match self {
-            Role::User => "User",
-            Role::Admin => "Admin",
-        })
+}
+
+impl fmt::Display for Role {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Role::User => "User",
+                Role::Admin => "Admin",
+            }
+        )
     }
 }
 
@@ -94,14 +100,14 @@ impl Jwt {
         // the decode function also checks that the expiry is valid.
         let jwt = decode::<Claims>(token, &DECODING_KEY, &VALIDATION)
             .map(|token_data| Jwt(token_data.claims))
-            .map_err(Error::JwtDecodingError)?;
+            .map_err(Error::JwtDecoding)?;
         let has_role = match role {
             Role::Admin => jwt.0.role == Role::Admin,
             Role::User => true,
         };
 
         match has_role {
-            false => Err(Error::InsufficientRoleError),
+            false => Err(Error::InsufficientRole),
             true => Ok(jwt),
         }
     }
@@ -116,6 +122,6 @@ impl Jwt {
 
         encode(&HEADER, claims, &ENCODING_KEY)
             .map(Auth)
-            .map_err(Error::JwtEncodingError)
+            .map_err(Error::JwtEncoding)
     }
 }
