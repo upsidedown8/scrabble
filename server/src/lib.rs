@@ -16,7 +16,6 @@ mod routes;
 /// Starts the server on the given address.
 pub async fn serve(addr: impl Into<SocketAddr>) {
     let db = connect_db().await.unwrap();
-
     let routes = routes::all(db);
     let cors = warp::cors()
         .allow_any_origin()
@@ -29,7 +28,7 @@ pub async fn serve(addr: impl Into<SocketAddr>) {
         ])
         .allow_headers(vec!["authorization", "content-type"]);
 
-    warp::serve(routes.with(cors)).run(addr).await;
+    warp::serve(routes.with(cors)).tls().run(addr).await;
 }
 
 /// Connects to the database at $DATABASE_URL.

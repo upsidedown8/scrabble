@@ -6,10 +6,10 @@ edition = "2021"
 [dependencies]
 scrabble = { path = "../scrabble" }
 api = { path = "../api" }
-warp = "0.3.2"
+warp = { version = "0.3.2", features = ["tls"] }
 rand = "0.8.4"
 rust-argon2 = "1"
-tokio = { version = "1", features = ["full"] }
+tokio = { version = "1", features = ["rt", "rt-multi-thread", "macros"] }
 serde = { version = "1.0", features = ["derive"] }
 lazy_static = "1"
 jsonwebtoken = "8.0.1"
