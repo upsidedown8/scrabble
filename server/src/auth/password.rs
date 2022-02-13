@@ -17,12 +17,11 @@ pub fn hash(pwd: &str) -> String {
 
 /// Verifies that a password matches the stored hash.
 pub fn verify(encoded_hash: &str, pwd: &str) -> Result<()> {
-    let verified =
-        argon2::verify_encoded(encoded_hash, pwd.as_bytes()).map_err(Error::Argon2Error)?;
+    let verified = argon2::verify_encoded(encoded_hash, pwd.as_bytes()).map_err(Error::Argon2)?;
 
     match verified {
         true => Ok(()),
-        false => Err(Error::IncorrectPasswordError),
+        false => Err(Error::IncorrectPassword),
     }
 }
 
@@ -34,6 +33,6 @@ pub fn verify(encoded_hash: &str, pwd: &str) -> Result<()> {
 // }
 
 /// Checks that the password has sufficient strength.
-pub fn check_password_strength(pwd: &str) -> Result<()> {
+pub fn check_password_strength(_pwd: &str) -> Result<()> {
     Ok(())
 }

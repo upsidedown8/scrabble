@@ -36,12 +36,12 @@ async fn validate((role, header_map): (Role, HeaderMap)) -> Result<Jwt, Rejectio
 
     let auth_header = header_map
         .get(AUTHORIZATION)
-        .ok_or(Error::MissingAuthHeaderError)?
+        .ok_or(Error::MissingAuthHeader)?
         .to_str()
-        .map_err(|_| Error::InvalidAuthHeaderError)?;
+        .map_err(|_| Error::InvalidAuthHeader)?;
 
     if !auth_header.starts_with(BEARER) {
-        Err(Error::InvalidAuthHeaderError)?;
+        return Err(Error::InvalidAuthHeader.into());
     }
 
     let token = auth_header.trim_start_matches(BEARER).trim_end();

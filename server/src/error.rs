@@ -4,30 +4,30 @@ impl warp::reject::Reject for Error {}
 
 impl From<sqlx::Error> for Error {
     fn from(err: sqlx::Error) -> Self {
-        Self::SqlxError(err)
+        Self::Sqlx(err)
     }
 }
 impl From<uuid::Error> for Error {
     fn from(err: uuid::Error) -> Self {
-        Self::UuidError(err)
+        Self::Uuid(err)
     }
 }
 impl From<argon2::Error> for Error {
     fn from(err: argon2::Error) -> Self {
-        Self::Argon2Error(err)
+        Self::Argon2(err)
     }
 }
 
 #[derive(Debug)]
 pub enum Error {
-    SqlxError(sqlx::Error),
-    UuidError(uuid::Error),
-    Argon2Error(argon2::Error),
-    UsernameExistsError,
-    InsufficientRoleError,
-    MissingAuthHeaderError,
-    InvalidAuthHeaderError,
-    IncorrectPasswordError,
-    JwtEncodingError(jsonwebtoken::errors::Error),
-    JwtDecodingError(jsonwebtoken::errors::Error),
+    Sqlx(sqlx::Error),
+    Uuid(uuid::Error),
+    Argon2(argon2::Error),
+    UsernameExists,
+    InsufficientRole,
+    MissingAuthHeader,
+    InvalidAuthHeader,
+    IncorrectPassword,
+    JwtEncoding(jsonwebtoken::errors::Error),
+    JwtDecoding(jsonwebtoken::errors::Error),
 }

@@ -25,10 +25,10 @@ impl User {
     }
     /// Parses the id_user column.
     pub fn id_user(&self) -> Result<Uuid> {
-        Uuid::parse_str(&self.id_user).map_err(Error::UuidError)
+        Uuid::parse_str(&self.id_user).map_err(Error::Uuid)
     }
     /// Converts to `api::users::UserDetails`.
-    pub fn to_user_details(self) -> UserDetails {
+    pub fn into_user_details(self) -> UserDetails {
         UserDetails {
             username: self.username,
             email: self.email,
@@ -42,7 +42,7 @@ impl User {
             .await?;
         match count == 0 {
             true => Ok(()),
-            false => Err(Error::UsernameExistsError),
+            false => Err(Error::UsernameExists),
         }
     }
     /// Finds a user from the user table by id.
