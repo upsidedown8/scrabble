@@ -1,5 +1,8 @@
 FROM rust:latest
-COPY ./ ./
+COPY ./server ./server
+COPY ./api ./api
+COPY ./scrabble ./scrabble
+WORKDIR "/server"
 RUN cargo build --release
 RUN openssl req -newkey rsa:2048 -new -nodes -x509 \
     -days 3650 \
