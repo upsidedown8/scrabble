@@ -1,6 +1,6 @@
 //! Models the scrabble board.
 
-use crate::game::{
+use crate::{
     bitboard::BitBoard,
     bitboard::Bits,
     error::{GameError, GameResult},

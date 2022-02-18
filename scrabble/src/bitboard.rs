@@ -1,7 +1,7 @@
 //! Module containing a bitboard implementation to represent
 //! the occupancy on the 15 x 15 board.
 
-use crate::game::{board::write_grid, pos::Pos};
+use crate::{board::write_grid, pos::Pos};
 use std::{
     fmt,
     ops::{

@@ -1,6 +1,6 @@
 //! Models the [`LetterBag`].
 
-use crate::game::{
+use crate::{
     rack::{TileCounts, RACK_SIZE},
     tile::Tile,
 };
@@ -126,7 +126,7 @@ impl LetterBag {
 
 #[cfg(test)]
 mod tests {
-    use crate::game::{letter_bag::LetterBag, rack::RACK_SIZE, tile::Tile};
+    use crate::{letter_bag::LetterBag, rack::RACK_SIZE, tile::Tile};
 
     #[test]
     fn draw_limits() {

@@ -1,7 +1,7 @@
 //! Module containing newtypes representing checked board [`position`](Pos)s,
 //! [`row`](Row)s, [`column`](Col)s and orthagonal directions.
 
-use crate::game::{
+use crate::{
     board::{CELLS, COLS, ROWS},
     tile::Letter,
 };

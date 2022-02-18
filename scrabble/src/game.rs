@@ -9,7 +9,7 @@
 
 use std::fmt;
 
-use self::{
+use crate::{
     board::Board,
     error::{GameError, GameResult},
     letter_bag::LetterBag,
@@ -17,16 +17,6 @@ use self::{
     rack::Rack,
     word_tree::WordTree,
 };
-
-pub mod bitboard;
-pub mod board;
-pub mod error;
-pub mod letter_bag;
-pub mod play;
-pub mod pos;
-pub mod rack;
-pub mod tile;
-pub mod word_tree;
 
 /// The reason that the game has ended.
 #[derive(Clone, Debug)]

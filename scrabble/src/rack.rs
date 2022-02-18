@@ -1,6 +1,6 @@
 //! Models the scrabble Rack.
 
-use crate::game::{
+use crate::{
     error::{GameError, GameResult},
     letter_bag::LetterBag,
     tile::Tile,
