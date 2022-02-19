@@ -1,33 +1,11 @@
 [package]
 name = "client"
 version = "0.1.0"
+authors = ["Tom Thorogood <tomthorogood@outlook.com>"]
 edition = "2021"
 
 [dependencies]
-# for displaying the web page
-yew = "0.19"
-yew-router = "0.16"
-yew-hooks = "0.1.20"
-
-# core game types and AI logic
-scrabble = { path = "../scrabble" }
-
-# for communicating with api
 api = { path = "../api" }
+scrabble = { path = "../scrabble" }
 serde = "1.0"
-lazy_static = "1.4"
-gloo = "0.6.0"
-uuid = { version = "0.8", features = ["serde", "v4"] }
-reqwest = { version = "0.11.9", features = ["json"] }
-
-# for logging
-log = "0.4.14"
-wasm-logger = "0.2.0"
-
-# error handling
-anyhow = "1.0.45"
-
-# for handling forms
-[dependencies.web-sys]
-version = "0.3"
-features = [ "HtmlInputElement" ]
+seed = "0.8.0"

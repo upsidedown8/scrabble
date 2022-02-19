@@ -1,27 +1,26 @@
-use super::square::Square;
-use scrabble::game::pos::{Col, Pos, Row};
-use yew::prelude::*;
+use seed::{prelude::*, *};
+use scrabble::{tile::Tile, pos::{Col, Row, Pos}, board::{COLS, CELLS}};
+use super::square;
 
-/// Properties for [`Board`].
-#[derive(Properties, PartialEq)]
-pub struct BoardProps {
-    /// The single dimensional array containing the
-    /// tile positions.
-    pub tiles: [Option<scrabble::game::tile::Tile>; 225],
+/// Display one of the 15 rows of the board.
+fn view_row<Msg>((tiles, row): (&[Option<Tile>], Row)) -> Node<Msg> {
+    div! [
+        C! [ "board-row" ],
+        Col::iter()
+            .map(|col| Pos::from((row, col)))
+            .zip(tiles)
+            .map(square::view)
+    ]
 }
 
-/// The scrabble board.
-#[function_component(Board)]
-pub fn board(props: &BoardProps) -> Html {
-    html! {
-        <div class="board">
-        { for Row::iter().map(|row| html! {
-            <div class="board-row">
-            { for Col::iter().map(|col| Pos::from((row, col))).map(|pos| html! {
-                <Square {pos} tile={props.tiles[usize::from(pos)]} />
-            })}
-            </div>
-        })}
-        </div>
-    }
+/// View the scrabble board, providing a single dimensional array containing
+/// the 225 optional tiles.
+pub fn view<Msg>(tiles: &[Option<Tile>; CELLS]) -> Node<Msg> {
+    div! [
+        C! [ "board" ],
+        tiles
+            .chunks_exact(COLS)
+            .zip(Row::iter())
+            .map(view_row)
+    ]
 }

@@ -1,40 +1,25 @@
+use seed::{prelude::*, *};
+use scrabble::{pos::{Pos, PosBonus}, tile::Tile};
 use super::tile;
-use scrabble::game::{
-    pos::{Pos, PosBonus},
-    tile::Tile,
-};
-use yew::prelude::*;
 
-#[derive(Properties, PartialEq)]
-pub struct SquareProps {
-    /// Position of the square on the board.
-    pub pos: Pos,
-    /// Tile placed on the square.
-    pub tile: Option<Tile>,
+/// The class used to style squares with a particular bonus.
+fn bonus_class(bonus: PosBonus) -> &'static str {
+    match bonus {
+        PosBonus::DoubleLetter => "double-letter",
+        PosBonus::TripleLetter => "triple-letter",
+        PosBonus::DoubleWord => "double-word",
+        PosBonus::TripleWord => "triple-word",
+        PosBonus::Start => "start",
+    }
 }
 
 /// One of 225 squares that make up the board. Each square
 /// is provided its board position in `Props`, so that it
 /// can render the bonus (if any), along with the (optional)
 /// tile which is placed in the square.
-#[function_component(Square)]
-pub fn square(props: &SquareProps) -> Html {
-    let bonus = match props.pos.bonus() {
-        None => "",
-        Some(bonus) => match bonus {
-            PosBonus::DoubleLetter => "double-letter",
-            PosBonus::TripleLetter => "triple-letter",
-            PosBonus::DoubleWord => "double-word",
-            PosBonus::TripleWord => "triple-word",
-            PosBonus::Start => "start",
-        },
-    };
-
-    html! {
-        <div class={classes!(bonus, "square")}>
-            if let Some(tile) = props.tile {
-                <tile::Tile {tile} />
-            }
-        </div>
-    }
+pub fn view<Msg>((pos, tile): (Pos, &Option<Tile>)) -> Node<Msg> {
+    div! [
+        C! [ "square", pos.bonus().map(bonus_class) ],
+        tile.as_ref().map(|t| tile::view(t))
+    ]
 }
