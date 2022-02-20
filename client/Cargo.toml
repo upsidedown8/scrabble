@@ -8,4 +8,14 @@ edition = "2021"
 api = { path = "../api" }
 scrabble = { path = "../scrabble" }
 serde = "1.0"
-seed = "0.8.0"
+wee_alloc = "0.4.5"
+sycamore = "0.8.0-beta.2"
+sycamore-router = "0.8.0-beta.2"
+log = "0.4.6"
+wasm-logger = "0.2.0"
+
+[profile.release]
+panic = 'abort'
+codegen-units = 1
+opt-level = 's'
+lto = true

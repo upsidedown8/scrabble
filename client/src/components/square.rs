@@ -1,25 +1,43 @@
-use seed::{prelude::*, *};
-use scrabble::{pos::{Pos, PosBonus}, tile::Tile};
-use super::tile;
+use sycamore::prelude::*;
+use scrabble::{pos::{Pos, PosBonus}, tile};
 
-/// The class used to style squares with a particular bonus.
-fn bonus_class(bonus: PosBonus) -> &'static str {
-    match bonus {
-        PosBonus::DoubleLetter => "double-letter",
-        PosBonus::TripleLetter => "triple-letter",
-        PosBonus::DoubleWord => "double-word",
-        PosBonus::TripleWord => "triple-word",
-        PosBonus::Start => "start",
+/// The class used to style squares with a bonus.
+fn bonus_class(pos: Pos) -> &'static str {
+    match pos.bonus() {
+        None => "",
+        Some(PosBonus::DoubleLetter) => "double-letter",
+        Some(PosBonus::TripleLetter) => "triple-letter",
+        Some(PosBonus::DoubleWord) => "double-word",
+        Some(PosBonus::TripleWord) => "triple-word",
+        Some(PosBonus::Start) => "start",
     }
+}
+
+pub struct SquareProps<'a> {
+    pos: Pos,
+    tile: &'a Signal<Option<tile::Tile>>,
 }
 
 /// One of 225 squares that make up the board. Each square
 /// is provided its board position in `Props`, so that it
 /// can render the bonus (if any), along with the (optional)
 /// tile which is placed in the square.
-pub fn view<Msg>((pos, tile): (Pos, &Option<Tile>)) -> Node<Msg> {
-    div! [
-        C! [ "square", pos.bonus().map(bonus_class) ],
-        tile.as_ref().map(|t| tile::view(t))
-    ]
+#[component]
+pub fn Square<'a, G: Html>(
+    ctx: ScopeRef<'a>,
+    SquareProps {
+        pos,
+        tile
+    }: SquareProps<'a>
+) -> View<G> {
+    view! { ctx,
+        div(class=format!("square {}", bonus_class(pos))) {
+            (match *tile.get() {
+                Some(tile) => view! { ctx,
+                    (tile)
+                },
+                None => view! { ctx, }
+            })
+        }
+    }
 }

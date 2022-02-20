@@ -1,7 +1,12 @@
-use seed::{prelude::*, *};
+use sycamore::prelude::*;
 
-pub fn view<Msg>() -> Node<Msg> {
-    div! [
-        C! ["account-route"],
-    ]
+#[component]
+pub fn AccountPage<G: Html>(ctx: ScopeRef) -> View<G> {
+    view! { ctx,
+        div(class="account-route") {
+            h1 {
+                "Account"
+            }
+        }
+    }
 }

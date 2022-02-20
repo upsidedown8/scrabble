@@ -1,11 +1,12 @@
-use seed::{prelude::*, *};
-use crate::components::board;
+use sycamore::prelude::*;
 
-pub fn view<Msg>() -> Node<Msg> {
-    div! [
-        C! ["home-route"],
-
-        h1! [ "HOME" ],
-        board::view(&[None; 225]),
-    ]
+#[component]
+pub fn HomePage<G: Html>(ctx: ScopeRef) -> View<G> {
+    view! { ctx,
+        div(class="home-route") {
+            h1 {
+                "Home"
+            }
+        }
+    }
 }
