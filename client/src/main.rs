@@ -1,3 +1,4 @@
+use log::Level;
 use sycamore::prelude::*;
 use client::App;
 
@@ -5,9 +6,9 @@ use client::App;
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 fn main() {
-    wasm_logger::init(wasm_logger::Config::default());
+    console_error_panic_hook::set_once();
+    wasm_logger::init(wasm_logger::Config::new(Level::Trace));
     sycamore::render(|ctx| view! { ctx,
-        h1 { "App" }
         App()
     });
 }
