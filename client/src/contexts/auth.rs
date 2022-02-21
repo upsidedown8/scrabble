@@ -1,7 +1,8 @@
 use api::auth::Auth;
 use sycamore::prelude::{ScopeRef, RcSignal};
+use serde::{Serialize, Deserialize};
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct AuthCtx {
     pub username: String,
     pub auth: Auth,
