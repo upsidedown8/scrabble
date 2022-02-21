@@ -1,23 +1,26 @@
+use crate::error::Error;
+
 use super::make_request;
 use api::users::*;
-use reqwest::Method;
+use reqwasm::http::Method;
+use sycamore::prelude::ScopeRef;
 
-pub async fn login(req: &Login) -> anyhow::Result<LoginResponse> {
-    make_request("/users/login", req, Method::POST).await
+pub async fn login(ctx: ScopeRef<'_>, req: &Login) -> Result<LoginResponse, Error> {
+    make_request(ctx, "/users/login", req, Method::POST).await
 }
 
-pub async fn sign_up(req: &SignUp) -> anyhow::Result<SignUpResponse> {
-    make_request("/users", req, Method::POST).await
+pub async fn sign_up(ctx: ScopeRef<'_>, req: &SignUp) -> Result<SignUpResponse, Error> {
+    make_request(ctx, "/users", req, Method::POST).await
 }
 
-pub async fn delete(req: &DeleteAccount) -> anyhow::Result<()> {
-    make_request("/users", req, Method::DELETE).await
+pub async fn profile(ctx: ScopeRef<'_>) -> Result<ProfileResponse, Error> {
+    make_request(ctx, "/users", &(), Method::GET).await
 }
 
-pub async fn update(req: &UpdateAccount) -> anyhow::Result<UpdateAccountResponse> {
-    make_request("/users", req, Method::PUT).await
+pub async fn update(ctx: ScopeRef<'_>, req: &UpdateAccount) -> Result<UpdateAccountResponse, Error> {
+    make_request(ctx, "/users", req, Method::PUT).await
 }
 
-pub async fn get() -> anyhow::Result<ProfileResponse> {
-    make_request("/users", &(), Method::GET).await
+pub async fn delete(ctx: ScopeRef<'_>, req: &DeleteAccount) -> Result<(), Error> {
+    make_request(ctx, "/users", req, Method::DELETE).await
 }
