@@ -2,10 +2,12 @@ use sycamore::prelude::*;
 use sycamore_router::{Route, Router, HistoryIntegration};
 
 mod components;
+mod contexts;
 mod routes;
 mod services;
 
-use components::Navbar;
+use contexts::auth::AuthCtx;
+use components::{Navbar, Footer};
 use routes::*;
 
 #[derive(Route, Debug, Clone, Copy)]
@@ -24,6 +26,9 @@ enum AppRoutes {
 
 #[component]
 pub fn App<G: Html>(ctx: ScopeRef) -> View<G> {
+    let auth_ctx = create_rc_signal::<Option<AuthCtx>>(None);
+    ctx.provide_context(auth_ctx);
+    
     view! { ctx,
         Navbar {}
         Router {
@@ -38,6 +43,6 @@ pub fn App<G: Html>(ctx: ScopeRef) -> View<G> {
                 }
             }
         }
-        // Footer {}
+        Footer {}
     }
 }
