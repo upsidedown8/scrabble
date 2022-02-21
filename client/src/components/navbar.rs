@@ -60,6 +60,8 @@ fn NavbarStart<'a, G: Html>(ctx: ScopeRef<'a>, _logged_in: &'a ReadSignal<bool>)
 
 #[component]
 fn NavbarEnd<'a, G: Html>(ctx: ScopeRef<'a>, logged_in: &'a ReadSignal<bool>) -> View<G> {
+    let onlogout = |_| use_auth_ctx(ctx).set(None);
+
     view! { ctx,
         div(class="navbar-end") {
             div(class="navbar-item") {
@@ -69,7 +71,7 @@ fn NavbarEnd<'a, G: Html>(ctx: ScopeRef<'a>, logged_in: &'a ReadSignal<bool>) ->
                             a(class="button is-light", href="/account") {
                                 "Account"
                             }
-                            a(class="button is-primary") {
+                            a(class="button is-primary", on:click=onlogout, href="/") {
                                 "Log out"
                             }
                         },
