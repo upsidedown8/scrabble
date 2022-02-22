@@ -4,7 +4,7 @@ use crate::{
 };
 use api::users::{
     DeleteAccount, Login, ProfileResponse, SignUp, SignUpResponse, UpdateAccount,
-    UpdateAccountResponse,
+    UpdateAccountResponse, LoginResponse,
 };
 use uuid::Uuid;
 use warp::{Filter, Rejection, Reply};
@@ -20,12 +20,6 @@ pub fn all(db: Db) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + 
         .and(with_db(db.clone()))
         .and(warp::body::json())
         .and_then(sign_up);
-    let sign_up_admin_route = warp::any()
-        .and(warp::post())
-        .and(with_db(db.clone()))
-        .and(authenticated_admin())
-        .and(warp::body::json())
-        .and_then(sign_up_admin);
     let profile_route = warp::any()
         .and(warp::get())
         .and(with_db(db.clone()))
@@ -46,7 +40,6 @@ pub fn all(db: Db) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + 
 
     let routes = login_route
         .or(sign_up_route)
-        .or(sign_up_admin_route)
         .or(profile_route)
         .or(delete_route)
         .or(update_route);
@@ -62,7 +55,7 @@ async fn login(db: Db, login: Login) -> Result<impl Reply, Rejection> {
 
     let jwt = Jwt::new(user.id_user()?, user.role());
 
-    Ok(warp::reply::json(&ProfileResponse {
+    Ok(warp::reply::json(&LoginResponse {
         auth: jwt.to_auth()?,
         user_details: user.into_user_details(),
     }))
@@ -82,27 +75,6 @@ async fn sign_up(db: Db, sign_up: SignUp) -> Result<impl Reply, Rejection> {
         role: Role::User.to_string(),
     };
     let jwt = Jwt::new(id_user, Role::User);
-
-    user.insert(&db).await?;
-
-    Ok(warp::reply::json(&SignUpResponse {
-        auth: jwt.to_auth()?,
-        user_details: user.into_user_details(),
-    }))
-}
-
-/// POST /api/users [+Auth] [+Admin]
-async fn sign_up_admin(db: Db, jwt: Jwt, sign_up: SignUp) -> Result<impl Reply, Rejection> {
-    User::check_username_free(&db, &sign_up.username).await?;
-
-    let id_user = Uuid::new_v4();
-    let user = User {
-        id_user: id_user.to_string(),
-        username: sign_up.username,
-        email: sign_up.email,
-        hashed_pass: auth::hash(&sign_up.password),
-        role: Role::Admin.to_string(),
-    };
 
     user.insert(&db).await?;
 
