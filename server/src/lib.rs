@@ -1,4 +1,4 @@
-use scrabble::game::word_tree::WordTree;
+use scrabble::word_tree::WordTree;
 use sqlx::{sqlite::SqlitePoolOptions, SqlitePool};
 use std::env;
 use std::net::SocketAddr;

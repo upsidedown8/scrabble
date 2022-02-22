@@ -1,4 +1,4 @@
-use scrabble::game::word_tree::WordTree;
+use scrabble::word_tree::WordTree;
 use warp::{Filter, Rejection, Reply};
 
 pub fn all(
