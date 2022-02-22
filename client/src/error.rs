@@ -4,6 +4,12 @@ use std::fmt;
 pub enum Error {
     Reqwasm(reqwasm::Error),
     SerdeJson(serde_json::Error),
+    BadRequest,
+    Unauthorized,
+    Forbidden,
+    NotFound,
+    InternalServerError,
+    HttpStatus(u16),
 }
 
 impl std::error::Error for Error {}
@@ -12,6 +18,12 @@ impl fmt::Display for Error {
         match self {
             Error::Reqwasm(err) => writeln!(f, "{err}"),
             Error::SerdeJson(err) => writeln!(f, "{err}"),
+            Error::BadRequest => writeln!(f, "Bad Request"),
+            Error::Unauthorized => writeln!(f, "Unauthorised"),
+            Error::Forbidden => writeln!(f, "Forbidden"),
+            Error::NotFound => writeln!(f, "Not Found"),
+            Error::InternalServerError => writeln!(f, "Internal Server Error"),
+            Error::HttpStatus(status) => writeln!(f, "HTTP status: {status}"),
         }
     }
 }
