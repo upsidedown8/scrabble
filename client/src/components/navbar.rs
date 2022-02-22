@@ -1,13 +1,13 @@
 use sycamore::prelude::*;
 
-use crate::contexts::auth::use_auth_ctx;
+use crate::contexts::ScopeAuthExt;
 
 #[component]
 pub fn Navbar<G: Html>(ctx: ScopeRef) -> View<G> {
-    let auth_ctx = use_auth_ctx(ctx);
+    let auth_ctx = ctx.use_auth_context();
     let active = ctx.create_signal(false);
     let logged_in = ctx.create_memo(|| auth_ctx.get().is_some());
-    
+
     let menu_class = ctx.create_memo(|| {
         match *active.get() {
             true => "navbar-menu is-active",
@@ -60,7 +60,7 @@ fn NavbarStart<'a, G: Html>(ctx: ScopeRef<'a>, _logged_in: &'a ReadSignal<bool>)
 
 #[component]
 fn NavbarEnd<'a, G: Html>(ctx: ScopeRef<'a>, logged_in: &'a ReadSignal<bool>) -> View<G> {
-    let onlogout = |_| use_auth_ctx(ctx).set(None);
+    let onlogout = |_| ctx.use_auth_context().set(None);
 
     view! { ctx,
         div(class="navbar-end") {

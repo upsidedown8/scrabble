@@ -1,13 +1,11 @@
-use api::auth::Auth;
-use sycamore::prelude::{ScopeRef, RcSignal};
+use api::{auth::Auth, users::UserDetails};
+use sycamore::prelude::RcSignal;
 use serde::{Serialize, Deserialize};
+
+pub type AuthSignal = RcSignal<Option<AuthCtx>>;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct AuthCtx {
-    pub username: String,
+    pub details: UserDetails,
     pub auth: Auth,
-}
-
-pub fn use_auth_ctx(ctx: ScopeRef) -> &RcSignal<Option<AuthCtx>> {
-    ctx.use_context::<RcSignal<Option<AuthCtx>>>()
 }

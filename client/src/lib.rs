@@ -3,7 +3,8 @@ use sycamore_router::{Route, Router, HistoryIntegration};
 use contexts::auth::AuthCtx;
 use components::{Navbar, Footer};
 use routes::*;
-use crate::contexts::auth::use_auth_ctx;
+
+use crate::contexts::ScopeAuthExt;
 
 mod components;
 mod contexts;
@@ -42,7 +43,7 @@ pub fn App<G: Html>(ctx: ScopeRef) -> View<G> {
     let auth_ctx = create_rc_signal(auth_ctx);
     ctx.provide_context(auth_ctx);
     ctx.create_effect(move || {
-        let auth_ctx = use_auth_ctx(ctx).get();
+        let auth_ctx = ctx.use_auth_context().get();
         let auth_ctx = auth_ctx.as_ref();
         let serialized = serde_json::to_string(auth_ctx).unwrap();
 
