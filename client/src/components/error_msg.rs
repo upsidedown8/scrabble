@@ -11,7 +11,7 @@ pub fn ErrorMsg<'a, G: Html>(ctx: ScopeRef<'a>, err: &'a Signal<Option<Error>>) 
     view! { ctx,
         (if err.get().is_some() {
             view! { ctx,
-                article(class="message mt-3") {
+                article(class="message is-danger mt-3") {
                     div(class="message-header") {
                         p { "Error" }
                         button(class="delete", on:click=|_| err.set(None))
