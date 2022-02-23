@@ -1,8 +1,12 @@
 use scrabble::{
-    game::Game,
-    play::{Play, Word},
-    pos::{Col, Direction, Row},
-    word_tree::WordTree,
+    game::{
+        play::{Play, Word},
+        Game,
+    },
+    util::{
+        fsm::Fsm,
+        pos::{Col, Direction, Row},
+    },
 };
 use std::{
     fs::File,
@@ -10,15 +14,15 @@ use std::{
 };
 
 fn main() {
-    let mut word_tree = WordTree::default();
+    let mut fsm = Fsm::default();
     let file = File::open("../server/data/words.txt").unwrap();
     let rdr = BufReader::new(file);
 
     for line in rdr.lines().flatten() {
-        word_tree.insert(line.trim());
+        fsm.insert(line.trim());
     }
 
-    let mut game = Game::new(&word_tree, 2);
+    let mut game = Game::new(&fsm, 2);
 
     let stdin = std::io::stdin();
     let mut stdin = stdin.lock();
