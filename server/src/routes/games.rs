@@ -1,11 +1,10 @@
-use std::{convert::Infallible, io::BufRead};
-
 use crate::{
     auth::{self, authenticated_user, Jwt},
     models::{with_db, Db},
 };
 use futures::{FutureExt, StreamExt};
 use serde::{Deserialize, Serialize};
+use std::{convert::Infallible, io::BufRead};
 use tokio::sync::mpsc;
 use uuid::Uuid;
 use warp::{
@@ -46,23 +45,24 @@ pub fn all(db: Db) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + 
     //     .or(make_play_route)
     //     .or(get_plays_route);
 
-    let web_socket_route = warp::path("ws")
-        .and(with_db(db))
+    let ws_echo_route = warp::path("ws_echo")
+        // .and(with_db(db))
         .and(warp::ws())
-        .and_then(web_socket);
+        .and_then(ws_echo);
 
-    let routes = web_socket_route;
+    let routes = ws_echo_route;
 
     warp::path("games").and(routes)
 }
 
-async fn web_socket(db: Db, ws: Ws) -> Result<impl Reply, Infallible> {
-    log::info!("web_socket handler");
+/// /api/games/ws_echo [websocket]
+async fn ws_echo(ws: Ws) -> Result<impl Reply, Infallible> {
+    log::info!("ws_echo handler");
 
-    Ok(ws.on_upgrade(move |socket| client_connection(socket)))
+    Ok(ws.on_upgrade(on_upgrade))
 }
 
-pub async fn client_connection(ws: WebSocket) {
+async fn on_upgrade(ws: WebSocket) {
     log::info!("establishing client connection... {:#?}", ws);
 
     let (tx, rx) = ws.split();
