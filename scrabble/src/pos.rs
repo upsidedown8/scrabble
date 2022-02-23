@@ -1,5 +1,5 @@
-//! Module containing newtypes representing checked board [`position`](Pos)s,
-//! [`row`](Row)s, [`column`](Col)s and orthagonal directions.
+//! Module containing newtypes representing checked board [`Pos`]itions,
+//! [`Row`]s, [`Col`]umns and orthagonal directions.
 
 use crate::{
     board::{CELLS, COLS, ROWS},
@@ -48,7 +48,7 @@ impl PosBonus {
     }
 }
 
-/// A position on the board. Ranges from `0..=`[`CELLS`].
+/// A position on the board. Ranges from `0..`[`CELLS`].
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash, PartialOrd)]
 pub struct Pos(usize);
 

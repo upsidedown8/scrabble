@@ -77,7 +77,8 @@ impl WordBoundary {
 }
 
 /// Represents the 15 x 15 scrabble board, storing the location of
-/// tiles, and allowing [`Play`]s to be made and validated.
+/// tiles, and allowing [`Play`](super::play::Play)s to be made
+/// and validated.
 #[derive(Clone, Debug)]
 pub struct Board {
     grid: [Option<Tile>; CELLS],
@@ -270,9 +271,9 @@ impl Board {
             self.occ_v.clear_bit(pos.anti_clockwise90());
         }
     }
-    /// Attempts to perform a [`Play::Place`] on the board. (All
-    /// other variants don't require board modification). If succesful,
-    /// returns the score from placing the new tiles.
+    /// Attempts to perform a [`Play::Place`](super::play::Play::Place)
+    /// on the board. (All other variants don't require board modification).
+    /// If succesful, returns the score from placing the new tiles.
     pub fn make_placement(
         &mut self,
         tile_positions: &[(Pos, Tile)],

@@ -1,5 +1,5 @@
 //! Module containing a bitboard implementation to represent
-//! the occupancy on the 15 x 15 board.
+//! the occupancy on the 15 by 15 board.
 
 use crate::{board::write_grid, pos::Pos};
 use std::{
@@ -49,8 +49,9 @@ impl Iterator for Bits {
     }
 }
 
-/// A scrabble board has [`ROWS`] * [`COLS`] = 15 * 15 = 225 squares. The
-/// nearest multiple of 64 bit integers is 4, giving 256 bit values.
+/// A scrabble board has [`ROWS`](super::board::ROWS) * [`COLS`](super::board::COLS)
+/// = 15 * 15 = 225 squares. The nearest multiple of 64 bit integers
+/// is 4, giving 256 bit values.
 ///
 /// Using integer types allows for very efficient move generation,
 /// validation and scoring, since these operations can be run with a
@@ -83,22 +84,24 @@ impl BitBoard {
         self & (horizontal_starts ^ horizontal_ends)
     }
     /// Gets a bitboard containing the set of squares that
-    /// are directly above the squares in `self`.
+    /// are directly above.
     pub fn up(self) -> BitBoard {
         self >> 15
     }
     /// Gets a bitboard containing the set of squares that
-    /// are directly below the squares in `self`.
+    /// are directly below.
     pub fn down(self) -> BitBoard {
         self << 15
     }
     /// Gets a bitboard containing the set of squares that
-    /// are directly below the squares in `self`.
+    /// are directly to the left.
     pub fn left(mut self) -> BitBoard {
         // discard the leftmost column to prevent overflow
         self &= !Self::leftmost_col();
         self >> 1
     }
+    /// Gets a bitboard containing the set of squares that
+    /// are directly to the right.
     pub fn right(mut self) -> BitBoard {
         // discard the rightmost column to prevent overflow
         self &= !Self::rightmost_col();

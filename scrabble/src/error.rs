@@ -1,6 +1,8 @@
+//! The error and result types for the library.
+
 use std::{error::Error, fmt};
 
-/// The [`Result`] type for the `game` module.
+/// The [`Result`] type for the [`game`](super::game) module.
 pub type GameResult<T> = std::result::Result<T, GameError>;
 
 /// The error type for the game module.
@@ -33,6 +35,23 @@ pub enum GameError {
 impl Error for GameError {}
 impl fmt::Display for GameError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "todo")
+        writeln!(
+            f,
+            "{}",
+            match self {
+                GameError::NotEnoughLetters => "There are not enough letters in the bag to redraw",
+                GameError::NotInRack => "One or more placed tiles were not in the rack",
+                GameError::Over => "The game is over so no futher plays can be made",
+                GameError::InvalidWord => "A word was not in the dictionary",
+                GameError::PlacementCount => "At least 1 and no more than 7 tiles can be placed",
+                GameError::CoincedentTiles => "Tiles were placed over existing tiles",
+                GameError::DuplicatePosition => "Multiple tiles were placed on the same square",
+                GameError::RedrawCount =>
+                    "At least 1 and up to the number of tiles on the rack can be redrawn",
+                GameError::MustIntersectStart => "A tile must be placed on the start square",
+                GameError::WordsNeedTwoLetters => "Words need at least 2 letters",
+                GameError::NotConnected => "Not connected",
+            }
+        )
     }
 }

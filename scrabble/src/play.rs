@@ -8,7 +8,7 @@ use std::{fmt, iter};
 
 /// A Play is the chosen action by a player on their turn. Each
 /// play can either be a [`Pass`](Play::Pass), redrawing of some
-/// of the tiles in the player's rack [`RedrawTiles`](Play::RedrawTiles),
+/// of the tiles in the player's rack [`Redraw`](Play::Redraw),
 /// or the placement of up to 7 tiles on the board.
 ///
 /// Plays are not validated until they are played on a board, so
@@ -79,7 +79,7 @@ impl Play {
     }
 }
 
-/// A [`Word`] provides a simpler way to construct a [`PlaceTiles`](Play::PlaceTiles)
+/// A [`Word`] provides a simpler way to construct a [`Place`](Play::Place)
 /// play. A string, start position, and direction is given, then the required
 /// tiles can be determined.
 #[derive(Debug, Clone)]
