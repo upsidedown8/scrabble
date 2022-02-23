@@ -8,11 +8,9 @@ pub fn Navbar<G: Html>(ctx: ScopeRef) -> View<G> {
     let active = ctx.create_signal(false);
     let logged_in = ctx.create_memo(|| auth_ctx.get().is_some());
 
-    let menu_class = ctx.create_memo(|| {
-        match *active.get() {
-            true => "navbar-menu is-active",
-            false => "navbar-menu"
-        }
+    let menu_class = ctx.create_memo(|| match *active.get() {
+        true => "navbar-menu is-active",
+        false => "navbar-menu",
     });
 
     view! { ctx,
@@ -28,14 +26,12 @@ pub fn Navbar<G: Html>(ctx: ScopeRef) -> View<G> {
 
 #[component]
 fn NavbarBrand<'a, G: Html>(ctx: ScopeRef<'a>, active: &'a Signal<bool>) -> View<G> {
-    let burger_class = ctx.create_memo(|| {
-        match *active.get() {
-            true => "navbar-burger is-active",
-            false => "navbar-burger"
-        }
+    let burger_class = ctx.create_memo(|| match *active.get() {
+        true => "navbar-burger is-active",
+        false => "navbar-burger",
     });
     let onclick = |_| active.set(!*active.get());
-    
+
     view! { ctx,
         div(class="navbar-brand") {
             a(class=burger_class, on:click=onclick) {
@@ -48,12 +44,18 @@ fn NavbarBrand<'a, G: Html>(ctx: ScopeRef<'a>, active: &'a Signal<bool>) -> View
 }
 
 #[component]
-fn NavbarStart<'a, G: Html>(ctx: ScopeRef<'a>, _logged_in: &'a ReadSignal<bool>) -> View<G> {
+fn NavbarStart<'a, G: Html>(ctx: ScopeRef<'a>, logged_in: &'a ReadSignal<bool>) -> View<G> {
     view! { ctx,
         div(class="navbar-start") {
-            a(class="navbar-item is-primary") {
-                "Play"
-            }
+            (if *logged_in.get() {
+                view! { ctx,
+                    a(class="navbar-item is-primary", href="/play") {
+                        "Play"
+                    }
+                }
+            } else {
+                view! { ctx, }
+            })
         }
     }
 }
