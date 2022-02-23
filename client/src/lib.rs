@@ -1,19 +1,25 @@
-use sycamore::prelude::*;
-use sycamore_router::{Route, Router, HistoryIntegration};
+//! SPA web client for the Scrabble game.
+
+#![warn(missing_docs)]
+
+use components::{Footer, Navbar};
 use contexts::auth::AuthCtx;
-use components::{Navbar, Footer};
 use routes::*;
+use sycamore::prelude::*;
+use sycamore_router::{HistoryIntegration, Route, Router};
 
 use crate::contexts::ScopeAuthExt;
 
 mod components;
 mod contexts;
+mod error;
 mod routes;
 mod services;
-mod error;
 
+/// HTML LocalStorage key for the auth info.
 const AUTH_KEY: &str = "scrabble.auth";
 
+/// Represents the pages of the app.
 #[derive(Route, Debug, Clone, Copy)]
 enum AppRoutes {
     #[to("/")]
@@ -24,10 +30,13 @@ enum AppRoutes {
     Login,
     #[to("/signup")]
     SignUp,
+    #[to("/play")]
+    Play,
     #[not_found]
     NotFound,
 }
 
+/// Top level app component.
 #[component]
 pub fn App<G: Html>(ctx: ScopeRef) -> View<G> {
     let local_storage = web_sys::window()
@@ -47,25 +56,28 @@ pub fn App<G: Html>(ctx: ScopeRef) -> View<G> {
         let auth_ctx = auth_ctx.as_ref();
         let serialized = serde_json::to_string(auth_ctx).unwrap();
 
-        local_storage
-            .set_item(AUTH_KEY, &serialized)
-            .unwrap();
+        local_storage.set_item(AUTH_KEY, &serialized).unwrap();
     });
-    
+
     view! { ctx,
         Router {
             integration: HistoryIntegration::new(),
             view: |ctx, route: &ReadSignal<AppRoutes>| view! { ctx,
-                div(class="app") {
+                div(id="app") {
                     Navbar {}
 
-                    (match route.get().as_ref() {
+                    ({let logged_in = ctx.use_auth_context().get().is_some();
+                    // match the route if
+                    //   - the user is logged in, or
+                    //   - the route doesn't require auth
+                    match route.get().as_ref() {
+                        AppRoutes::Login if !logged_in => view! { ctx, LoginPage() },
+                        AppRoutes::SignUp if !logged_in => view! { ctx, SignUpPage() },
+                        AppRoutes::Account if logged_in => view! { ctx, AccountPage() },
+                        AppRoutes::Play if logged_in => view! { ctx, PlayPage() },
                         AppRoutes::Home => view! { ctx, HomePage() },
-                        AppRoutes::Account => view! { ctx, AccountPage() },
-                        AppRoutes::Login => view! { ctx, LoginPage() },
-                        AppRoutes::SignUp => view! { ctx, SignUpPage() },
-                        AppRoutes::NotFound => view! { ctx, NotFoundPage() },
-                    })
+                        _ => view! { ctx, NotFoundPage() },
+                    }})
 
                     Footer {}
                 }
