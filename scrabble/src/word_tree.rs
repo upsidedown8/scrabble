@@ -1,4 +1,4 @@
-//! Module containing a word tree
+//! Module containing a word tree.
 
 use super::tile::Letter;
 
