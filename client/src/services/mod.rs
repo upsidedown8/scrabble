@@ -1,7 +1,12 @@
+//! Methods for interacting with the API asynchronously.
+
+use crate::{
+    contexts::{AuthCtx, AuthSignal},
+    error::Error,
+};
 use api::auth::Auth;
+use reqwasm::http::{Method, Request};
 use serde::{de::DeserializeOwned, Serialize};
-use reqwasm::http::{Request, Method};
-use crate::{contexts::auth::{AuthCtx, AuthSignal}, error::Error};
 
 pub mod users;
 
@@ -9,15 +14,20 @@ const API_URL: &str = "https://localhost:8000/api";
 
 /// Make a request to the path {API_URL}/{url}, with the provided
 /// method and data.
-pub async fn make_request<T, U>(auth_ctx: &AuthSignal, url: &str, data: &T, method: Method) -> Result<U, Error>
+pub async fn make_request<T, U>(
+    auth_ctx: &AuthSignal,
+    url: &str,
+    data: &T,
+    method: Method,
+) -> Result<U, Error>
 where
     T: Serialize,
     U: DeserializeOwned,
 {
     let request_url = format!("{API_URL}{url}");
-  
+
     let body = serde_json::to_string(data)?;
-    
+
     log::info!("method: {method}, url: {request_url}, body: {body}");
 
     let mut req = Request::new(&request_url)
