@@ -1,5 +1,6 @@
 use sycamore::prelude::*;
 
+/// An indeterminate progress bar. Only displays is `visible` is true.
 #[component]
 pub fn ProgressBar<'a, G: Html>(ctx: ScopeRef<'a>, visible: &'a Signal<bool>) -> View<G> {
     view! { ctx,

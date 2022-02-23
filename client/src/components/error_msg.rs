@@ -1,6 +1,9 @@
 use crate::error::Error;
 use sycamore::prelude::*;
 
+/// Component to display an optional error message.
+///   - if there is an error, displays a danger styled message
+///   - if there is no error, displays nothing
 #[component]
 pub fn ErrorMsg<'a, G: Html>(ctx: ScopeRef<'a>, err: &'a Signal<Option<Error>>) -> View<G> {
     let err_msg = ctx.create_memo(|| match err.get().as_ref() {

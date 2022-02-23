@@ -1,3 +1,5 @@
+//! Reuseable components used across pages.
+
 mod board;
 mod error_msg;
 mod fa_icon;

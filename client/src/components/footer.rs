@@ -1,6 +1,7 @@
 use crate::components::{FaIcon, Separator};
 use sycamore::prelude::*;
 
+/// Appears at the bottom of every page.
 #[component]
 pub fn Footer<G: Html>(ctx: ScopeRef) -> View<G> {
     view! { ctx,

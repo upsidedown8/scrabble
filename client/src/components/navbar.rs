@@ -2,6 +2,7 @@ use sycamore::prelude::*;
 
 use crate::contexts::ScopeAuthExt;
 
+/// Appears at the top of every page.
 #[component]
 pub fn Navbar<G: Html>(ctx: ScopeRef) -> View<G> {
     let auth_ctx = ctx.use_auth_context();
@@ -24,6 +25,7 @@ pub fn Navbar<G: Html>(ctx: ScopeRef) -> View<G> {
     }
 }
 
+/// The brand and hamburger menu.
 #[component]
 fn NavbarBrand<'a, G: Html>(ctx: ScopeRef<'a>, active: &'a Signal<bool>) -> View<G> {
     let burger_class = ctx.create_memo(|| match *active.get() {
@@ -43,6 +45,7 @@ fn NavbarBrand<'a, G: Html>(ctx: ScopeRef<'a>, active: &'a Signal<bool>) -> View
     }
 }
 
+/// The start (left part) of the menu.
 #[component]
 fn NavbarStart<'a, G: Html>(ctx: ScopeRef<'a>, logged_in: &'a ReadSignal<bool>) -> View<G> {
     view! { ctx,
@@ -60,6 +63,7 @@ fn NavbarStart<'a, G: Html>(ctx: ScopeRef<'a>, logged_in: &'a ReadSignal<bool>) 
     }
 }
 
+/// The end (right part) of the menu.
 #[component]
 fn NavbarEnd<'a, G: Html>(ctx: ScopeRef<'a>, logged_in: &'a ReadSignal<bool>) -> View<G> {
     let onlogout = |_| ctx.use_auth_context().set(None);
