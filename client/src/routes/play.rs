@@ -1,7 +1,10 @@
+//! Implementation of the [`PlayPage`].
+
 use futures::{channel::mpsc, SinkExt, StreamExt};
 use reqwasm::websocket::{futures::WebSocket, Message};
 use sycamore::{futures::ScopeSpawnFuture, prelude::*};
 
+/// Page for playing live games.
 #[component]
 pub fn PlayPage<G: Html>(ctx: ScopeRef) -> View<G> {
     let msg = ctx.create_signal(String::new());

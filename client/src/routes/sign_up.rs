@@ -1,12 +1,15 @@
+//! Implementation of the [`SignUpPage`].
+
 use crate::{
     components::{ErrorMsg, ProgressBar},
-    contexts::{auth::AuthCtx, ScopeAuthExt},
+    contexts::{AuthCtx, ScopeExt},
     services::users::sign_up,
 };
 use api::users::SignUp;
 use sycamore::{futures::ScopeSpawnFuture, prelude::*};
 use sycamore_router::navigate;
 
+/// Page for creating an account.
 #[component]
 pub fn SignUpPage<G: Html>(ctx: ScopeRef) -> View<G> {
     let auth_ctx = ctx.use_auth_context();

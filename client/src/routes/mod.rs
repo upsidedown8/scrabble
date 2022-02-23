@@ -1,3 +1,5 @@
+//! Module containing code for displaying pages.
+
 mod account;
 mod home;
 mod login;

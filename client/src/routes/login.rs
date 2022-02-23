@@ -1,12 +1,15 @@
+//! Implementation of the [`NotFoundPage`].
+
 use crate::{
     components::{ErrorMsg, ProgressBar},
-    contexts::{auth::AuthCtx, ScopeAuthExt},
+    contexts::{AuthCtx, ScopeExt},
     services::users::login,
 };
 use api::users::Login;
 use sycamore::{futures::ScopeSpawnFuture, prelude::*};
 use sycamore_router::navigate;
 
+/// Page for signing in to an account.
 #[component]
 pub fn LoginPage<G: Html>(ctx: ScopeRef) -> View<G> {
     let auth_ctx = ctx.use_auth_context();
