@@ -79,7 +79,7 @@ pub fn App<G: Html>(ctx: ScopeRef) -> View<G> {
                 div(id="app") {
                     Navbar {}
 
-                    ({let logged_in = ctx.use_auth_context().get().is_some();
+                    ({let logged_in = *ctx.use_logged_in().get();
                     // match the route if
                     //   - the user is logged in, or
                     //   - the route doesn't require auth

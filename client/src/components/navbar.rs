@@ -1,13 +1,11 @@
+use crate::contexts::ScopeExt;
 use sycamore::prelude::*;
-
-use crate::contexts::ScopeAuthExt;
 
 /// Appears at the top of every page.
 #[component]
 pub fn Navbar<G: Html>(ctx: ScopeRef) -> View<G> {
-    let auth_ctx = ctx.use_auth_context();
     let active = ctx.create_signal(false);
-    let logged_in = ctx.create_memo(|| auth_ctx.get().is_some());
+    let logged_in = ctx.use_logged_in();
 
     let menu_class = ctx.create_memo(|| match *active.get() {
         true => "navbar-menu is-active",
