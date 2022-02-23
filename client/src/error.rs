@@ -1,14 +1,26 @@
+//! Module containing the error types.
+
 use std::fmt;
 
+/// The error variants for the client.
 #[derive(Debug)]
 pub enum Error {
+    /// Error originated from making a http or websocket request.
     Reqwasm(reqwasm::Error),
+    /// Error originated from serializing or deserializing
+    /// data.
     SerdeJson(serde_json::Error),
+    /// 400 Bad request
     BadRequest,
+    /// 401 Unauthorized
     Unauthorized,
+    /// 403 Forbidden
     Forbidden,
+    /// 404 Not found
     NotFound,
+    /// 500 Internal server error
     InternalServerError,
+    /// Any other http status that is not `200..=299` (ok).
     HttpStatus(u16),
 }
 
