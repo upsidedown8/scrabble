@@ -10,6 +10,7 @@ pub fn PlayPage<G: Html>(ctx: ScopeRef) -> View<G> {
     let msg = ctx.create_signal(String::new());
     let recv = ctx.create_signal(String::new());
     let ws = WebSocket::open("wss://localhost:8000/api/games/ws_echo").unwrap();
+
     let (mut write, mut read) = ws.split();
 
     let (tx, mut rx) = mpsc::unbounded();
@@ -45,19 +46,19 @@ pub fn PlayPage<G: Html>(ctx: ScopeRef) -> View<G> {
     };
 
     view! { ctx,
-        div(class="is-centered is-vcentered is-flex columns") {
+        div(class="play-route is-centered is-vcentered is-flex columns") {
             div(class="box") {
                 div(class="field") {
-                    input(type="text", bind:value=msg)
+                    input(class="input",type="text", bind:value=msg)
                 }
 
                 div(class="field") {
-                    textarea(disabled=true) {
+                    textarea(class="input", disabled=true) {
                         (recv.get())
                     }
                 }
 
-                button(on:click=onsend) {
+                button(class="button is-primary is-light",on:click=onsend) {
                     "Send"
                 }
             }
