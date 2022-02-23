@@ -1,12 +1,9 @@
 //! Models the scrabble board.
 
 use crate::{
-    bitboard::BitBoard,
-    bitboard::Bits,
     error::{GameError, GameResult},
-    pos::{Col, Pos, Row},
-    tile::Tile,
-    word_tree::WordTree,
+    game::tile::Tile,
+    util::{self, bitboard::BitBoard, fsm::Fsm, pos::Pos, word_boundaries::WordBoundaries},
 };
 use std::fmt;
 
@@ -16,65 +13,6 @@ pub const ROWS: usize = 15;
 pub const COLS: usize = 15;
 /// The number of squares on the board.
 pub const CELLS: usize = 15 * 15;
-
-/// Struct wrapping the result of `Board::word_boundaries` which
-/// implements the `Iterator` trait, going over tuples containing
-/// the start and end of each word (inclusive).
-pub struct WordBoundaries(Bits);
-impl WordBoundaries {
-    /// Creates a new `WordBoundaries` instance, going over boundaries
-    /// calculated from `occ`. This assumes that words in `occ` always
-    /// read left to right so for vertical words, the occupancy must
-    /// first be rotated 90degrees anticlockwise.
-    pub fn new(occ: BitBoard) -> Self {
-        Self(occ.word_boundaries().into_iter())
-    }
-}
-impl Iterator for WordBoundaries {
-    type Item = WordBoundary;
-
-    fn next(&mut self) -> Option<WordBoundary> {
-        match (self.0.next(), self.0.next()) {
-            (Some(start), Some(end)) => Some(WordBoundary::new(start, end)),
-            _ => None,
-        }
-    }
-}
-
-/// The start and end of a specific word.
-#[derive(Clone, Copy, Debug)]
-pub struct WordBoundary {
-    start: Pos,
-    end: Pos,
-}
-impl WordBoundary {
-    /// Creates a new `WordBoundary`. `start` should be less than `end.
-    pub fn new(start: Pos, end: Pos) -> Self {
-        debug_assert!(start < end);
-
-        Self { start, end }
-    }
-    /// An iterator between the `start` and `end` positions, inclusive
-    pub fn iter_range(&self) -> impl Iterator<Item = Pos> {
-        let start = usize::from(self.start);
-        let end = usize::from(self.end);
-
-        (start..=end).map(Pos::from)
-    }
-    /// Gets the start position
-    pub fn start(&self) -> Pos {
-        self.start
-    }
-    /// Gets the end position
-    pub fn end(&self) -> Pos {
-        self.end
-    }
-    /// Checks whether `pos` fits within the inclusive range,
-    /// `start` <= `pos` <= `end`.
-    pub fn contains(&self, pos: Pos) -> bool {
-        self.start <= pos && pos <= self.end
-    }
-}
 
 /// Represents the 15 x 15 scrabble board, storing the location of
 /// tiles, and allowing [`Play`](super::play::Play)s to be made
@@ -99,7 +37,7 @@ impl Board {
         &self,
         occ: BitBoard,
         new: BitBoard,
-        word_tree: &WordTree,
+        fsm: &Fsm,
         map_pos: F,
     ) -> GameResult<usize>
     where
@@ -122,7 +60,7 @@ impl Board {
                     let mut word_multiplier = 1;
                     letter_multipliers.fill(1);
 
-                    let mut curr_node = word_tree.root_idx();
+                    let mut curr_node = fsm.root_idx();
 
                     while let Some(pos) = curr_bit {
                         // stop looping once `pos` is no longer within the word
@@ -135,7 +73,7 @@ impl Board {
                         let tile = self.at(real_pos).expect("An occupied square");
                         let letter = tile.letter().expect("A letter");
 
-                        curr_node = word_tree
+                        curr_node = fsm
                             .node(curr_node)
                             .get_child(letter)
                             .ok_or(GameError::InvalidWord)?;
@@ -149,7 +87,7 @@ impl Board {
                         }
                     }
 
-                    if !word_tree.node(curr_node).is_terminal() {
+                    if !fsm.node(curr_node).is_terminal() {
                         return Err(GameError::InvalidWord);
                     }
 
@@ -169,15 +107,10 @@ impl Board {
     }
     /// Computes the combined score for horizontal and vertical words, adding
     /// the 50 point bonus where appropriate.
-    fn score_and_validate(
-        &self,
-        new_h: BitBoard,
-        new_v: BitBoard,
-        word_tree: &WordTree,
-    ) -> GameResult<usize> {
+    fn score_and_validate(&self, new_h: BitBoard, new_v: BitBoard, fsm: &Fsm) -> GameResult<usize> {
         // Find the score for horizontal and vertical words.
-        let score_h = self.score_words(self.occ_h, new_h, word_tree, |pos| pos)?;
-        let score_v = self.score_words(self.occ_v, new_v, word_tree, |pos| pos.clockwise90())?;
+        let score_h = self.score_words(self.occ_h, new_h, fsm, |pos| pos)?;
+        let score_v = self.score_words(self.occ_v, new_v, fsm, |pos| pos.clockwise90())?;
 
         // Find combined score
         let score = score_h + score_v;
@@ -277,7 +210,7 @@ impl Board {
     pub fn make_placement(
         &mut self,
         tile_positions: &[(Pos, Tile)],
-        word_tree: &WordTree,
+        fsm: &Fsm,
     ) -> GameResult<usize> {
         // new tiles for horizontal words
         let mut new_h = BitBoard::default();
@@ -306,7 +239,7 @@ impl Board {
         }
 
         // checks that words are valid then returns the score
-        match self.score_and_validate(new_h, new_v, word_tree) {
+        match self.score_and_validate(new_h, new_v, fsm) {
             // everything was valid, update the bitboards.
             Ok(score) => {
                 // update bitboards
@@ -338,46 +271,9 @@ impl Default for Board {
 }
 impl fmt::Display for Board {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write_grid(f, |pos| match self.at(pos) {
+        util::write_grid(f, |pos| match self.at(pos) {
             Some(tile) => format!("{}", tile),
             None => " . ".to_string(),
         })
     }
-}
-
-/// Utility function for displaying a grid, which prints row
-/// and column headers. `at_pos` should return a string of length
-/// 3 which represents the cell at the provided position.
-///
-/// This function is used for implementing [`fmt::Display`] for [`Board`]
-/// and [`BitBoard`].
-pub fn write_grid<F, T>(f: &mut fmt::Formatter, at_pos: F) -> fmt::Result
-where
-    F: Fn(Pos) -> T,
-    T: fmt::Display,
-{
-    fn write_col_headers(f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "   ")?;
-        for col in Col::iter() {
-            write!(f, " {} ", col)?;
-        }
-
-        Ok(())
-    }
-
-    write_col_headers(f)?;
-
-    writeln!(f)?;
-
-    for row in Row::iter() {
-        write!(f, "{:>2} ", row.to_string())?;
-
-        for col in Col::iter() {
-            write!(f, "{}", at_pos(Pos::from((row, col))))?;
-        }
-
-        writeln!(f, " {:<2}", row.to_string())?;
-    }
-
-    write_col_headers(f)
 }

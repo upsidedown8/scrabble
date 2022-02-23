@@ -1,8 +1,8 @@
 //! Models the [`LetterBag`].
 
 use crate::{
-    rack::{TileCounts, RACK_SIZE},
-    tile::Tile,
+    game::{rack::RACK_SIZE, tile::Tile},
+    util::tile_counts::TileCounts,
 };
 use rand::Rng;
 use std::iter::once;
@@ -126,7 +126,7 @@ impl LetterBag {
 
 #[cfg(test)]
 mod tests {
-    use crate::{letter_bag::LetterBag, rack::RACK_SIZE, tile::Tile};
+    use crate::game::{letter_bag::LetterBag, rack::RACK_SIZE, tile::Tile};
 
     #[test]
     fn draw_limits() {

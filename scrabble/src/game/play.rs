@@ -1,8 +1,8 @@
 //! Module representing a [`Play`] (move) made by a player.
 
-use super::{
-    pos::{Direction, Pos},
-    tile::{Letter, Tile},
+use crate::{
+    game::tile::{Letter, Tile},
+    util::pos::{Direction, Pos},
 };
 use std::{fmt, iter};
 

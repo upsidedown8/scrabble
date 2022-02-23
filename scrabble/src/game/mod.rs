@@ -7,16 +7,18 @@
 //! The types exposed in this module are also useful for modelling
 //! state for the UI.
 
-use std::fmt;
+pub mod board;
+pub mod letter_bag;
+pub mod play;
+pub mod rack;
+pub mod tile;
 
 use crate::{
-    board::Board,
     error::{GameError, GameResult},
-    letter_bag::LetterBag,
-    play::Play,
-    rack::Rack,
-    word_tree::WordTree,
+    game::{board::Board, letter_bag::LetterBag, play::Play, rack::Rack},
+    util::fsm::Fsm,
 };
+use std::fmt;
 
 /// The reason that the game has ended.
 #[derive(Clone, Debug)]
@@ -49,7 +51,7 @@ impl From<PlayerId> for usize {
 /// game. Manages players, all state, and determines when the
 /// game is over, calculating scores and determining the winner.
 pub struct Game<'a> {
-    word_tree: &'a WordTree,
+    fsm: &'a Fsm,
 
     board: Board,
     letter_bag: LetterBag,
@@ -65,7 +67,7 @@ pub struct Game<'a> {
 impl<'a> Game<'a> {
     /// Constructs a new [`Game`] from a borrowed `word_tree` and the number
     /// of players.
-    pub fn new(word_tree: &'a WordTree, player_count: usize) -> Self {
+    pub fn new(fsm: &'a Fsm, player_count: usize) -> Self {
         let mut letter_bag = LetterBag::default();
 
         let to_play = PlayerId(0);
@@ -74,7 +76,7 @@ impl<'a> Game<'a> {
             .collect();
 
         Self {
-            word_tree,
+            fsm,
             letter_bag,
             to_play,
             board: Board::default(),
@@ -152,7 +154,7 @@ impl<'a> Game<'a> {
                 }
 
                 // attempt to make the placement
-                let score = self.board.make_placement(tile_positions, self.word_tree)?;
+                let score = self.board.make_placement(tile_positions, self.fsm)?;
                 self.scores[id] += score;
 
                 // remove letters from rack
