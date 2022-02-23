@@ -3,7 +3,7 @@ use sycamore::prelude::*;
 #[component]
 pub fn NotFoundPage<G: Html>(ctx: ScopeRef) -> View<G> {
     view! { ctx,
-        div(class="not-found-route columns is-centered is-vcentered is-flex") {
+        div(class="not-found-route is-centered is-vcentered columns") {
             div {
                 h1 {
                     "404: Not Found"
