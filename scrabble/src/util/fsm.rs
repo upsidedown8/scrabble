@@ -1,6 +1,8 @@
+//! Module containing an implementation of a Finite State Machine (FSM)
+//! which can be used to efficiently traverse the space of available words.
 //! Module containing a word tree.
 
-use super::tile::Letter;
+use crate::game::tile::Letter;
 
 /// Newtype containing an index for a node, so that the node
 /// can be retrieved in `O(1)`.
@@ -64,12 +66,12 @@ impl Node {
 /// in a single dimensional vector, with each node containing the indices of its
 /// children, pointing back to the `nodes` vector.
 #[derive(Debug)]
-pub struct WordTree {
+pub struct Fsm {
     root: NodeIndex,
     nodes: Vec<Node>,
 }
 
-impl Default for WordTree {
+impl Default for Fsm {
     fn default() -> Self {
         Self {
             root: NodeIndex(0),
@@ -77,7 +79,7 @@ impl Default for WordTree {
         }
     }
 }
-impl WordTree {
+impl Fsm {
     /// Gets the [`NodeIndex`] for the root node.
     pub fn root_idx(&self) -> NodeIndex {
         self.root
@@ -152,7 +154,7 @@ mod tests {
 
     #[test]
     fn insert_contains() {
-        let mut word_tree = WordTree::default();
+        let mut word_tree = Fsm::default();
 
         word_tree.insert("abade");
         word_tree.insert("abide");
