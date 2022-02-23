@@ -1,5 +1,8 @@
+use scrabble::{
+    pos::{Pos, PosBonus},
+    tile,
+};
 use sycamore::prelude::*;
-use scrabble::{pos::{Pos, PosBonus}, tile};
 
 /// The class used to style squares with a bonus.
 fn bonus_class(pos: Pos) -> &'static str {
@@ -25,10 +28,7 @@ pub struct SquareProps<'a> {
 #[component]
 pub fn Square<'a, G: Html>(
     ctx: ScopeRef<'a>,
-    SquareProps {
-        pos,
-        tile
-    }: SquareProps<'a>
+    SquareProps { pos, tile }: SquareProps<'a>,
 ) -> View<G> {
     view! { ctx,
         div(class=format!("square {}", bonus_class(pos))) {

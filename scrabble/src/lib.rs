@@ -1,10 +1,10 @@
 //! Implementation of a multiplayer scrabble game and AI.
 
 pub mod ai;
-pub mod game;
 pub mod bitboard;
 pub mod board;
 pub mod error;
+pub mod game;
 pub mod letter_bag;
 pub mod play;
 pub mod pos;

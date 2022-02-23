@@ -1,8 +1,8 @@
 use scrabble::{
+    game::Game,
     play::{Play, Word},
     pos::{Col, Direction, Row},
     word_tree::WordTree,
-    game::Game,
 };
 use std::{
     fs::File,
