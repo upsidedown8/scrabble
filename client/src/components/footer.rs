@@ -1,3 +1,4 @@
+use crate::components::{FaIcon, Separator};
 use sycamore::prelude::*;
 
 #[component]
@@ -6,13 +7,15 @@ pub fn Footer<G: Html>(ctx: ScopeRef) -> View<G> {
         footer(class="footer") {
             div(class="content has-text-centered") {
                 p {
+                    "Tom Thorogood"
+                    Separator()
                     "Scrabble AI"
+                    Separator()
                     a(href="https://github.com/upsidedown8/scrabble") {
-                        span(class="icon") {
-                            i(class="fa-brands fa-github")
-                        }
+                        "Code"
+                        FaIcon("fa-brands fa-github")
                     }
-                }                
+                }
             }
         }
     }
