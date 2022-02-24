@@ -20,6 +20,8 @@ use crate::{
 };
 use std::fmt;
 
+use self::tile::Letter;
+
 /// The reason that the game has ended.
 #[derive(Clone, Debug)]
 pub enum Reason {
@@ -50,8 +52,8 @@ impl From<PlayerId> for usize {
 /// Top level struct allowing for management of the entire
 /// game. Manages players, all state, and determines when the
 /// game is over, calculating scores and determining the winner.
-pub struct Game<'a> {
-    fsm: &'a Fsm,
+pub struct Game<'a, F> {
+    fsm: &'a F,
 
     board: Board,
     letter_bag: LetterBag,
@@ -64,10 +66,10 @@ pub struct Game<'a> {
     status: GameStatus,
 }
 
-impl<'a> Game<'a> {
+impl<'a, F: Fsm<'a, Letter>> Game<'a, F> {
     /// Constructs a new [`Game`] from a borrowed `word_tree` and the number
     /// of players.
-    pub fn new(fsm: &'a Fsm, player_count: usize) -> Self {
+    pub fn new(fsm: &'a F, player_count: usize) -> Self {
         let mut letter_bag = LetterBag::default();
 
         let to_play = PlayerId(0);
@@ -234,7 +236,7 @@ impl<'a> Game<'a> {
         Ok(())
     }
 }
-impl<'a> fmt::Display for Game<'a> {
+impl<'a, F: Fsm<'a, Letter>> fmt::Display for Game<'a, F> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "{}", self.board)?;
 

@@ -7,6 +7,8 @@ use crate::{
 };
 use std::fmt;
 
+use super::tile::Letter;
+
 /// The number of rows on the board.
 pub const ROWS: usize = 15;
 /// The number of columns on the board.
@@ -33,11 +35,11 @@ impl Board {
     /// bitboard. `new` is the set of added tiles, which should ave been
     /// rotated previously for vertical words. `occ` is the set of existing
     /// tiles, which should also have been rotated.
-    fn score_words<F>(
+    fn score_words<'a, F>(
         &self,
         occ: BitBoard,
         new: BitBoard,
-        fsm: &Fsm,
+        fsm: &impl Fsm<'a, Letter>,
         map_pos: F,
     ) -> GameResult<usize>
     where
@@ -60,7 +62,7 @@ impl Board {
                     let mut word_multiplier = 1;
                     letter_multipliers.fill(1);
 
-                    let mut curr_node = fsm.root_idx();
+                    let mut curr_node = fsm.initial_state();
 
                     while let Some(pos) = curr_bit {
                         // stop looping once `pos` is no longer within the word
@@ -74,8 +76,7 @@ impl Board {
                         let letter = tile.letter().expect("A letter");
 
                         curr_node = fsm
-                            .node(curr_node)
-                            .get_child(letter)
+                            .traverse_from(curr_node, letter)
                             .ok_or(GameError::InvalidWord)?;
                         curr_bit = bits.next();
 
@@ -87,7 +88,7 @@ impl Board {
                         }
                     }
 
-                    if !fsm.node(curr_node).is_terminal() {
+                    if !fsm.is_terminal(curr_node) {
                         return Err(GameError::InvalidWord);
                     }
 
@@ -107,7 +108,12 @@ impl Board {
     }
     /// Computes the combined score for horizontal and vertical words, adding
     /// the 50 point bonus where appropriate.
-    fn score_and_validate(&self, new_h: BitBoard, new_v: BitBoard, fsm: &Fsm) -> GameResult<usize> {
+    fn score_and_validate<'a>(
+        &self,
+        new_h: BitBoard,
+        new_v: BitBoard,
+        fsm: &impl Fsm<'a, Letter>,
+    ) -> GameResult<usize> {
         // Find the score for horizontal and vertical words.
         let score_h = self.score_words(self.occ_h, new_h, fsm, |pos| pos)?;
         let score_v = self.score_words(self.occ_v, new_v, fsm, |pos| pos.clockwise90())?;
@@ -207,10 +213,10 @@ impl Board {
     /// Attempts to perform a [`Play::Place`](super::play::Play::Place)
     /// on the board. (All other variants don't require board modification).
     /// If succesful, returns the score from placing the new tiles.
-    pub fn make_placement(
+    pub fn make_placement<'a>(
         &mut self,
         tile_positions: &[(Pos, Tile)],
-        fsm: &Fsm,
+        fsm: &impl Fsm<'a, Letter>,
     ) -> GameResult<usize> {
         // new tiles for horizontal words
         let mut new_h = BitBoard::default();
