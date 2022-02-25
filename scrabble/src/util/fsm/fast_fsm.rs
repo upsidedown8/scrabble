@@ -1,12 +1,14 @@
 use crate::{
     game::tile::Letter,
-    util::fsm::{Fsm, FsmBuilder, FsmSequence, StateId},
+    util::fsm::{small_fsm::Transition, Fsm, FsmBuilder, FsmSequence, StateId},
 };
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{hash_map::Keys, HashMap},
     iter,
 };
+
+use super::SmallFsm;
 
 /// A state in the [`FastFsm`]. Stores only the transitions to other states,
 /// in a hashmap.
@@ -95,6 +97,27 @@ impl From<FsmBuilder> for FastFsm {
         Self {
             states,
             terminal_count,
+        }
+    }
+}
+impl From<SmallFsm> for FastFsm {
+    fn from(small_fsm: SmallFsm) -> Self {
+        let mut states = Vec::with_capacity(small_fsm.states.len());
+
+        // add the states in the same order as the small fsm.
+        for id in 0..small_fsm.states.len() {
+            let (start, end) = small_fsm.transition_limits(StateId(id));
+            let transitions = (start..end)
+                .map(|pos| small_fsm.transitions[pos])
+                .map(|Transition(letter, state_id)| (letter, state_id))
+                .collect::<HashMap<_, _>>();
+
+            states.push(State { transitions });
+        }
+
+        Self {
+            states,
+            terminal_count: small_fsm.terminal_count,
         }
     }
 }

@@ -16,7 +16,7 @@ pub struct TransitionStartId(usize);
 
 /// A transition, mapping from one state to another.
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
-pub struct Transition(Letter, StateId);
+pub struct Transition(pub(super) Letter, pub(super) StateId);
 
 /// A memory optimised finite state machine.
 ///
@@ -29,14 +29,14 @@ pub struct Transition(Letter, StateId);
 /// implementation is very compact, but requires a linear traversal of states.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SmallFsm {
-    states: Vec<State>,
-    transitions: Vec<Transition>,
-    terminal_count: usize,
+    pub(super) states: Vec<State>,
+    pub(super) transitions: Vec<Transition>,
+    pub(super) terminal_count: usize,
 }
 
 impl SmallFsm {
     /// Gets the start and end of the transition array for a state.
-    fn transition_limits(&self, StateId(id): StateId) -> (usize, usize) {
+    pub fn transition_limits(&self, StateId(id): StateId) -> (usize, usize) {
         let State(TransitionStartId(start)) = self.states[id];
         let end = match self.states.get(id + 1) {
             Some(&State(TransitionStartId(end))) => end,
