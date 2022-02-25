@@ -19,29 +19,6 @@ impl State {
     pub fn last_transition(&self) -> Option<&Letter> {
         self.transitions.keys().max()
     }
-    fn hash_recursive(&self, builder: &FsmBuilder, state: &mut String) {
-        // hash the data for the current node
-        if self.is_terminal {
-            state.push('Y');
-        } else {
-            state.push('N');
-        }
-
-        state.push('[');
-
-        for (key, &value) in self.transitions.iter() {
-            state.push(char::from(*key));
-            state.push('[');
-
-            // do not hash the `StateId`, as it is not relevant for determining
-            // whether 2 states are identical.
-            builder.state(value).hash_recursive(builder, state);
-
-            state.push(']');
-        }
-
-        state.push(']');
-    }
     /// Recursively computes a hash for the state based on whether it is terminal
     /// and its transitions.
     pub(self) fn state_hash(&self, builder: &FsmBuilder) -> PerfectHash {
@@ -50,6 +27,28 @@ impl State {
         self.hash_recursive(builder, &mut state);
 
         PerfectHash(state)
+    }
+    /// Generates a perfect hash for the state. This implemtation produces a string
+    /// hash of the form:
+    ///   - {terminal (Y/N)}{child1}{state1}{child2}{state2}]...
+    ///
+    /// Each state is enclosed at the start by a Y/N, and at the end by a square bracket ']',
+    /// which ensures that no two different states can have the same perfect hash.
+    fn hash_recursive(&self, builder: &FsmBuilder, state: &mut String) {
+        state.push(match self.is_terminal {
+            true => '1',
+            false => '0',
+        });
+
+        for (key, &value) in self.transitions.iter() {
+            state.push(char::from(*key));
+
+            // do not hash the `StateId`, as it is not relevant for determining
+            // whether 2 states are identical.
+            builder.state(value).hash_recursive(builder, state);
+        }
+
+        state.push(']');
     }
 }
 
