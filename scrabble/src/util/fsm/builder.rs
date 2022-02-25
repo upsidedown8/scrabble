@@ -2,11 +2,11 @@ use crate::{
     game::tile::Letter,
     util::fsm::{Fsm, FsmSequence, StateId},
 };
-use std::collections::{HashMap, HashSet};
+use std::{collections::HashMap, hash::Hash};
 
 /// Represents a state in a finite state machine. `is_terminal` determines
 /// whether it is an acceptance state.
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct State {
     pub(super) is_terminal: bool,
     pub(super) transitions: HashMap<Letter, StateId>,
@@ -19,14 +19,52 @@ impl State {
     pub fn last_transition(&self) -> Option<&Letter> {
         self.transitions.keys().max()
     }
+    fn hash_recursive(&self, builder: &FsmBuilder, state: &mut String) {
+        // hash the data for the current node
+        if self.is_terminal {
+            state.push('Y');
+        } else {
+            state.push('N');
+        }
+
+        state.push('[');
+
+        for (key, &value) in self.transitions.iter() {
+            state.push(char::from(*key));
+            state.push('[');
+
+            // do not hash the `StateId`, as it is not relevant for determining
+            // whether 2 states are identical.
+            builder.state(value).hash_recursive(builder, state);
+
+            state.push(']');
+        }
+
+        state.push(']');
+    }
+    /// Recursively computes a hash for the state based on whether it is terminal
+    /// and its transitions.
+    pub(self) fn state_hash(&self, builder: &FsmBuilder) -> PerfectHash {
+        let mut state = String::new();
+
+        self.hash_recursive(builder, &mut state);
+
+        PerfectHash(state)
+    }
 }
+
+/// Used to check whether two states are identical.
+#[repr(transparent)]
+#[derive(PartialEq, Eq, Clone, Hash, Debug, Default)]
+pub struct PerfectHash(String);
 
 /// Used to construct a finite state machine.
 #[derive(Debug)]
 pub struct FsmBuilder {
     pub(super) states: HashMap<StateId, State>,
     previous_seq: Vec<Letter>,
-    register: HashSet<StateId>,
+    register: HashMap<PerfectHash, StateId>,
+    position_stack: Vec<StateId>,
 }
 
 impl Default for FsmBuilder {
@@ -44,7 +82,8 @@ impl Default for FsmBuilder {
         Self {
             states,
             previous_seq: Vec::new(),
-            register: HashSet::new(),
+            register: HashMap::new(),
+            position_stack: vec![StateId(0)],
         }
     }
 }
@@ -62,38 +101,30 @@ impl FsmBuilder {
         let seq: Vec<_> = seq.into_iter().collect();
         let prefix_len = Self::common_prefix_len(&self.previous_seq, &seq);
 
-        let prefix = &seq[0..prefix_len];
-        let suffix = &seq[prefix_len..];
-
-        let last_state_id = self.traverse(prefix);
+        // traverse backwards to last node
+        self.position_stack.truncate(prefix_len + 1);
+        // the most recent state is the last value.
+        let last_state_id = self.position_stack[prefix_len];
 
         self.replace_or_register(last_state_id);
-        self.add_suffix(last_state_id, suffix);
+        self.add_suffix(last_state_id, &seq[prefix_len..]);
         self.previous_seq = seq;
     }
     /// Gets a reference to a [`State`] by id.
+    #[inline]
     fn state(&self, id: StateId) -> &State {
         &self.states[&id]
     }
     /// Gets a mutable reference to a [`State`] by id.
+    #[inline]
     fn state_mut(&mut self, id: StateId) -> &mut State {
-        self.states.get_mut(&id).expect("State to be present")
+        self.states.get_mut(&id).unwrap()
     }
     /// Finds the length of the substring that is common to both strings,
     /// and starts at the beginning.
+    #[inline]
     fn common_prefix_len(a: &[Letter], b: &[Letter]) -> usize {
         a.iter().zip(b).take_while(|&(a, b)| a == b).count()
-    }
-    /// Traverses a path through the fsm.
-    fn traverse(&self, prefix: &[Letter]) -> StateId {
-        // start with the initial node.
-        let mut curr_state_id = StateId(0);
-
-        for ch in prefix {
-            curr_state_id = self.state(curr_state_id).transitions[ch];
-        }
-
-        curr_state_id
     }
     /// Inserts a suffix into the fsm. The suffix should be a new branch.
     fn add_suffix(&mut self, last_state_id: StateId, suffix: &[Letter]) {
@@ -104,18 +135,15 @@ impl FsmBuilder {
             debug_assert!(self.state(curr_state_id).transitions.get(&ch).is_none());
 
             let id = StateId(self.states.len());
-            self.states.insert(
-                id,
-                State {
-                    is_terminal: false,
-                    transitions: HashMap::new(),
-                },
-            );
-
+            self.states.insert(id, State::default());
             self.state_mut(curr_state_id).transitions.insert(ch, id);
             curr_state_id = id;
+
+            // update the stack
+            self.position_stack.push(id);
         }
 
+        // the last state must be terminal
         self.state_mut(curr_state_id).is_terminal = true;
     }
     /// Attempts to replace nodes in the register with identical
@@ -123,74 +151,22 @@ impl FsmBuilder {
     fn replace_or_register(&mut self, state_id: StateId) {
         if let Some(&child_transition) = self.state(state_id).last_transition() {
             let child_id = self.state(state_id).transitions[&child_transition];
-
             self.replace_or_register(child_id);
 
-            // if any node in the register is identical to the child node
-            let identical_node = self
-                .register
-                .iter()
-                .copied()
-                .find(|&node_id| self.states_eq(node_id, child_id));
+            // check whether any node in the register is identical
+            let child_hash = self.state(child_id).state_hash(self);
 
-            match identical_node {
-                Some(node_id) => {
+            match self.register.get(&child_hash) {
+                Some(&node_id) => {
                     self.state_mut(state_id)
                         .transitions
                         .insert(child_transition, node_id);
-                    self.delete_state(child_id);
+                    self.states.remove(&child_id);
                 }
-                None => {
-                    self.register.insert(child_id);
+                _ => {
+                    self.register.insert(child_hash, child_id);
                 }
             }
         }
-    }
-    /// Remove a state by id (does not remove children).
-    fn delete_state(&mut self, id: StateId) {
-        self.states.remove(&id);
-    }
-    /// Recursively checks whether two states are identical.
-    ///     - both are terminal or not terminal
-    ///     - all children are identical
-    fn states_eq(&self, a_id: StateId, b_id: StateId) -> bool {
-        let a_state = self.state(a_id);
-        let b_state = self.state(b_id);
-
-        // quick check: same terminal state
-        if a_state.is_terminal != b_state.is_terminal {
-            return false;
-        }
-
-        // check that children are equal for both:
-        self.children_eq(a_state, b_state)
-    }
-    /// Recursively checks that the children of two states are identical.
-    fn children_eq(&self, a_state: &State, b_state: &State) -> bool {
-        // quick check: same number of children
-        if a_state.transitions.len() != b_state.transitions.len() {
-            return false;
-        }
-
-        // check that the transition on each state is the same.
-        // this performs a breadth-first check for a depth of 1,
-        // which reduces the number of recursive calls, at a cost of
-        // iterating the hashmaps twice.
-        if a_state
-            .transitions
-            .keys()
-            .zip(b_state.transitions.keys())
-            .any(|(&a, &b)| a != b)
-        {
-            return false;
-        }
-
-        // call `states_eq` to check that the nodes for each transition
-        // are identical.
-        a_state
-            .transitions
-            .values()
-            .zip(b_state.transitions.values())
-            .all(|(&a_id, &b_id)| self.states_eq(a_id, b_id))
     }
 }
