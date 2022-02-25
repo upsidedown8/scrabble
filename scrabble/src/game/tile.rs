@@ -9,15 +9,15 @@ use std::fmt::{Display, Formatter};
     Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
 )]
 #[repr(transparent)]
-pub struct Letter(usize);
+pub struct Letter(u8);
 
 impl Letter {
     /// Creates a new letter from a `char`, returns [`None`] if the
     /// `ch` provided is not in the latin alphabet.
     pub fn new(ch: char) -> Option<Self> {
         match ch {
-            'a'..='z' => Some(Letter(ch as usize - 97)),
-            'A'..='Z' => Some(Letter(ch as usize - 65)),
+            'a'..='z' => Some(Letter(ch as u8 - 97)),
+            'A'..='Z' => Some(Letter(ch as u8 - 65)),
             _ => None,
         }
     }
@@ -28,17 +28,17 @@ impl Letter {
 }
 impl From<usize> for Letter {
     fn from(v: usize) -> Self {
-        Self(v % 26)
+        Self((v as u8) % 26)
     }
 }
 impl From<Letter> for usize {
     fn from(letter: Letter) -> Self {
-        letter.0
+        letter.0 as usize
     }
 }
 impl From<Letter> for char {
     fn from(letter: Letter) -> Self {
-        (letter.0 + 65) as u8 as char
+        (letter.0 + 65) as char
     }
 }
 impl Display for Letter {
@@ -71,7 +71,7 @@ impl From<Tile> for usize {
     fn from(tile: Tile) -> Self {
         match tile {
             // a letter is from `0..=25`
-            Tile::Letter(Letter(num)) => num,
+            Tile::Letter(Letter(num)) => num as usize,
             // a blank is `26`
             Tile::Blank(_) => 26,
         }
