@@ -28,46 +28,65 @@ pub struct FastFsm<T> {
 }
 
 impl<T: Eq + Hash> From<FsmBuilder<T>> for FastFsm<T> {
-    fn from(builder: FsmBuilder<T>) -> Self {
+    fn from(mut builder: FsmBuilder<T>) -> Self {
         // the initial state (at index 0) should be non-terminal
-        assert!(!builder.states[&StateId(0)].is_terminal);
-        // the array to store the new states in
-        let mut states = Vec::with_capacity(builder.states.len());
+        assert!(
+            !builder.states[&StateId(0)].is_terminal,
+            "Initial state should be non-terminal"
+        );
 
-        // find the number of terminal states
-        let mut terminal_count = 0;
-        for old_state in builder.states.values() {
-            if old_state.is_terminal {
-                terminal_count += 1;
-            }
-        }
+        let terminal_count = builder.states.values().filter(|&v| v.is_terminal).count();
+        let non_terminal_count = builder.states.len() - terminal_count;
 
         // stores the mapping old id -> new id.
         let mut terminal_id = 0;
-        let mut non_terminal_id = 0;
+        let mut non_terminal_id = 1; // skip zero id (used for initial state)
         let mut state_id_map = HashMap::new();
-        for (&old_state_id, old_state) in builder.states.iter() {
-            let state_id = StateId(if old_state.is_terminal {
-                terminal_id += 1;
-                terminal_count + terminal_id
-            } else {
-                non_terminal_id += 1;
-                non_terminal_id
-            });
 
-            state_id_map.insert(old_state_id, state_id);
+        // ensure that the position of the initial state is unchanged
+        // by removing it from the hashmap (hashmap traversal is not
+        // in order).
+        let initial_state_transitions = builder.states.remove(&StateId(0)).unwrap().transitions;
+        state_id_map.insert(StateId(0), StateId(0));
+
+        for (&old_state_id, old_state) in builder.states.iter() {
+            let (offset, id) = match old_state.is_terminal {
+                true => (non_terminal_count, &mut terminal_id),
+                false => (0, &mut non_terminal_id),
+            };
+
+            state_id_map.insert(old_state_id, StateId(offset + *id));
+            *id += 1;
         }
+
+        let mut terminal_states = Vec::with_capacity(non_terminal_count);
+        let mut non_terminal_states = Vec::with_capacity(builder.states.len());
+        let map_transitions = |transitions: HashMap<_, _>| {
+            transitions
+                .into_iter()
+                .map(|(k, v)| (k, state_id_map[&v]))
+                .collect()
+        };
+
+        // add the initial state first
+        non_terminal_states.push(State {
+            transitions: map_transitions(initial_state_transitions),
+        });
 
         // traverse the old states and add to the new states
         for (_, old_state) in builder.states {
-            let mut transitions = HashMap::new();
+            let state = State {
+                transitions: map_transitions(old_state.transitions),
+            };
 
-            for (k, old_state_id) in old_state.transitions {
-                transitions.insert(k, state_id_map[&old_state_id]);
+            match old_state.is_terminal {
+                true => terminal_states.push(state),
+                false => non_terminal_states.push(state),
             }
-
-            states.push(State { transitions });
         }
+
+        let mut states = non_terminal_states;
+        states.append(&mut terminal_states);
 
         Self {
             states,
