@@ -26,6 +26,7 @@ pub struct Transition<T>(T, StateId);
 ///
 /// This implementation of the [`Fsm`] trait is memory optimised, as the array
 /// implementation is very compact, but requires a linear traversal of states.
+#[derive(Debug)]
 pub struct SmallFsm<T> {
     states: Vec<State>,
     transitions: Vec<Transition<T>>,
@@ -46,11 +47,16 @@ impl<T> SmallFsm<T> {
 }
 impl<T: Hash + Eq> From<FsmBuilder<T>> for SmallFsm<T> {
     fn from(builder: FsmBuilder<T>) -> Self {
+        Self::from(FastFsm::from(builder))
+    }
+}
+impl<T: Hash + Eq> From<FastFsm<T>> for SmallFsm<T> {
+    fn from(fast_fsm: FastFsm<T>) -> Self {
         // reuse the code for the fast fsm.
         let FastFsm {
             states,
             terminal_count,
-        } = FastFsm::from(builder);
+        } = fast_fsm;
 
         let mut small_states = Vec::with_capacity(states.len());
         let mut transitions = Vec::new();
