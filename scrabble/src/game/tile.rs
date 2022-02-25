@@ -5,6 +5,7 @@ use std::fmt::{Display, Formatter};
 /// A letter `A..=Z`. Represented as a newtype containing an unsigned
 /// integer from `0..=25` to make game operations easier.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[repr(transparent)]
 pub struct Letter(usize);
 
 impl Letter {
