@@ -1,6 +1,6 @@
 use scrabble::{
-    pos::{Pos, PosBonus},
-    tile,
+    util::pos::{Pos, PosBonus},
+    game::tile,
 };
 use sycamore::prelude::*;
 

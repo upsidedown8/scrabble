@@ -1,4 +1,4 @@
-//! Implementation of the [`NotFoundPage`].
+//! Implementation of the [`LoginPage`].
 
 use crate::{
     components::{ErrorMsg, ProgressBar},
