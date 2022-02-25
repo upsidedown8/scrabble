@@ -1,10 +1,10 @@
 use crate::{
-    auth::{self, authenticated_admin, authenticated_user, Jwt, Role},
+    auth::{self, authenticated_user, Jwt, Role},
     models::{user::User, with_db, Db},
 };
 use api::users::{
-    DeleteAccount, Login, ProfileResponse, SignUp, SignUpResponse, UpdateAccount,
-    UpdateAccountResponse, LoginResponse,
+    DeleteAccount, Login, LoginResponse, ProfileResponse, SignUp, SignUpResponse, UpdateAccount,
+    UpdateAccountResponse,
 };
 use uuid::Uuid;
 use warp::{Filter, Rejection, Reply};

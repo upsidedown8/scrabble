@@ -6,7 +6,6 @@ use warp::{http::StatusCode, Filter, Rejection, Reply};
 mod games;
 mod leaderboard;
 mod users;
-mod words;
 
 /// Gets a filter for all routes
 pub fn all(db: Db) -> impl Filter<Extract = (impl Reply,), Error = Infallible> + Clone {

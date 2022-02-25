@@ -1,4 +1,4 @@
-use scrabble::word_tree::WordTree;
+use scrabble::util::fsm::{Fsm, FsmBuilder};
 use sqlx::{sqlite::SqlitePoolOptions, SqlitePool};
 use std::env;
 use std::net::SocketAddr;
@@ -50,21 +50,21 @@ async fn connect_db() -> sqlx::Result<SqlitePool> {
         .await
 }
 
-/// Loads the word tree from the $WORD_LIST directory.
-async fn load_word_tree() -> tokio::io::Result<WordTree> {
+/// Loads the fsm from the $WORD_LIST directory.
+async fn load_fsm_from_wordlist<'a, F: Fsm<'a>>() -> tokio::io::Result<F> {
     let word_file = env::var("WORD_LIST").expect("`WORD_LIST` env variable");
 
-    log::info!("building word tree from file: {}", word_file);
+    log::info!("building fsm from file: {}", word_file);
 
-    let mut word_tree = WordTree::default();
+    let mut fsm_builder = FsmBuilder::default();
     let file = File::open(word_file)
         .await
         .expect("word file should exist at `WORD_LIST` dir");
     let mut lines = BufReader::new(file).lines();
 
     while let Some(line) = lines.next_line().await? {
-        word_tree.insert(line.trim());
+        fsm_builder.insert(line.trim());
     }
 
-    Ok(word_tree)
+    Ok(fsm_builder.build())
 }
