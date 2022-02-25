@@ -1,27 +1,35 @@
-use crate::util::fsm::{Fsm, FsmSequence, StateId};
-use std::{
-    collections::{HashMap, HashSet},
-    hash::Hash,
+use crate::{
+    game::tile::Letter,
+    util::fsm::{Fsm, FsmSequence, StateId},
 };
+use std::collections::{HashMap, HashSet};
 
 /// Represents a state in a finite state machine. `is_terminal` determines
 /// whether it is an acceptance state.
 #[derive(Debug)]
-pub struct State<T> {
+pub struct State {
     pub(super) is_terminal: bool,
-    pub(super) transitions: HashMap<T, StateId>,
-    last_transition: Option<T>,
+    pub(super) transitions: HashMap<Letter, StateId>,
+}
+
+impl State {
+    /// Gets the transition label with greatest value, which is the label
+    /// that was added most recently, since insertion occurs in alphabetical
+    /// order.
+    pub fn last_transition(&self) -> Option<&Letter> {
+        self.transitions.keys().max()
+    }
 }
 
 /// Used to construct a finite state machine.
 #[derive(Debug)]
-pub struct FsmBuilder<T> {
-    pub(super) states: HashMap<StateId, State<T>>,
-    previous_seq: Vec<T>,
+pub struct FsmBuilder {
+    pub(super) states: HashMap<StateId, State>,
+    previous_seq: Vec<Letter>,
     register: HashSet<StateId>,
 }
 
-impl<T> Default for FsmBuilder<T> {
+impl Default for FsmBuilder {
     fn default() -> Self {
         let mut states = HashMap::new();
 
@@ -30,7 +38,6 @@ impl<T> Default for FsmBuilder<T> {
             State {
                 is_terminal: false,
                 transitions: HashMap::default(),
-                last_transition: None,
             },
         );
 
@@ -41,9 +48,9 @@ impl<T> Default for FsmBuilder<T> {
         }
     }
 }
-impl<'a, T: 'a + Ord + Hash + Eq + Copy> FsmBuilder<T> {
+impl FsmBuilder {
     /// Constructs an immutable [`Fsm`] from the builder.
-    pub fn build<F: Fsm<'a, T>>(mut self) -> F {
+    pub fn build<'a, F: Fsm<'a>>(mut self) -> F {
         // find shortcuts up to the initial state.
         self.replace_or_register(StateId(0));
 
@@ -51,8 +58,8 @@ impl<'a, T: 'a + Ord + Hash + Eq + Copy> FsmBuilder<T> {
     }
     /// Inserts a word into the [`FsmBuilder`]. Words must be inserted in
     /// alphabetical order.
-    pub fn insert<'b>(&mut self, seq: impl FsmSequence<'b, T>) {
-        let seq: Vec<T> = seq.into_iter().collect();
+    pub fn insert(&mut self, seq: impl FsmSequence) {
+        let seq: Vec<_> = seq.into_iter().collect();
         let prefix_len = Self::common_prefix_len(&self.previous_seq, &seq);
 
         let prefix = &seq[0..prefix_len];
@@ -65,20 +72,20 @@ impl<'a, T: 'a + Ord + Hash + Eq + Copy> FsmBuilder<T> {
         self.previous_seq = seq;
     }
     /// Gets a reference to a [`State`] by id.
-    fn state(&self, id: StateId) -> &State<T> {
+    fn state(&self, id: StateId) -> &State {
         &self.states[&id]
     }
     /// Gets a mutable reference to a [`State`] by id.
-    fn state_mut(&mut self, id: StateId) -> &mut State<T> {
+    fn state_mut(&mut self, id: StateId) -> &mut State {
         self.states.get_mut(&id).expect("State to be present")
     }
     /// Finds the length of the substring that is common to both strings,
     /// and starts at the beginning.
-    fn common_prefix_len(a: &[T], b: &[T]) -> usize {
+    fn common_prefix_len(a: &[Letter], b: &[Letter]) -> usize {
         a.iter().zip(b).take_while(|&(a, b)| a == b).count()
     }
     /// Traverses a path through the fsm.
-    fn traverse(&self, prefix: &[T]) -> StateId {
+    fn traverse(&self, prefix: &[Letter]) -> StateId {
         // start with the initial node.
         let mut curr_state_id = StateId(0);
 
@@ -89,7 +96,7 @@ impl<'a, T: 'a + Ord + Hash + Eq + Copy> FsmBuilder<T> {
         curr_state_id
     }
     /// Inserts a suffix into the fsm. The suffix should be a new branch.
-    fn add_suffix(&mut self, last_state_id: StateId, suffix: &[T]) {
+    fn add_suffix(&mut self, last_state_id: StateId, suffix: &[Letter]) {
         let mut curr_state_id = last_state_id;
 
         for &ch in suffix {
@@ -102,15 +109,10 @@ impl<'a, T: 'a + Ord + Hash + Eq + Copy> FsmBuilder<T> {
                 State {
                     is_terminal: false,
                     transitions: HashMap::new(),
-                    last_transition: None,
                 },
             );
 
-            let curr_state = self.state_mut(curr_state_id);
-
-            curr_state.last_transition = curr_state.last_transition.max(Some(ch));
-            curr_state.transitions.insert(ch, id);
-
+            self.state_mut(curr_state_id).transitions.insert(ch, id);
             curr_state_id = id;
         }
 
@@ -119,7 +121,7 @@ impl<'a, T: 'a + Ord + Hash + Eq + Copy> FsmBuilder<T> {
     /// Attempts to replace nodes in the register with identical
     /// pre-existing nodes to cut down the graph size.
     fn replace_or_register(&mut self, state_id: StateId) {
-        if let Some(child_transition) = self.state(state_id).last_transition {
+        if let Some(&child_transition) = self.state(state_id).last_transition() {
             let child_id = self.state(state_id).transitions[&child_transition];
 
             self.replace_or_register(child_id);
@@ -164,7 +166,7 @@ impl<'a, T: 'a + Ord + Hash + Eq + Copy> FsmBuilder<T> {
         self.children_eq(a_state, b_state)
     }
     /// Recursively checks that the children of two states are identical.
-    fn children_eq(&self, a_state: &State<T>, b_state: &State<T>) -> bool {
+    fn children_eq(&self, a_state: &State, b_state: &State) -> bool {
         // quick check: same number of children
         if a_state.transitions.len() != b_state.transitions.len() {
             return false;

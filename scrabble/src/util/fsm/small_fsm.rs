@@ -1,21 +1,22 @@
-use crate::util::fsm::{Fsm, FsmBuilder, FsmSequence, StateId};
-use std::hash::Hash;
-
-use super::FastFsm;
+use crate::{
+    game::tile::Letter,
+    util::fsm::{FastFsm, Fsm, FsmBuilder, FsmSequence, StateId},
+};
+use serde::{Deserialize, Serialize};
 
 /// A state in the [`SmallFsm`]. Stores an index into the transitions array.
 #[repr(transparent)]
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub struct State(TransitionStartId);
 
 /// An index into the transitions array in [`SmallFsm`].
 #[repr(transparent)]
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub struct TransitionStartId(usize);
 
 /// A transition, mapping from one state to another.
-#[derive(Clone, Copy, Debug)]
-pub struct Transition<T>(T, StateId);
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+pub struct Transition(Letter, StateId);
 
 /// A memory optimised finite state machine.
 ///
@@ -26,14 +27,14 @@ pub struct Transition<T>(T, StateId);
 ///
 /// This implementation of the [`Fsm`] trait is memory optimised, as the array
 /// implementation is very compact, but requires a linear traversal of states.
-#[derive(Debug)]
-pub struct SmallFsm<T> {
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SmallFsm {
     states: Vec<State>,
-    transitions: Vec<Transition<T>>,
+    transitions: Vec<Transition>,
     terminal_count: usize,
 }
 
-impl<T> SmallFsm<T> {
+impl SmallFsm {
     /// Gets the start and end of the transition array for a state.
     fn transition_limits(&self, StateId(id): StateId) -> (usize, usize) {
         let State(TransitionStartId(start)) = self.states[id];
@@ -45,13 +46,13 @@ impl<T> SmallFsm<T> {
         (start, end)
     }
 }
-impl<T: Hash + Eq> From<FsmBuilder<T>> for SmallFsm<T> {
-    fn from(builder: FsmBuilder<T>) -> Self {
+impl From<FsmBuilder> for SmallFsm {
+    fn from(builder: FsmBuilder) -> Self {
         Self::from(FastFsm::from(builder))
     }
 }
-impl<T: Hash + Eq> From<FastFsm<T>> for SmallFsm<T> {
-    fn from(fast_fsm: FastFsm<T>) -> Self {
+impl From<FastFsm> for SmallFsm {
+    fn from(fast_fsm: FastFsm) -> Self {
         // reuse the code for the fast fsm.
         let FastFsm {
             states,
@@ -81,8 +82,8 @@ impl<T: Hash + Eq> From<FastFsm<T>> for SmallFsm<T> {
         }
     }
 }
-impl<'a, T: 'a + Hash + Eq> Fsm<'a, T> for SmallFsm<T> {
-    type TransitionsIter = FastFsmTransitionsIter<'a, T>;
+impl<'a> Fsm<'a> for SmallFsm {
+    type TransitionsIter = FastFsmTransitionsIter<'a>;
 
     fn transitions(&'a self, state_id: StateId) -> Self::TransitionsIter {
         let (start, end) = self.transition_limits(state_id);
@@ -99,11 +100,7 @@ impl<'a, T: 'a + Hash + Eq> Fsm<'a, T> for SmallFsm<T> {
         StateId(0)
     }
 
-    fn traverse_from<'b>(
-        &self,
-        state_id: StateId,
-        seq: impl FsmSequence<'b, T>,
-    ) -> Option<StateId> {
+    fn traverse_from(&self, state_id: StateId, seq: impl FsmSequence) -> Option<StateId> {
         let mut curr_state = state_id;
 
         'outer: for item in seq.into_iter() {
@@ -129,14 +126,14 @@ impl<'a, T: 'a + Hash + Eq> Fsm<'a, T> for SmallFsm<T> {
 }
 
 /// Used to iterate over the transitions in the [`SmallFsm`].
-pub struct FastFsmTransitionsIter<'a, T> {
-    slice_iter: std::slice::Iter<'a, Transition<T>>,
+pub struct FastFsmTransitionsIter<'a> {
+    slice_iter: std::slice::Iter<'a, Transition>,
 }
 
-impl<'a, T: 'a> Iterator for FastFsmTransitionsIter<'a, T> {
-    type Item = &'a T;
+impl<'a> Iterator for FastFsmTransitionsIter<'a> {
+    type Item = Letter;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.slice_iter.next().map(|Transition(item, _)| item)
+        self.slice_iter.next().map(|Transition(item, _)| *item)
     }
 }

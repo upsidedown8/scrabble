@@ -6,17 +6,17 @@ mod builder;
 mod fast_fsm;
 mod small_fsm;
 
+use crate::game::tile::Letter;
+use serde::{Deserialize, Serialize};
 use std::{iter, str::Chars};
 
 pub use builder::FsmBuilder;
 pub use fast_fsm::FastFsm;
 pub use small_fsm::SmallFsm;
 
-use crate::game::tile::Letter;
-
 /// Used to identify a [`State`].
 #[repr(transparent)]
-#[derive(Hash, Default, Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Hash, Default, Debug, PartialEq, Eq, Clone, Copy, Serialize, Deserialize)]
 pub struct StateId(usize);
 
 /// Trait implemented by [`SmallFsm`] and [`FastFsm`]. Provides
@@ -27,9 +27,9 @@ pub struct StateId(usize);
 /// [`FsmBuilder`]. Each implementation is generic over a parameter `T`,
 /// which is the type used for labelling state transitions. In this
 /// library the type used primarily [`Letter`].
-pub trait Fsm<'a, T: 'a>: From<FsmBuilder<T>> {
+pub trait Fsm<'a>: From<FsmBuilder> {
     /// An iterator over the transitions from a state.
-    type TransitionsIter: Iterator<Item = &'a T> + 'a;
+    type TransitionsIter: Iterator<Item = Letter> + 'a;
 
     /// Gets an iterator over the transitions from a state.
     fn transitions(&'a self, state: StateId) -> Self::TransitionsIter;
@@ -39,24 +39,26 @@ pub trait Fsm<'a, T: 'a>: From<FsmBuilder<T>> {
     fn initial_state(&self) -> StateId;
     /// Checks whether a letter sequence is accepted by the
     /// finite state machine.
-    fn accepts<'b>(&self, seq: impl FsmSequence<'b, T>) -> bool {
+    fn accepts(&self, seq: impl FsmSequence) -> bool {
         // default implementation: traverse and check result
-        self.traverse(seq).is_some()
+        self.traverse(seq)
+            .map(|state_id| self.is_terminal(state_id))
+            .unwrap_or(false)
     }
     /// Traverses a sequence through the finite state machine.
-    fn traverse<'b>(&self, seq: impl FsmSequence<'b, T>) -> Option<StateId> {
+    fn traverse(&self, seq: impl FsmSequence) -> Option<StateId> {
         // default implementation: traverse from initial state
         self.traverse_from(self.initial_state(), seq)
     }
     /// Traverses a sequence through the finite state machine
     /// from a given initial `state`.
-    fn traverse_from<'b>(&self, state: StateId, seq: impl FsmSequence<'b, T>) -> Option<StateId>;
+    fn traverse_from(&self, state: StateId, seq: impl FsmSequence) -> Option<StateId>;
 }
 
 /// A sequence provided as input to a finite state machine.
-pub trait FsmSequence<'a, T> {
+pub trait FsmSequence {
     /// Type performing the iteration.
-    type Iter: Iterator<Item = T> + 'a;
+    type Iter: Iterator<Item = Letter>;
 
     /// Returns an iterator over type `T`.
     fn into_iter(self) -> Self::Iter;
@@ -74,7 +76,7 @@ impl<'a> Iterator for FsmCharsIter<'a> {
         self.inner.next().and_then(Letter::new)
     }
 }
-impl<'a> FsmSequence<'a, Letter> for &'a str {
+impl<'a> FsmSequence for &'a str {
     type Iter = FsmCharsIter<'a>;
 
     fn into_iter(self) -> Self::Iter {
@@ -83,7 +85,7 @@ impl<'a> FsmSequence<'a, Letter> for &'a str {
         }
     }
 }
-impl<'a> FsmSequence<'a, Letter> for &'a String {
+impl<'a> FsmSequence for &'a String {
     type Iter = FsmCharsIter<'a>;
 
     fn into_iter(self) -> Self::Iter {
@@ -92,14 +94,14 @@ impl<'a> FsmSequence<'a, Letter> for &'a String {
         }
     }
 }
-impl<'a> FsmSequence<'a, Letter> for &'a [Letter] {
+impl<'a> FsmSequence for &'a [Letter] {
     type Iter = iter::Copied<std::slice::Iter<'a, Letter>>;
 
     fn into_iter(self) -> Self::Iter {
         self.iter().copied()
     }
 }
-impl<'a> FsmSequence<'a, Letter> for Letter {
+impl FsmSequence for Letter {
     type Iter = iter::Once<Letter>;
 
     fn into_iter(self) -> Self::Iter {

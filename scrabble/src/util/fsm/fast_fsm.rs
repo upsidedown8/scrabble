@@ -1,14 +1,18 @@
-use crate::util::fsm::{Fsm, FsmBuilder, FsmSequence, StateId};
+use crate::{
+    game::tile::Letter,
+    util::fsm::{Fsm, FsmBuilder, FsmSequence, StateId},
+};
+use serde::{Deserialize, Serialize};
 use std::{
     collections::{hash_map::Keys, HashMap},
-    hash::Hash,
+    iter,
 };
 
 /// A state in the [`FastFsm`]. Stores only the transitions to other states,
 /// in a hashmap.
-#[derive(Debug)]
-pub struct State<T> {
-    pub(super) transitions: HashMap<T, StateId>,
+#[derive(Debug, Serialize, Deserialize)]
+pub struct State {
+    pub(super) transitions: HashMap<Letter, StateId>,
 }
 
 /// A time optimised finite state machine.
@@ -19,16 +23,16 @@ pub struct State<T> {
 /// need to be stored for each state.
 ///
 /// This implementation of the [`Fsm`] trait is time optimised, as a hashmap for
-/// transitions is fast to access, but may not the most compact representation of
+/// transitions is fast to access, but may not be the most compact representation of
 /// the transitions from each state.
-#[derive(Debug)]
-pub struct FastFsm<T> {
-    pub(super) states: Vec<State<T>>,
+#[derive(Debug, Serialize, Deserialize)]
+pub struct FastFsm {
+    pub(super) states: Vec<State>,
     pub(super) terminal_count: usize,
 }
 
-impl<T: Eq + Hash> From<FsmBuilder<T>> for FastFsm<T> {
-    fn from(mut builder: FsmBuilder<T>) -> Self {
+impl From<FsmBuilder> for FastFsm {
+    fn from(mut builder: FsmBuilder) -> Self {
         // the initial state (at index 0) should be non-terminal
         assert!(
             !builder.states[&StateId(0)].is_terminal,
@@ -94,11 +98,11 @@ impl<T: Eq + Hash> From<FsmBuilder<T>> for FastFsm<T> {
         }
     }
 }
-impl<'a, T: 'a + Eq + Hash> Fsm<'a, T> for FastFsm<T> {
-    type TransitionsIter = Keys<'a, T, StateId>;
+impl<'a> Fsm<'a> for FastFsm {
+    type TransitionsIter = iter::Copied<Keys<'a, Letter, StateId>>;
 
     fn transitions(&'a self, StateId(id): StateId) -> Self::TransitionsIter {
-        self.states[id].transitions.keys()
+        self.states[id].transitions.keys().copied()
     }
 
     fn is_terminal(&self, StateId(id): StateId) -> bool {
@@ -116,7 +120,7 @@ impl<'a, T: 'a + Eq + Hash> Fsm<'a, T> for FastFsm<T> {
         StateId(0)
     }
 
-    fn traverse_from<'b>(&self, state: StateId, seq: impl FsmSequence<'b, T>) -> Option<StateId> {
+    fn traverse_from(&self, state: StateId, seq: impl FsmSequence) -> Option<StateId> {
         let mut curr_state = state;
 
         for item in seq.into_iter() {
