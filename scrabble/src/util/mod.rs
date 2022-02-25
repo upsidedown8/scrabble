@@ -13,9 +13,6 @@ pub mod word_boundaries;
 /// Utility function for displaying a grid, which prints row
 /// and column headers. `at_pos` should return a string of length
 /// 3 which represents the cell at the provided position.
-///
-/// This function is used for implementing [`fmt::Display`] for [`Board`]
-/// and [`BitBoard`].
 pub fn write_grid<F, T>(f: &mut fmt::Formatter, at_pos: F) -> fmt::Result
 where
     F: Fn(Pos) -> T,

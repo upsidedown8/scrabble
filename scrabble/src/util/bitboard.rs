@@ -49,9 +49,10 @@ impl Iterator for Bits {
     }
 }
 
-/// A scrabble board has [`ROWS`](super::board::ROWS) * [`COLS`](super::board::COLS)
-/// = 15 * 15 = 225 squares. The nearest multiple of 64 bit integers
-/// is 4, giving 256 bit values.
+/// A scrabble board has [`ROWS`](crate::game::board::ROWS) *
+/// [`COLS`](crate::game::board::COLS) = 15 * 15 = 225 squares.
+/// The nearest multiple of 64 bit integers is 4, giving 256
+/// bit values.
 ///
 /// Using integer types allows for very efficient move generation,
 /// validation and scoring, since these operations can be run with a

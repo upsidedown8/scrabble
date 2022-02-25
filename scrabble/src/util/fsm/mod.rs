@@ -14,7 +14,7 @@ pub use builder::FsmBuilder;
 pub use fast_fsm::FastFsm;
 pub use small_fsm::SmallFsm;
 
-/// Used to identify a [`State`].
+/// Used to identify a state in a Finite State Machine ([`Fsm`]).
 #[repr(transparent)]
 #[derive(Hash, Default, Debug, PartialEq, Eq, Clone, Copy, Serialize, Deserialize)]
 pub struct StateId(usize);
