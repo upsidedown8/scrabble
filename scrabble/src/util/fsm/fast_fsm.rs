@@ -8,7 +8,7 @@ use std::{
     iter,
 };
 
-use super::SmallFsm;
+use super::{small_fsm::SmallStateId, SmallFsm};
 
 /// A state in the [`FastFsm`]. Stores only the transitions to other states,
 /// in a hashmap.
@@ -33,6 +33,19 @@ pub struct FastFsm {
     pub(super) terminal_count: usize,
 }
 
+impl FastFsm {
+    /// Gets the number of states
+    pub fn state_count(&self) -> usize {
+        self.states.len()
+    }
+    /// Gets the number of transitions
+    pub fn transition_count(&self) -> usize {
+        self.states
+            .iter()
+            .map(|state| state.transitions.len())
+            .sum()
+    }
+}
 impl From<FsmBuilder> for FastFsm {
     fn from(mut builder: FsmBuilder) -> Self {
         // the initial state (at index 0) should be non-terminal
@@ -109,7 +122,9 @@ impl From<SmallFsm> for FastFsm {
             let (start, end) = small_fsm.transition_limits(StateId(id));
             let transitions = (start..end)
                 .map(|pos| small_fsm.transitions[pos])
-                .map(|Transition(letter, state_id)| (letter, state_id))
+                .map(|Transition(letter, SmallStateId(state_id))| {
+                    (letter, StateId(state_id as usize))
+                })
                 .collect::<HashMap<_, _>>();
 
             states.push(State { transitions });

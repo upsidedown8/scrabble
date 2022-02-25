@@ -4,6 +4,12 @@ use crate::{
 };
 use serde::{Deserialize, Serialize};
 
+/// Used to identify a [`State`]. Uses fewer bits that [`StateId`] so
+/// that it takes up smaller storage space.
+#[repr(transparent)]
+#[derive(Hash, Default, Debug, PartialEq, Eq, Clone, Copy, Serialize, Deserialize)]
+pub struct SmallStateId(pub(super) u32);
+
 /// A state in the [`SmallFsm`]. Stores an index into the transitions array.
 #[repr(transparent)]
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
@@ -12,11 +18,11 @@ pub struct State(TransitionStartId);
 /// An index into the transitions array in [`SmallFsm`].
 #[repr(transparent)]
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
-pub struct TransitionStartId(usize);
+pub struct TransitionStartId(u32);
 
 /// A transition, mapping from one state to another.
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
-pub struct Transition(pub(super) Letter, pub(super) StateId);
+pub struct Transition(pub(super) Letter, pub(super) SmallStateId);
 
 /// A memory optimised finite state machine.
 ///
@@ -39,11 +45,19 @@ impl SmallFsm {
     pub fn transition_limits(&self, StateId(id): StateId) -> (usize, usize) {
         let State(TransitionStartId(start)) = self.states[id];
         let end = match self.states.get(id + 1) {
-            Some(&State(TransitionStartId(end))) => end,
+            Some(&State(TransitionStartId(end))) => end as usize,
             _ => self.transitions.len(),
         };
 
-        (start, end)
+        (start as usize, end)
+    }
+    /// Gets the number of states
+    pub fn state_count(&self) -> usize {
+        self.states.len()
+    }
+    /// Gets the number of transitions
+    pub fn transition_count(&self) -> usize {
+        self.transitions.len()
     }
 }
 impl From<FsmBuilder> for SmallFsm {
@@ -53,6 +67,9 @@ impl From<FsmBuilder> for SmallFsm {
 }
 impl From<FastFsm> for SmallFsm {
     fn from(fast_fsm: FastFsm) -> Self {
+        debug_assert!((fast_fsm.state_count() as u32) < u32::MAX);
+        debug_assert!((fast_fsm.transition_count() as u32) < u32::MAX);
+
         // reuse the code for the fast fsm.
         let FastFsm {
             states,
@@ -69,8 +86,10 @@ impl From<FastFsm> for SmallFsm {
 
             // add each transition to the array
             for (k, state_id) in state.transitions {
+                let StateId(id) = state_id;
+
                 // can reuse the state_id as the ordering is unchanged.
-                transitions.push(Transition(k, state_id));
+                transitions.push(Transition(k, SmallStateId(id as u32)));
                 transition_id += 1;
             }
         }
@@ -108,9 +127,10 @@ impl<'a> Fsm<'a> for SmallFsm {
 
             for i in start..end {
                 let Transition(k, next_state) = &self.transitions[i];
+                let &SmallStateId(id) = next_state;
 
                 if item.eq(k) {
-                    curr_state = *next_state;
+                    curr_state = StateId(id as usize);
 
                     // move to next item
                     continue 'outer;
