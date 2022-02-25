@@ -7,8 +7,6 @@ use crate::{
 };
 use std::fmt;
 
-use super::tile::Letter;
-
 /// The number of rows on the board.
 pub const ROWS: usize = 15;
 /// The number of columns on the board.
@@ -39,7 +37,7 @@ impl Board {
         &self,
         occ: BitBoard,
         new: BitBoard,
-        fsm: &impl Fsm<'a, Letter>,
+        fsm: &impl Fsm<'a>,
         map_pos: F,
     ) -> GameResult<usize>
     where
@@ -112,7 +110,7 @@ impl Board {
         &self,
         new_h: BitBoard,
         new_v: BitBoard,
-        fsm: &impl Fsm<'a, Letter>,
+        fsm: &impl Fsm<'a>,
     ) -> GameResult<usize> {
         // Find the score for horizontal and vertical words.
         let score_h = self.score_words(self.occ_h, new_h, fsm, |pos| pos)?;
@@ -216,7 +214,7 @@ impl Board {
     pub fn make_placement<'a>(
         &mut self,
         tile_positions: &[(Pos, Tile)],
-        fsm: &impl Fsm<'a, Letter>,
+        fsm: &impl Fsm<'a>,
     ) -> GameResult<usize> {
         // new tiles for horizontal words
         let mut new_h = BitBoard::default();
