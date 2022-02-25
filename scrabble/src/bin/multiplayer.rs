@@ -4,7 +4,7 @@ use scrabble::{
         Game,
     },
     util::{
-        fsm::Fsm,
+        fsm::{FastFsm, FsmBuilder},
         pos::{Col, Direction, Row},
     },
 };
@@ -14,13 +14,15 @@ use std::{
 };
 
 fn main() {
-    let mut fsm = Fsm::default();
+    let mut fsm = FsmBuilder::default();
     let file = File::open("../server/data/words.txt").unwrap();
     let rdr = BufReader::new(file);
 
     for line in rdr.lines().flatten() {
         fsm.insert(line.trim());
     }
+
+    let fsm: FastFsm = fsm.build();
 
     let mut game = Game::new(&fsm, 2);
 
