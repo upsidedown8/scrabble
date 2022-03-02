@@ -122,8 +122,8 @@ impl<'a> Fsm<'a> for SmallFsm {
 
         for item in seq.into_iter() {
             let (start, end) = self.transition_limits(curr_state);
-            curr_state = (start..end)
-                .map(|i| &self.transitions[i])
+            curr_state = self.transitions[start..end]
+                .iter()
                 .find(|Transition(k, _)| *k == item)
                 .map(|Transition(_, SmallStateId(id))| StateId(*id as usize))?;
         }
