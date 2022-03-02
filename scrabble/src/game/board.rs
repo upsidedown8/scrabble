@@ -26,23 +26,28 @@ pub struct Board {
     occ_v: BitBoard,
 }
 impl Board {
+    /// Gets the board occupancy.
+    pub fn occ_h(&self) -> &BitBoard {
+        &self.occ_h
+    }
+    /// Gets the rotated board occupancy.
+    pub fn occ_v(&self) -> &BitBoard {
+        &self.occ_v
+    }
     /// Finds the sum of the scores of each word. If an invalid word is
     /// encountered, returns an error, otherwise returns the sum of the
-    /// scores of all words containing new letters. `map_pos` is used to rotate
+    /// scores of all words containing new letters. `map` is used to rotate
     /// the bit positions back to the standard grid for the rotated vertical
     /// bitboard. `new` is the set of added tiles, which should ave been
     /// rotated previously for vertical words. `occ` is the set of existing
     /// tiles, which should also have been rotated.
-    fn score_words<'a, F>(
+    fn score_words<'a>(
         &self,
         occ: BitBoard,
         new: BitBoard,
         fsm: &impl Fsm<'a>,
-        map_pos: F,
-    ) -> GameResult<usize>
-    where
-        F: Copy + Fn(Pos) -> Pos,
-    {
+        map_pos: impl Fn(Pos) -> Pos + Copy,
+    ) -> GameResult<usize> {
         let mut sum = 0;
 
         let mut bits = new.into_iter();
@@ -194,10 +199,7 @@ impl Board {
         }
     }
     /// Gets the tile at `pos`
-    pub fn at<T>(&self, pos: T) -> Option<Tile>
-    where
-        T: Into<Pos>,
-    {
+    pub fn at(&self, pos: impl Into<Pos>) -> Option<Tile> {
         self.grid[usize::from(pos.into())]
     }
     /// Removes all tiles in `tile_positions` from the board.
