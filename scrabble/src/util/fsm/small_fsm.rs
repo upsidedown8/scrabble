@@ -67,8 +67,8 @@ impl From<FsmBuilder> for SmallFsm {
 }
 impl From<FastFsm> for SmallFsm {
     fn from(fast_fsm: FastFsm) -> Self {
-        debug_assert!((fast_fsm.state_count() as u32) < u32::MAX);
-        debug_assert!((fast_fsm.transition_count() as u32) < u32::MAX);
+        assert!(fast_fsm.state_count() < u32::MAX as usize);
+        assert!(fast_fsm.transition_count() < u32::MAX as usize);
 
         // reuse the code for the fast fsm.
         let FastFsm {
@@ -85,9 +85,7 @@ impl From<FastFsm> for SmallFsm {
             small_states.push(State(TransitionStartId(transition_id)));
 
             // add each transition to the array
-            for (k, state_id) in state.transitions {
-                let StateId(id) = state_id;
-
+            for (k, StateId(id)) in state.transitions {
                 // can reuse the state_id as the ordering is unchanged.
                 transitions.push(Transition(k, SmallStateId(id as u32)));
                 transition_id += 1;
@@ -122,23 +120,12 @@ impl<'a> Fsm<'a> for SmallFsm {
     fn traverse_from(&self, state_id: StateId, seq: impl FsmSequence) -> Option<StateId> {
         let mut curr_state = state_id;
 
-        'outer: for item in seq.into_iter() {
+        for item in seq.into_iter() {
             let (start, end) = self.transition_limits(curr_state);
-
-            for i in start..end {
-                let Transition(k, next_state) = &self.transitions[i];
-                let &SmallStateId(id) = next_state;
-
-                if item.eq(k) {
-                    curr_state = StateId(id as usize);
-
-                    // move to next item
-                    continue 'outer;
-                }
-            }
-
-            // no matching transition found
-            return None;
+            curr_state = (start..end)
+                .map(|i| &self.transitions[i])
+                .find(|Transition(k, _)| *k == item)
+                .map(|Transition(_, SmallStateId(id))| StateId(*id as usize))?;
         }
 
         Some(curr_state)
