@@ -1,6 +1,6 @@
 use scrabble::{
-    util::pos::{Pos, PosBonus},
     game::tile,
+    util::pos::{Pos, PosBonus},
 };
 use sycamore::prelude::*;
 
@@ -16,9 +16,10 @@ fn bonus_class(pos: Pos) -> &'static str {
     }
 }
 
+#[derive(Prop)]
 pub struct SquareProps<'a> {
-    pos: Pos,
-    tile: &'a Signal<Option<tile::Tile>>,
+    pub pos: Pos,
+    pub tile: &'a Signal<Option<tile::Tile>>,
 }
 
 /// One of 225 squares that make up the board. Each square

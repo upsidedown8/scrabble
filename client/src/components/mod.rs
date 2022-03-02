@@ -10,7 +10,7 @@ mod rack;
 mod separator;
 mod square;
 
-// pub use board::Board;
+pub use board::Board;
 pub use error_msg::ErrorMsg;
 pub use fa_icon::FaIcon;
 pub use footer::Footer;

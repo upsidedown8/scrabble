@@ -1,52 +1,66 @@
-// use sycamore::prelude::*;
-// use scrabble::{tile::Tile, pos::{Col, Row, Pos}, board::{COLS, CELLS}};
-// use super::square::Square;
+use super::square::Square;
+use scrabble::{
+    game::tile::Tile,
+    util::pos::{Col, Pos, Row},
+};
+use sycamore::prelude::*;
 
-// /// Display one of the 15 rows of the board.
-// #[component(BoardRow<G>)]
-// fn board_row<'a>((tiles, row): (&'a [Option<Tile>], Row)) -> View<G> {
-//     // let props = KeyedProps {
-//     //     iterable: Col::iter()
-//     //         .map(|col| Pos::from((row, col)))
-//     //         .zip(tiles)
-//     //         .collect(),
-//     //     // template: |props| view! {
-//     //     //     Square(props)
-//     //     // },
-//     //     // key: |(pos, _)| pos,
-//     // };
+#[derive(Prop, Clone, Copy)]
+pub struct BoardRowProps<'a> {
+    row: Row,
+    cells: &'a [&'a Signal<Option<Tile>>],
+}
 
-//     // view! {
-//     //     div(class="board-row") {
-//     //         Keyed(props)
-//     //     }
-//     // }
+#[component]
+pub fn BoardRow<'a, G: Html>(ctx: ScopeRef<'a>, props: BoardRowProps<'a>) -> View<G> {
+    let squares = View::new_fragment(
+        Col::iter()
+            .map(|col| Pos::from((props.row, col)))
+            .zip(props.cells)
+            .map(|(pos, &tile)| {
+                view! { ctx,
+                    Square {
+                        pos: pos,
+                        tile: tile,
+                    }
+                }
+            })
+            .collect(),
+    );
 
-//     todo!()
-// }
+    view! { ctx,
+        div(class="board-row") {
+            (squares)
+        }
+    }
+}
 
-// pub struct BoardRowProps<'a> {
-//     cells: Vec<&'a Signal<Option<Tile>>>,
-// }
+#[derive(Prop, Clone)]
+pub struct BoardProps<'a> {
+    cells: &'a [&'a Signal<Option<Tile>>; 225],
+}
 
-// pub struct BoardProps<'a> {
-//     cells: &'a Signal<Vec<BoardRowProps<'a>>>,
-// }
+/// View the scrabble board, providing a single dimensional array containing
+/// the 225 optional tiles.
+#[component]
+pub fn Board<'a, G: Html>(ctx: ScopeRef<'a>, props: BoardProps<'a>) -> View<G> {
+    let rows = View::new_fragment(
+        props
+            .cells
+            .chunks_exact(15)
+            .zip(Row::iter())
+            .map(|(cells, row)| BoardRowProps { cells, row })
+            .map(|row_props| {
+                view! { ctx,
+                    BoardRow(row_props)
+                }
+            })
+            .collect(),
+    );
 
-// /// View the scrabble board, providing a single dimensional array containing
-// /// the 225 optional tiles.
-// #[component]
-// pub fn Board<G: Html>(ctx: ScopeRef, tiles: ReadSignal<[Option<Tile>; CELLS]>) -> View<G> {
-//     view! { ctx,
-//         div(class="board") {
-//             (tiles
-//                 .get()
-//                 .chunks(15)
-//                 .zip(Row::iter())
-//                 .map(|props| view! {
-//                     BoardRow(props)
-//                 })
-//                 .collect())
-//         }
-//     }
-// }
+    view! { ctx,
+        div(class="board") {
+            (rows)
+        }
+    }
+}
