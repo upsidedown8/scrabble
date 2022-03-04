@@ -80,17 +80,11 @@ impl Rack {
         Ok(())
     }
     /// Checks whether all `tiles` are contained within the rack.
-    pub fn contains<I>(&self, tiles: I) -> bool
-    where
-        I: Iterator<Item = Tile>,
-    {
+    pub fn contains(&self, tiles: impl Iterator<Item = Tile>) -> bool {
         self.counts.contains(tiles)
     }
     /// Removes all `tiles` from the rack.
-    pub fn remove<I>(&mut self, tiles: I)
-    where
-        I: Iterator<Item = Tile>,
-    {
+    pub fn remove(&mut self, tiles: impl Iterator<Item = Tile>) {
         self.counts.remove(tiles)
     }
     /// Gets an iterator over the tiles in the rack.
