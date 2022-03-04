@@ -12,7 +12,7 @@ pub const ROWS: usize = 15;
 /// The number of columns on the board.
 pub const COLS: usize = 15;
 /// The number of squares on the board.
-pub const CELLS: usize = 15 * 15;
+pub const CELLS: usize = ROWS * COLS;
 
 /// Represents the 15 x 15 scrabble board, storing the location of
 /// tiles, and allowing [`Play`](super::play::Play)s to be made
@@ -30,10 +30,9 @@ impl Board {
     /// the 50 point bonus where appropriate. `new` is the (horizontal) bitboard
     /// of added tiles. If an invalid word is encountered, returns an error.
     fn score_and_validate<'a>(&self, new_h: BitBoard, fsm: &impl Fsm<'a>) -> GameResult<usize> {
-        let words_h = Words::horizontal(self.occ_h);
-        let words_v = Words::vertical(self.occ_v);
+        let words_h = Words::horizontal(self.occ_h).new_words(new_h);
+        let words_v = Words::vertical(self.occ_v).new_words(new_h);
 
-        // FIXME: Only score modified words!
         let mut score = 0;
         for word in words_h.chain(words_v) {
             score += scoring::score(word, &new_h, self, fsm)?;
@@ -78,8 +77,11 @@ impl Board {
             return Err(GameError::PlacementCount);
         }
 
-        // FIXME: All tiles must be in the same row or column!
-        
+        // store the row and column of the first tile.
+        let (row, col) = tile_positions[0].0.row_col();
+        let mut same_row = true;
+        let mut same_col = true;
+
         // new tiles for horizontal words
         let mut new_h = BitBoard::default();
         // new tiles for vertical words: rotated 90deg anticlockwise
@@ -92,8 +94,16 @@ impl Board {
                 return Err(GameError::DuplicatePosition);
             }
 
+            // compare row and col with the first row.
+            same_row &= row == pos_h.row();
+            same_col &= col == pos_h.col();
+
             new_h.set_bit(pos_h);
             new_v.set_bit(pos_h.anti_clockwise90());
+        }
+
+        if !same_row && !same_col {
+            return Err(GameError::NoCommonLine);
         }
 
         // perform tile placement validation
