@@ -7,247 +7,256 @@
 //! The types exposed in this module are also useful for modelling
 //! state for the UI.
 
+use crate::{
+    error::{GameError, GameResult},
+    game::{board::Board, letter_bag::LetterBag, play::Play, rack::Rack, tile::Tile},
+    util::{fsm::Fsm, pos::Pos},
+};
+
 pub mod board;
 pub mod letter_bag;
 pub mod play;
 pub mod rack;
 pub mod tile;
 
-use crate::{
-    error::{GameError, GameResult},
-    game::{board::Board, letter_bag::LetterBag, play::Play, rack::Rack},
-    util::fsm::Fsm,
-};
-use std::fmt;
+/// Top level struct allowing for management of the entire
+/// game. Manages players, all state, and determines when the
+/// game is over, calculating scores and determining the winner.
+#[derive(Debug)]
+pub struct Game {
+    board: Board,
+    letter_bag: LetterBag,
+    players: Vec<Player>,
+    to_play: PlayerNum,
+    status: GameStatus,
+}
 
-/// The reason that the game has ended.
-#[derive(Clone, Debug)]
-pub enum Reason {
-    /// A player has emptied their rack with no letters remaining in the bag.
-    EmptyRack,
-    /// All players have passed for 6 consecutive rounds.
-    SixPasses,
+/// Models a scrabble player.
+#[derive(Debug)]
+pub struct Player {
+    rack: Rack,
+    score: usize,
+    pass_count: usize,
 }
 
 /// The current state of the game.
 #[derive(Clone, Debug)]
 pub enum GameStatus {
-    /// One or more players have one
-    Over(Vec<PlayerId>, Reason),
+    /// One or more players have won
+    Over(GameOver),
     /// The game is ongoing.
-    ToPlay(PlayerId),
+    ToPlay(PlayerNum),
 }
-
-/// Used to identify a player.
-#[derive(Hash, Clone, Copy, Debug, PartialEq, Eq)]
-pub struct PlayerId(usize);
-impl From<PlayerId> for usize {
-    fn from(PlayerId(id): PlayerId) -> Self {
-        id
+impl GameStatus {
+    /// Checks whether the game is over.
+    pub fn is_over(&self) -> bool {
+        matches!(self, GameStatus::Over(_))
     }
 }
 
-/// Top level struct allowing for management of the entire
-/// game. Manages players, all state, and determines when the
-/// game is over, calculating scores and determining the winner.
-pub struct Game<'a, F> {
-    fsm: &'a F,
-
-    board: Board,
-    letter_bag: LetterBag,
+/// Stores the final scores and the outcome of the game.
+#[derive(Clone, Debug)]
+pub struct GameOver {
+    max_score: usize,
     scores: Vec<usize>,
-    racks: Vec<Rack>,
+    reason: GameOverReason,
+}
+impl GameOver {
+    /// Computes the final scores from the game state.
+    pub fn new(reason: GameOverReason, players: &[Player], last_player: PlayerNum) -> Self {
+        let mut scores = vec![0; players.len()];
+        let mut overall_rack_sum = 0;
 
-    to_play: PlayerId,
-    pass_count: usize,
-    player_count: usize,
-    status: GameStatus,
+        // First calculate the initial scores for all players, as
+        //     (current running total) - (sum of tiles on rack)
+        for (idx, player) in players.iter().enumerate() {
+            let rack_sum = player.rack.tile_sum();
+            scores[idx] = player.score - rack_sum;
+            overall_rack_sum += rack_sum;
+        }
+
+        // Then calculate the final score for the player that ended the game,
+        // by adding `overall_rack_total` to their score.
+        scores[usize::from(last_player)] += overall_rack_sum;
+
+        let &max_score = scores.iter().max().unwrap_or(&0);
+
+        Self {
+            max_score,
+            scores,
+            reason,
+        }
+    }
+    /// Gets the maximum score achieved.
+    pub fn max_score(&self) -> usize {
+        self.max_score
+    }
+    /// Gets the reason that the game ended.
+    pub fn reason(&self) -> GameOverReason {
+        self.reason
+    }
+    /// Gets an iterator over the numbers of the winning players.
+    pub fn winners(&self) -> impl Iterator<Item = PlayerNum> + '_ {
+        self.iter()
+            .filter(|&(_, score)| score == self.max_score)
+            .map(|(player_num, _)| player_num)
+    }
+    /// Gets an iterator over the (playernumber, score) tuples.
+    pub fn iter(&self) -> impl Iterator<Item = (PlayerNum, usize)> + '_ {
+        PlayerNum::iter(self.scores.len()).zip(self.scores.iter().copied())
+    }
 }
 
-impl<'a, F: Fsm<'a>> Game<'a, F> {
-    /// Constructs a new [`Game`] from a borrowed `word_tree` and the number
-    /// of players.
-    pub fn new(fsm: &'a F, player_count: usize) -> Self {
+/// The reason that the game has ended.
+#[derive(Clone, Copy, Debug)]
+pub enum GameOverReason {
+    /// A player has emptied their rack with no letters remaining in the bag.
+    EmptyRack,
+    /// A player has passed their turn twice in a row.
+    TwoPasses,
+}
+
+/// Used to identify players within a [`Game`]. Since
+/// the implementation is decoupled from any actual data,
+/// the server/client has to handle how assigned [`PlayerNum`]
+/// values relate to the actual players.
+#[derive(Debug, Clone, Copy)]
+#[repr(transparent)]
+pub struct PlayerNum(usize);
+impl PlayerNum {
+    /// The first player.
+    pub fn first() -> Self {
+        Self(0)
+    }
+    /// Gets the next player, wrapping around at the end.
+    pub fn next(self, player_count: usize) -> Self {
+        let PlayerNum(val) = self;
+
+        Self((val + 1) % player_count)
+    }
+    /// Gets an iterator over [`PlayerNum`]s.
+    pub fn iter(player_count: usize) -> impl Iterator<Item = Self> {
+        (0..player_count).map(Self)
+    }
+}
+impl From<PlayerNum> for usize {
+    fn from(PlayerNum(num): PlayerNum) -> Self {
+        num
+    }
+}
+
+impl Game {
+    /// Constructs a new [`Game`] from the number of players.
+    pub fn with_players(player_count: usize) -> Self {
         let mut letter_bag = LetterBag::default();
 
-        let to_play = PlayerId(0);
-        let racks = (0..player_count)
-            .map(|_| Rack::new(&mut letter_bag))
+        let players = (0..player_count)
+            .map(|_| Player {
+                rack: Rack::new(&mut letter_bag),
+                score: 0,
+                pass_count: 0,
+            })
             .collect();
 
         Self {
-            fsm,
             letter_bag,
-            to_play,
+            to_play: PlayerNum::first(),
             board: Board::default(),
-            pass_count: 0,
-            player_count,
-            status: GameStatus::ToPlay(to_play),
-            scores: vec![0; player_count],
-            racks,
+            status: GameStatus::ToPlay(PlayerNum::first()),
+            players,
         }
     }
-    /// Gets the id of the current player.
-    pub fn to_play(&self) -> PlayerId {
-        self.to_play
-    }
-    /// Gets the id of the next player.
-    pub fn next_player(&self) -> PlayerId {
-        PlayerId((usize::from(self.to_play) + 1) % self.player_count)
-    }
-    /// Pops the most recent play from the history and undoes it.
-    pub fn undo_play(&mut self) {
-        todo!()
-    }
-    /// Gets an iterator over the player ids.
-    pub fn player_ids(&self) -> impl Iterator<Item = PlayerId> {
-        (0..self.player_count).map(PlayerId)
-    }
-    /// Borrows a player's rack by id.
-    pub fn rack(&self, id: PlayerId) -> &Rack {
-        &self.racks[usize::from(id)]
-    }
-    /// Gets a player's score by id.
-    pub fn score(&self, id: PlayerId) -> usize {
-        self.scores[usize::from(id)]
-    }
-    /// Borrows the current status of the game.
+    /// The current status of the game.
     pub fn status(&self) -> &GameStatus {
         &self.status
     }
-    /// Checks whether the game is over.
-    pub fn is_over(&self) -> bool {
-        matches!(self.status(), GameStatus::Over(_, _))
+    /// Gets the number of players.
+    pub fn player_count(&self) -> usize {
+        self.players.len()
     }
     /// Attempts to make a [`Play`].
-    pub fn make_play(&mut self, play: Play) -> GameResult<()> {
-        if self.is_over() {
+    pub fn make_play<'a, F: Fsm<'a>>(&mut self, play: &Play, fsm: &F) -> GameResult<()> {
+        // Return early if the game is over.
+        if self.status().is_over() {
             return Err(GameError::Over);
         }
 
-        let id = usize::from(self.to_play());
-        let rack = &mut self.racks[id];
+        // make the play.
+        match play {
+            Play::Pass => self.pass(),
+            Play::Redraw(tiles) => self.redraw(tiles)?,
+            Play::Place(tile_positions) => self.place(fsm, tile_positions)?,
+        }
 
-        match &play {
-            Play::Pass => self.pass_count += 1,
-            Play::Redraw(tiles) => {
-                // check number of tiles
-                if !(1..=7).contains(&tiles.len()) {
-                    return Err(GameError::RedrawCount);
-                }
-
-                // attempt to swap out tiles
-                rack.exchange_tiles(tiles, &mut self.letter_bag)?;
-
-                // not a pass so set pas count to zero
-                self.pass_count = 0;
-            }
-            Play::Place(tile_positions) => {
-                // check number of tiles
-                if !(1..=7).contains(&tile_positions.len()) {
-                    return Err(GameError::PlacementCount);
-                }
-
-                // check whether rack contains tiles
-                if !rack.contains(tile_positions.iter().map(|(_, t)| *t)) {
-                    return Err(GameError::NotInRack);
-                }
-
-                // attempt to make the placement
-                let score = self.board.make_placement(tile_positions, self.fsm)?;
-                self.scores[id] += score;
-
-                // remove letters from rack
-                rack.remove(tile_positions.iter().map(|(_, t)| *t));
-
-                // refill rack
-                rack.refill(&mut self.letter_bag);
-
-                // not a pass so set pas count to zero
-                self.pass_count = 0;
-            }
-        };
-
-        // update current player
-        self.to_play = self.next_player();
-
-        // Check whether any player has an empty rack
-        let empty_rack = self
-            .player_ids()
-            .map(|id| self.rack(id))
-            .any(|rack| rack.is_empty());
-
-        // If there have been 6 rounds of passes in a row,
-        // or a player has no letters on their rack,
-        // then the game is over.
-        let reason = if self.pass_count == 6 * self.player_count {
-            Some(Reason::SixPasses)
-        } else if empty_rack {
-            Some(Reason::EmptyRack)
-        } else {
-            None
-        };
-
-        self.status = match reason {
-            None => {
-                // Game is ongoing
-                GameStatus::ToPlay(self.to_play)
-            }
-            Some(reason) => {
-                let mut rack_sum = 0;
-
-                // Compute initial scores:
-                // = (the running score of each player) - (the total of tiles on their rack)
-                for id in self.player_ids() {
-                    let id = usize::from(id);
-                    let rack_total = self.racks[id]
-                        .iter()
-                        .map(|tile| tile.score())
-                        .sum::<usize>();
-                    let final_score = (self.scores[id] as i32 - rack_total as i32).max(0) as usize;
-
-                    self.scores[id] = final_score as usize;
-
-                    rack_sum += rack_total;
-                }
-
-                // Compute final scores:
-                // the final score of any player with no remaining tiles is increased
-                // by the sum of the remaining tiles
-                for id in 0..self.player_count {
-                    // if the player's rack was empty then this is true
-                    if self.racks[id].is_empty() {
-                        self.scores[id] += rack_sum;
-                    }
-                }
-
-                let max_score = self.scores.iter().copied().max().unwrap_or(0);
-                let winners = self
-                    .player_ids()
-                    .filter(|&id| self.scores[usize::from(id)] == max_score)
-                    .collect();
-
-                GameStatus::Over(winners, reason)
-            }
-        };
+        // update current player & status
+        self.status = self.next_status();
+        self.to_play = self.to_play.next(self.player_count());
 
         Ok(())
     }
-}
-impl<'a, F: Fsm<'a>> fmt::Display for Game<'a, F> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "{}", self.board)?;
 
-        for id in self.player_ids() {
-            writeln!(
-                f,
-                "{:?}: score = {}, rack = {}",
-                id,
-                self.score(id),
-                self.rack(id)
-            )?;
-        }
+    /// Makes a [`Play::Redraw`] play.
+    fn redraw(&mut self, tiles: &[Tile]) -> GameResult<()> {
+        let player = self.current_player_mut();
+
+        // attempt to swap out tiles
+        player.rack.exchange_tiles(tiles, &mut self.letter_bag)?;
+        player.pass_count = 0;
 
         Ok(())
+    }
+    /// Makes a [`Play::Pass`] play.
+    fn pass(&mut self) {
+        let player = self.current_player_mut();
+
+        // The player has passed, so update their count.
+        player.pass_count += 1;
+    }
+    /// Makes a [`Play::Place`] play.
+    fn place<'a, F: Fsm<'a>>(&mut self, fsm: &F, tile_positions: &[(Pos, Tile)]) -> GameResult<()> {
+        let player = self.current_player_mut();
+
+        // check that the player has enough tiles.
+        if !player.rack.contains(tile_positions.iter().map(|&(_, t)| t)) {
+            return Err(GameError::NotInRack);
+        }
+
+        // attempt to make the placement
+        let score = self.board.make_placement(tile_positions, fsm)?;
+
+        // update player data
+        player.pass_count = 0;
+        player.score += score;
+        player.rack.remove(tile_positions.iter().map(|(_, t)| *t));
+        player.rack.refill(&mut self.letter_bag);
+
+        Ok(())
+    }
+
+    /// Gets the current [`Player`] data.
+    fn current_player(&mut self) -> &Player {
+        &self.players[usize::from(self.to_play)]
+    }
+    /// Gets the (mutable) current [`Player`] data.
+    fn current_player_mut(&mut self) -> &mut Player {
+        &mut self.players[usize::from(self.to_play)]
+    }
+    /// Determines the next game status.
+    fn next_status(&self) -> GameStatus {
+        let player = &(*self.current_player_mut());
+
+        if player.pass_count >= 2 {
+            // The game ends if the most recent player has passed twice
+            // in a row.
+            let game_over = GameOver::new(GameOverReason::TwoPasses, &self.players, self.to_play);
+            GameStatus::Over(game_over)
+        } else if player.rack.is_empty() {
+            // The game ends if the most recent player has emptied their rack.
+            let game_over = GameOver::new(GameOverReason::EmptyRack, &self.players, self.to_play);
+            GameStatus::Over(game_over)
+        } else {
+            // Otherwise the game is ongoing.
+            GameStatus::ToPlay(self.to_play)
+        }
     }
 }
