@@ -1,6 +1,8 @@
 //! Module containing newtypes representing checked board [`Pos`]itions,
 //! [`Row`]s, [`Col`]umns and orthagonal directions.
 
+use serde::{Deserialize, Serialize};
+
 use crate::game::{
     board::{CELLS, COLS, ROWS},
     tile::Letter,
@@ -9,7 +11,7 @@ use std::{fmt, ops::Sub};
 
 /// Additional bonus for certain positions on the board.
 #[derive(Debug, Clone, Copy)]
-pub enum PosBonus {
+pub enum Premium {
     /// The square doubles the value of the tile placed on it
     DoubleLetter,
     /// The square triples the value of the tile placed on it
@@ -23,47 +25,36 @@ pub enum PosBonus {
     Start,
 }
 
-impl PosBonus {
+impl Premium {
     /// Gets the multiplier for a word placed on a square with
     /// this bonus.
     pub fn word_multiplier(&self) -> usize {
         match self {
-            PosBonus::DoubleLetter => 1,
-            PosBonus::TripleLetter => 1,
-            PosBonus::DoubleWord => 2,
-            PosBonus::TripleWord => 3,
-            PosBonus::Start => 2,
+            Premium::DoubleLetter => 1,
+            Premium::TripleLetter => 1,
+            Premium::DoubleWord => 2,
+            Premium::TripleWord => 3,
+            Premium::Start => 2,
         }
     }
     /// Gets the multiplier for a tile placed on a square with
     /// this bonus.
-    pub fn letter_multiplier(&self) -> usize {
+    pub fn tile_multiplier(&self) -> usize {
         match self {
-            PosBonus::DoubleLetter => 2,
-            PosBonus::TripleLetter => 3,
-            PosBonus::DoubleWord => 1,
-            PosBonus::TripleWord => 1,
-            PosBonus::Start => 1,
+            Premium::DoubleLetter => 2,
+            Premium::TripleLetter => 3,
+            Premium::DoubleWord => 1,
+            Premium::TripleWord => 1,
+            Premium::Start => 1,
         }
     }
 }
 
 /// A position on the board. Ranges from `0..`[`CELLS`].
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash, PartialOrd)]
+#[repr(transparent)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Serialize, Deserialize)]
 pub struct Pos(usize);
 
-impl<R, C> From<(R, C)> for Pos
-where
-    R: Into<Row>,
-    C: Into<Col>,
-{
-    fn from((r, c): (R, C)) -> Self {
-        let row = usize::from(r.into());
-        let col = usize::from(c.into());
-
-        Self(row * COLS + col)
-    }
-}
 impl From<usize> for Pos {
     fn from(pos: usize) -> Self {
         Self(pos % (ROWS * COLS))
@@ -72,6 +63,14 @@ impl From<usize> for Pos {
 impl From<Pos> for usize {
     fn from(p: Pos) -> Self {
         p.0
+    }
+}
+impl<R: Into<Row>, C: Into<Col>> From<(R, C)> for Pos {
+    fn from((r, c): (R, C)) -> Self {
+        let row = usize::from(r.into());
+        let col = usize::from(c.into());
+
+        Self(row * COLS + col)
     }
 }
 impl fmt::Display for Pos {
@@ -108,7 +107,7 @@ impl Pos {
         *self == Self::start()
     }
     /// Gets the optional tile bonus of the `Pos`.
-    pub fn bonus(&self) -> Option<PosBonus> {
+    pub fn premium(&self) -> Option<Premium> {
         let (row, col) = self.row_col();
 
         // finds positive difference between two unsigned numbers
@@ -122,14 +121,22 @@ impl Pos {
         let delta_col = abs_diff(usize::from(col), 7);
 
         match (delta_row, delta_col) {
-            (0, 0) => Some(PosBonus::Start),
-            (2, 2) | (2, 6) | (6, 2) => Some(PosBonus::TripleLetter),
+            (0, 0) => Some(Premium::Start),
+            (2, 2) | (2, 6) | (6, 2) => Some(Premium::TripleLetter),
             (0, 4) | (4, 0) | (1, 1) | (1, 5) | (5, 1) | (7, 4) | (4, 7) => {
-                Some(PosBonus::DoubleLetter)
+                Some(Premium::DoubleLetter)
             }
-            (7, 7) | (0, 7) | (7, 0) => Some(PosBonus::TripleWord),
-            (a, b) if a == b => Some(PosBonus::DoubleWord),
+            (7, 7) | (0, 7) | (7, 0) => Some(Premium::TripleWord),
+            (a, b) if a == b => Some(Premium::DoubleWord),
             _ => None,
+        }
+    }
+    /// Gets the tuple (tile_multiplier, word_multiplier) for the position.
+    /// Defaults to (1, 1).
+    pub fn premium_multipliers(&self) -> (usize, usize) {
+        match self.premium() {
+            Some(bonus) => (bonus.tile_multiplier(), bonus.word_multiplier()),
+            _ => (1, 1),
         }
     }
     /// Gets the row number
@@ -166,6 +173,12 @@ impl Pos {
     pub fn iter() -> impl Iterator<Item = Self> {
         (0..CELLS).map(Pos::from)
     }
+    /// Advances the position value by 1.
+    pub fn next(&self) -> Self {
+        let &Pos(val) = self;
+
+        Pos((val + 1) % CELLS)
+    }
 }
 impl Sub<Pos> for Pos {
     type Output = Pos;
@@ -176,6 +189,7 @@ impl Sub<Pos> for Pos {
 }
 
 /// A vertical coordinate from `0..=14`
+#[repr(transparent)]
 #[derive(Debug, Clone, Copy)]
 pub struct Row(usize);
 
@@ -215,6 +229,7 @@ impl Row {
 }
 
 /// A horizontal coordinate from `A..=O`
+#[repr(transparent)]
 #[derive(Debug, Clone, Copy)]
 pub struct Col(usize);
 
