@@ -30,6 +30,8 @@ pub enum GameError {
     WordsNeedTwoLetters,
     /// Every tile should have a neighbour above, below, left or right.
     NotConnected,
+    /// Placed tiles must share a common row or column.
+    NoCommonLine,
 }
 
 impl Error for GameError {}
@@ -51,6 +53,7 @@ impl fmt::Display for GameError {
                 GameError::MustIntersectStart => "A tile must be placed on the start square",
                 GameError::WordsNeedTwoLetters => "Words need at least 2 letters",
                 GameError::NotConnected => "Not connected",
+                GameError::NoCommonLine => "Placed tiles must share a common row or column",
             }
         )
     }
