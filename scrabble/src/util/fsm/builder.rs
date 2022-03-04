@@ -169,3 +169,20 @@ impl FsmBuilder {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn common_prefix_len() {
+        let seq_a: Vec<_> = "abcdef".into_iter().collect();
+        let seq_b: Vec<_> = "abcdefg".into_iter().collect();
+        let seq_c: Vec<_> = "bcdefg".into_iter().collect();
+        let seq_d: Vec<_> = "".into_iter().collect();
+
+        assert_eq!(6, FsmBuilder::common_prefix_len(&seq_a, &seq_b));
+        assert_eq!(0, FsmBuilder::common_prefix_len(&seq_a, &seq_d));
+        assert_eq!(0, FsmBuilder::common_prefix_len(&seq_b, &seq_c));
+    }
+}

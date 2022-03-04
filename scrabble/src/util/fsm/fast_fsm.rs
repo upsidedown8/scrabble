@@ -12,7 +12,7 @@ use super::{small_fsm::SmallStateId, SmallFsm};
 
 /// A state in the [`FastFsm`]. Stores only the transitions to other states,
 /// in a hashmap.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct State {
     pub(super) transitions: HashMap<Letter, StateId>,
 }
@@ -27,7 +27,7 @@ pub struct State {
 /// This implementation of the [`Fsm`] trait is time optimised, as a hashmap for
 /// transitions is fast to access, but may not be the most compact representation of
 /// the transitions from each state.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct FastFsm {
     pub(super) states: Vec<State>,
     pub(super) terminal_count: usize,
@@ -168,5 +168,74 @@ impl<'a> Fsm<'a> for FastFsm {
         }
 
         Some(curr_state)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn build() -> FastFsm {
+        let mut builder = FsmBuilder::default();
+
+        builder.insert("bat");
+        builder.insert("batman");
+        builder.insert("bats");
+        builder.insert("cat");
+        builder.insert("cats");
+
+        builder.build()
+    }
+
+    #[test]
+    fn convert() {
+        let fast_fsm_1 = build();
+        let small_fsm = SmallFsm::from(fast_fsm_1.clone());
+        let fast_fsm_2 = FastFsm::from(small_fsm);
+
+        assert_eq!(fast_fsm_1, fast_fsm_2);
+    }
+
+    #[test]
+    fn accepts() {
+        let fast_fsm = build();
+
+        // check for matches
+        assert!(fast_fsm.accepts("bat"));
+        assert!(fast_fsm.accepts("batman"));
+        assert!(fast_fsm.accepts("bats"));
+        assert!(fast_fsm.accepts("cat"));
+        assert!(fast_fsm.accepts("cats"));
+
+        // check for no match
+        assert!(!fast_fsm.accepts("batma"));
+        assert!(!fast_fsm.accepts("zzzzz"));
+        assert!(!fast_fsm.accepts(""));
+    }
+
+    #[test]
+    fn traverse() {
+        let fast_fsm = build();
+
+        // check for partial paths
+        assert!(fast_fsm.traverse("batma").is_some());
+        assert!(!fast_fsm.is_terminal(fast_fsm.traverse("batma").unwrap()));
+        assert!(fast_fsm.is_terminal(fast_fsm.traverse("batman").unwrap()));
+    }
+
+    #[test]
+    fn transitions() {
+        let fast_fsm = build();
+
+        let transition_count = |seq| {
+            fast_fsm
+                .transitions(fast_fsm.traverse(seq).unwrap())
+                .count()
+        };
+
+        // check for transition count
+        assert_eq!(2, transition_count("bat"));
+        assert_eq!(0, transition_count("batman"));
+        assert_eq!(2, transition_count(""));
     }
 }

@@ -12,16 +12,16 @@ pub struct SmallStateId(pub(super) u32);
 
 /// A state in the [`SmallFsm`]. Stores an index into the transitions array.
 #[repr(transparent)]
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct State(TransitionStartId);
 
 /// An index into the transitions array in [`SmallFsm`].
 #[repr(transparent)]
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TransitionStartId(u32);
 
 /// A transition, mapping from one state to another.
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Transition(pub(super) Letter, pub(super) SmallStateId);
 
 /// A memory optimised finite state machine.
@@ -33,7 +33,7 @@ pub struct Transition(pub(super) Letter, pub(super) SmallStateId);
 ///
 /// This implementation of the [`Fsm`] trait is memory optimised, as the array
 /// implementation is very compact, but requires a linear traversal of states.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SmallFsm {
     pub(super) states: Vec<State>,
     pub(super) transitions: Vec<Transition>,
@@ -142,5 +142,74 @@ impl<'a> Iterator for FastFsmTransitionsIter<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         self.slice_iter.next().map(|Transition(item, _)| *item)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn build() -> SmallFsm {
+        let mut builder = FsmBuilder::default();
+
+        builder.insert("bat");
+        builder.insert("batman");
+        builder.insert("bats");
+        builder.insert("cat");
+        builder.insert("cats");
+
+        builder.build()
+    }
+
+    #[test]
+    fn convert() {
+        let small_fsm_1 = build();
+        let fast_fsm = FastFsm::from(small_fsm_1.clone());
+        let small_fsm_2 = SmallFsm::from(fast_fsm);
+
+        assert_eq!(small_fsm_1, small_fsm_2);
+    }
+
+    #[test]
+    fn accepts() {
+        let fast_fsm = build();
+
+        // check for matches
+        assert!(fast_fsm.accepts("bat"));
+        assert!(fast_fsm.accepts("batman"));
+        assert!(fast_fsm.accepts("bats"));
+        assert!(fast_fsm.accepts("cat"));
+        assert!(fast_fsm.accepts("cats"));
+
+        // check for no match
+        assert!(!fast_fsm.accepts("batma"));
+        assert!(!fast_fsm.accepts("zzzzz"));
+        assert!(!fast_fsm.accepts(""));
+    }
+
+    #[test]
+    fn traverse() {
+        let fast_fsm = build();
+
+        // check for partial paths
+        assert!(fast_fsm.traverse("batma").is_some());
+        assert!(!fast_fsm.is_terminal(fast_fsm.traverse("batma").unwrap()));
+        assert!(fast_fsm.is_terminal(fast_fsm.traverse("batman").unwrap()));
+    }
+
+    #[test]
+    fn transitions() {
+        let fast_fsm = build();
+
+        let transition_count = |seq| {
+            fast_fsm
+                .transitions(fast_fsm.traverse(seq).unwrap())
+                .count()
+        };
+
+        // check for transition count
+        assert_eq!(2, transition_count("bat"));
+        assert_eq!(0, transition_count("batman"));
+        assert_eq!(2, transition_count(""));
     }
 }
