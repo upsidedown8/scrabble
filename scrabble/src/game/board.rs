@@ -25,6 +25,23 @@ pub struct Board {
     /// vertical occupancy, rotated 90deg. For finding vertical words.
     occ_v: BitBoard,
 }
+impl Default for Board {
+    fn default() -> Self {
+        Self {
+            grid: [None; CELLS],
+            occ_h: BitBoard::default(),
+            occ_v: BitBoard::default(),
+        }
+    }
+}
+impl fmt::Display for Board {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        util::write_grid(f, |pos| match self.at(pos) {
+            Some(tile) => format!("{}", tile),
+            None => " . ".to_string(),
+        })
+    }
+}
 impl Board {
     /// Computes the combined score for horizontal and vertical words, adding
     /// the 50 point bonus where appropriate. `new` is the (horizontal) bitboard
@@ -130,22 +147,5 @@ impl Board {
                 Err(e)
             }
         }
-    }
-}
-impl Default for Board {
-    fn default() -> Self {
-        Self {
-            grid: [None; CELLS],
-            occ_h: BitBoard::default(),
-            occ_v: BitBoard::default(),
-        }
-    }
-}
-impl fmt::Display for Board {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        util::write_grid(f, |pos| match self.at(pos) {
-            Some(tile) => format!("{}", tile),
-            None => " . ".to_string(),
-        })
     }
 }
