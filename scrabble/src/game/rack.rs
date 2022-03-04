@@ -60,14 +60,19 @@ impl Rack {
     /// If there are insufficient tiles in the `letter_bag`, or the tiles
     /// provided are not all present in the rack, returns [`None`].
     pub fn exchange_tiles(&mut self, tiles: &[Tile], letter_bag: &mut LetterBag) -> GameResult<()> {
-        // check whether all tiles are within the rack
-        if !self.counts.contains(tiles.iter().copied()) {
-            return Err(GameError::NotInRack);
+        // check number of tiles
+        if !(1..=7).contains(&tiles.len()) {
+            return Err(GameError::RedrawCount);
         }
 
         // check whether there are enough new letters in the bag
         if letter_bag.len() < tiles.len() {
             return Err(GameError::NotEnoughLetters);
+        }
+
+        // check whether all tiles are within the rack
+        if !self.counts.contains(tiles.iter().copied()) {
+            return Err(GameError::NotInRack);
         }
 
         // remove current tiles & draw new tiles
