@@ -170,6 +170,10 @@ impl Game {
     pub fn status(&self) -> &GameStatus {
         &self.status
     }
+    /// Borrows the board.
+    pub fn board(&self) -> &Board {
+        &self.board
+    }
     /// Gets the number of players.
     pub fn player_count(&self) -> usize {
         self.players.len()
