@@ -2,17 +2,20 @@
 //! the library.
 
 use crate::{
-    error::{GameResult, GameError},
-    util::{pos::{Col, Pos, Row}, bitboard::BitBoard}
+    error::{GameError, GameResult},
+    util::{
+        bitboard::BitBoard,
+        pos::{Col, Pos, Row},
+    },
 };
 use std::fmt;
 
 pub mod bitboard;
 pub mod fsm;
 pub mod pos;
+pub mod scoring;
 pub mod tile_counts;
 pub mod words;
-pub mod scoring;
 
 /// Utility function for displaying a grid, which prints row
 /// and column headers. `at_pos` should return a string of length
@@ -92,27 +95,35 @@ pub fn validate_occ_h(occ_h: BitBoard, mut new_h: BitBoard) -> GameResult<()> {
     // remove the start bit from `new_h`
     new_h.clear_bit(Pos::start());
 
+    match is_connected(connected, new_h) {
+        // if there are still tiles remaining in `new_h` then
+        // the tiles are not connected.
+        false => Err(GameError::NotConnected),
+        // otherwise all tiles are connected.
+        true => Ok(()),
+    }
+}
+
+/// Checks whether the `new` tiles are connected orthagonally to the already
+/// `connected` tiles. The `connected` bitboard is assumed to contain tiles
+/// that are already connected together. The `new` bitboard must not intersect
+/// the `connected` bitboard.
+pub fn is_connected(mut connected: BitBoard, mut new: BitBoard) -> bool {
     // Keep looping until there are no neighbours
     loop {
         // Find the set of new tiles which neighbours the connected
         // set of tiles.
-        let neighbours = connected.neighbours() & new_h;
+        let neighbours = connected.neighbours() & new;
 
         // Remove the tiles from the set of tiles to consider
-        new_h ^= neighbours;
+        new ^= neighbours;
         // Add the tiles to the set of connected tiles.
         connected |= neighbours;
 
         // if there are no neighbouring tiles, then exit the loop
         if neighbours.is_zero() {
             // exits the loop and returns a value
-            break match new_h.is_zero() {
-                // if there are still tiles remaining in `new_h` then
-                // the tiles are not connected.
-                false => Err(GameError::NotConnected),
-                // otherwise all tiles are connected.
-                true => Ok(()),
-            };
+            return new.is_zero();
         }
     }
 }
