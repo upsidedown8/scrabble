@@ -89,6 +89,11 @@ impl From<[usize; 27]> for TileCounts {
         Self { counts, len }
     }
 }
+impl From<TileCounts> for [usize; 27] {
+    fn from(TileCounts { counts, .. }: TileCounts) -> Self {
+        counts
+    }
+}
 
 #[cfg(test)]
 mod tests {

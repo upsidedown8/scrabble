@@ -38,6 +38,10 @@ impl Rack {
 
         Self { counts }
     }
+    /// Get the underlying tile counts for the rack.
+    pub fn tile_counts(&self) -> &TileCounts {
+        &self.counts
+    }
     /// Gets the sum of the remaining tiles on the rack. This is used
     /// for scoring at the end of the game.
     pub fn tile_sum(&self) -> usize {
