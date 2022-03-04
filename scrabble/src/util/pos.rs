@@ -269,7 +269,7 @@ impl Col {
 }
 
 /// The four orthagonal directions from a [`Pos`].
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Direction {
     /// Up
     North,
