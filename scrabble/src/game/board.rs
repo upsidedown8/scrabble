@@ -3,14 +3,7 @@
 use crate::{
     error::{GameError, GameResult},
     game::tile::Tile,
-    util::{
-        self,
-        bitboard::BitBoard,
-        fsm::Fsm,
-        pos::Pos,
-        scoring,
-        words::{Word, Words},
-    },
+    util::{self, bitboard::BitBoard, fsm::Fsm, pos::Pos, scoring, words::Words},
 };
 use std::fmt;
 
@@ -34,24 +27,13 @@ pub struct Board {
 }
 impl Board {
     /// Computes the combined score for horizontal and vertical words, adding
-    /// the 50 point bonus where appropriate.
-    ///
-    /// Finds the sum of the scores of each word. If an invalid word is
-    /// encountered, returns an error, otherwise returns the sum of the
-    /// scores of all words containing new letters. `map_pos` is used to rotate
-    /// the bit positions back to the standard grid for the rotated vertical
-    /// bitboard. `new` is the set of added tiles, which should ave been
-    /// rotated previously for vertical words. `occ` is the set of existing
-    /// tiles, which should also have been rotated.
-    fn score_and_validate<'a>(
-        &self,
-        new_h: BitBoard,
-        new_v: BitBoard,
-        fsm: &impl Fsm<'a>,
-    ) -> GameResult<usize> {
-        let words_h = Words::horizontal(self.occ_h | new_h);
-        let words_v = Words::vertical(self.occ_v | new_v);
+    /// the 50 point bonus where appropriate. `new` is the (horizontal) bitboard
+    /// of added tiles. If an invalid word is encountered, returns an error.
+    fn score_and_validate<'a>(&self, new_h: BitBoard, fsm: &impl Fsm<'a>) -> GameResult<usize> {
+        let words_h = Words::horizontal(self.occ_h);
+        let words_v = Words::vertical(self.occ_v);
 
+        // FIXME: Only score modified words!
         let mut score = 0;
         for word in words_h.chain(words_v) {
             score += scoring::score(word, &new_h, self, fsm)?;
@@ -63,13 +45,6 @@ impl Board {
             _ => Ok(score),
         }
     }
-    /// Gets an iterator over the words on the board.
-    pub fn words(&self) -> impl Iterator<Item = Word> {
-        let words_h = Words::horizontal(self.occ_h);
-        let words_v = Words::vertical(self.occ_v);
-
-        words_h.chain(words_v)
-    }
     /// Gets the board occupancy.
     pub fn occ_h(&self) -> &BitBoard {
         &self.occ_h
@@ -78,13 +53,13 @@ impl Board {
     pub fn occ_v(&self) -> &BitBoard {
         &self.occ_v
     }
-    /// Gets the tile at `pos`
+    /// Gets the tile at `pos`.
     pub fn at(&self, pos: impl Into<Pos>) -> Option<Tile> {
         self.grid[usize::from(pos.into())]
     }
     /// Removes all tiles in `tile_positions` from the board.
-    pub fn undo_placement(&mut self, tile_positions: Vec<Pos>) {
-        for pos in tile_positions {
+    pub fn undo_placement(&mut self, tile_positions: &[(Pos, Tile)]) {
+        for &(pos, _) in tile_positions {
             self.grid[usize::from(pos)] = None;
             self.occ_h.clear_bit(pos);
             self.occ_v.clear_bit(pos.anti_clockwise90());
@@ -98,6 +73,13 @@ impl Board {
         tile_positions: &[(Pos, Tile)],
         fsm: &impl Fsm<'a>,
     ) -> GameResult<usize> {
+        // check the tile count
+        if !(1..=7).contains(&tile_positions.len()) {
+            return Err(GameError::PlacementCount);
+        }
+
+        // FIXME: All tiles must be in the same row or column!
+        
         // new tiles for horizontal words
         let mut new_h = BitBoard::default();
         // new tiles for vertical words: rotated 90deg anticlockwise
@@ -117,6 +99,10 @@ impl Board {
         // perform tile placement validation
         util::validate_occ_h(self.occ_h, new_h)?;
 
+        // update bitboards
+        self.occ_h |= new_h;
+        self.occ_v |= new_v;
+
         // Tiles positions have now been validated: place the tiles on the board.
         // Word validation requires that these tiles are present. If an invalid
         // word exists on the board, the tiles will be removed.
@@ -125,22 +111,12 @@ impl Board {
         }
 
         // checks that words are valid then returns the score
-        match self.score_and_validate(new_h, new_v, fsm) {
+        match self.score_and_validate(new_h, fsm) {
             // everything was ok, update the bitboards.
-            Ok(score) => {
-                // update bitboards
-                self.occ_h |= new_h;
-                self.occ_v |= new_v;
-
-                Ok(score)
-            }
+            Ok(score) => Ok(score),
             // error occured, reverse the state change
             Err(e) => {
-                // clear all modified squares
-                tile_positions
-                    .iter()
-                    .for_each(|(pos, _)| self.grid[usize::from(*pos)] = None);
-
+                self.undo_placement(tile_positions);
                 Err(e)
             }
         }
