@@ -22,6 +22,7 @@ const WORD_SIZE: usize = 64;
 const FINAL_WORD_MASK: u64 = 0x1ffffffff;
 
 /// Used to iterate over the bits in a [`BitBoard`].
+#[derive(Clone, Copy, Debug)]
 pub struct Bits {
     boards: [u64; 4],
     word_idx: usize,
@@ -46,6 +47,14 @@ impl Iterator for Bits {
         }
 
         None
+    }
+}
+impl From<BitBoard> for Bits {
+    fn from(bb: BitBoard) -> Bits {
+        Bits {
+            boards: bb.boards,
+            word_idx: 0,
+        }
     }
 }
 
@@ -200,10 +209,7 @@ impl IntoIterator for BitBoard {
     type IntoIter = Bits;
 
     fn into_iter(self) -> Self::IntoIter {
-        Bits {
-            boards: self.boards,
-            word_idx: 0,
-        }
+        Bits::from(self)
     }
 }
 
