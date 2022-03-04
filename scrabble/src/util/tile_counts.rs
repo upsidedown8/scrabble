@@ -12,6 +12,13 @@ pub struct TileCounts {
 }
 
 impl TileCounts {
+    /// Gets the sum of the tile values.
+    pub fn tile_sum(&self) -> usize {
+        Tile::iter()
+            .zip(self.counts.iter())
+            .map(|(tile, &count)| tile.score() * count)
+            .sum()
+    }
     /// The number of tiles in `self`
     pub fn len(&self) -> usize {
         self.len

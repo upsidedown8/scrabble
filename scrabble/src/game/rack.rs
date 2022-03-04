@@ -38,6 +38,11 @@ impl Rack {
 
         Self { counts }
     }
+    /// Gets the sum of the remaining tiles on the rack. This is used
+    /// for scoring at the end of the game.
+    pub fn tile_sum(&self) -> usize {
+        self.counts.tile_sum()
+    }
     /// Adds tiles from `letter_bag` to attempt to increase the
     /// number of tiles in the rack to [`RACK_SIZE`].
     pub fn refill(&mut self, letter_bag: &mut LetterBag) {
