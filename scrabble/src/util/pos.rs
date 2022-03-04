@@ -190,7 +190,7 @@ impl Sub<Pos> for Pos {
 
 /// A vertical coordinate from `0..=14`
 #[repr(transparent)]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Row(usize);
 
 impl From<usize> for Row {
@@ -230,7 +230,7 @@ impl Row {
 
 /// A horizontal coordinate from `A..=O`
 #[repr(transparent)]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Col(usize);
 
 impl From<usize> for Col {
@@ -272,13 +272,13 @@ impl Col {
 #[derive(Debug, Clone, Copy)]
 pub enum Direction {
     /// Up
-    Up,
-    /// Down
-    Down,
-    /// Left
-    Left,
+    North,
     /// Right
-    Right,
+    East,
+    /// Down
+    South,
+    /// Left
+    West,
 }
 impl Direction {
     /// Gets a unit vector in the `Direction` represented by `self`
@@ -289,10 +289,10 @@ impl Direction {
     pub fn vector(&self, scale: i32) -> (i32, i32) {
         use Direction::*;
         match self {
-            Up => (-scale, 0),
-            Down => (scale, 0),
-            Left => (0, -scale),
-            Right => (0, scale),
+            North => (-scale, 0),
+            South => (scale, 0),
+            West => (0, -scale),
+            East => (0, scale),
         }
     }
 }
