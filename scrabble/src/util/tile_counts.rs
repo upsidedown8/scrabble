@@ -5,7 +5,7 @@ use crate::game::tile::Tile;
 use std::iter::repeat;
 
 /// Reusable structure used to store a quantity of each tile.
-#[derive(Debug, Clone, Copy)]
+#[derive(Default, Debug, Clone, Copy)]
 pub struct TileCounts {
     counts: [usize; 27],
     len: usize,
@@ -35,17 +35,11 @@ impl TileCounts {
             .flat_map(|(tile, &count)| repeat(Tile::from(tile)).take(count))
     }
     /// Gets the count for a specific tile
-    pub fn count<T>(&self, tile: T) -> usize
-    where
-        T: Into<Tile>,
-    {
+    pub fn count(&self, tile: impl Into<Tile>) -> usize {
         self.counts[usize::from(tile.into())]
     }
     /// Checks whether the `tiles` are contained within the counts.
-    pub fn contains<I>(&self, tiles: I) -> bool
-    where
-        I: Iterator<Item = Tile>,
-    {
+    pub fn contains(&self, tiles: impl IntoIterator<Item = Tile>) -> bool {
         Self::counts(tiles)
             .into_iter()
             .zip(self.counts)
@@ -53,10 +47,7 @@ impl TileCounts {
     }
     /// Removes tiles from `self`. `self` should have sufficient tiles
     /// otherwise this method may panic.
-    pub fn remove<I>(&mut self, tiles: I)
-    where
-        I: Iterator<Item = Tile>,
-    {
+    pub fn remove(&mut self, tiles: impl IntoIterator<Item = Tile>) {
         let counts = Self::counts(tiles);
 
         self.counts
@@ -68,10 +59,7 @@ impl TileCounts {
         self.len = self.counts.iter().sum();
     }
     /// Adds tiles into `self`.
-    pub fn insert<I>(&mut self, tiles: I)
-    where
-        I: Iterator<Item = Tile>,
-    {
+    pub fn insert(&mut self, tiles: impl IntoIterator<Item = Tile>) {
         let counts = Self::counts(tiles);
 
         self.counts.iter_mut().zip(counts).for_each(|(curr, add)| {
@@ -81,10 +69,7 @@ impl TileCounts {
     }
     /// Helper method to get an array of counts for each tile in
     /// the iterator.
-    fn counts<I>(tiles: I) -> [usize; 27]
-    where
-        I: Iterator<Item = Tile>,
-    {
+    fn counts(tiles: impl IntoIterator<Item = Tile>) -> [usize; 27] {
         let mut counts = [0; 27];
         for t in tiles {
             counts[usize::from(t)] += 1;
@@ -102,5 +87,85 @@ impl From<[usize; 27]> for TileCounts {
         let len = counts.iter().sum();
 
         Self { counts, len }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::game::tile::Letter;
+
+    use super::*;
+
+    fn tile(num: usize) -> Tile {
+        Tile::Letter(Letter::from(num))
+    }
+
+    #[test]
+    fn insert_contains() {
+        let mut tc = TileCounts::default();
+
+        tc.insert([tile(0), tile(0), tile(1), tile(2), tile(2), tile(25)]);
+
+        assert!(tc.contains([tile(0), tile(0)]));
+        assert!(!tc.contains([tile(0), tile(0), tile(0)]));
+    }
+
+    #[test]
+    fn counts() {
+        let mut tc = TileCounts::default();
+
+        tc.insert([tile(0), tile(1), tile(2), tile(10), tile(9), tile(0)]);
+
+        assert_eq!(2, tc.count(tile(0)));
+        assert_eq!(1, tc.count(tile(1)));
+        assert_eq!(1, tc.count(tile(2)));
+        assert_eq!(1, tc.count(tile(9)));
+        assert_eq!(1, tc.count(tile(10)));
+    }
+
+    #[test]
+    fn iter() {
+        let mut tc = TileCounts::default();
+
+        tc.insert([
+            tile(0),
+            tile(1),
+            tile(2),
+            tile(2),
+            tile(0),
+            tile(7),
+            tile(20),
+            tile(20),
+        ]);
+
+        // should traverse in sorted order.
+        let order = [0, 0, 1, 2, 2, 7, 20, 20];
+        assert!(tc
+            .iter()
+            .zip(order)
+            .all(|(a, b)| usize::from(a.letter().unwrap()) == b));
+    }
+
+    #[test]
+    fn remove() {
+        let mut tc = TileCounts::default();
+
+        tc.insert([tile(0), tile(0), tile(1), tile(2)]);
+
+        assert_eq!(2, tc.count(tile(0)));
+        tc.remove([tile(0)]);
+        assert_eq!(1, tc.count(tile(0)));
+        tc.remove([tile(0)]);
+        assert_eq!(0, tc.count(tile(0)));
+
+        assert_eq!(tc.len(), 2);
+    }
+
+    #[test]
+    #[should_panic]
+    fn remove_zero_tile() {
+        let mut tc = TileCounts::default();
+
+        tc.remove([tile(0)]);
     }
 }
