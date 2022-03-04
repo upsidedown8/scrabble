@@ -197,7 +197,7 @@ impl Game {
 
     /// Makes a [`Play::Redraw`] play.
     fn redraw(&mut self, tiles: &[Tile]) -> GameResult<()> {
-        let player = self.current_player_mut();
+        let player = &mut self.players[0];
 
         // attempt to swap out tiles
         player.rack.exchange_tiles(tiles, &mut self.letter_bag)?;
@@ -207,14 +207,14 @@ impl Game {
     }
     /// Makes a [`Play::Pass`] play.
     fn pass(&mut self) {
-        let player = self.current_player_mut();
+        let player = &mut self.players[usize::from(self.to_play)];
 
         // The player has passed, so update their count.
         player.pass_count += 1;
     }
     /// Makes a [`Play::Place`] play.
     fn place<'a, F: Fsm<'a>>(&mut self, fsm: &F, tile_positions: &[(Pos, Tile)]) -> GameResult<()> {
-        let player = self.current_player_mut();
+        let player = &mut self.players[usize::from(self.to_play)];
 
         // check that the player has enough tiles.
         if !player.rack.contains(tile_positions.iter().map(|&(_, t)| t)) {
@@ -233,17 +233,9 @@ impl Game {
         Ok(())
     }
 
-    /// Gets the current [`Player`] data.
-    fn current_player(&mut self) -> &Player {
-        &self.players[usize::from(self.to_play)]
-    }
-    /// Gets the (mutable) current [`Player`] data.
-    fn current_player_mut(&mut self) -> &mut Player {
-        &mut self.players[usize::from(self.to_play)]
-    }
     /// Determines the next game status.
     fn next_status(&self) -> GameStatus {
-        let player = &(*self.current_player_mut());
+        let player = &self.players[usize::from(self.to_play)];
 
         if player.pass_count >= 2 {
             // The game ends if the most recent player has passed twice
