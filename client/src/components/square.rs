@@ -1,18 +1,18 @@
 use scrabble::{
     game::tile,
-    util::pos::{Pos, PosBonus},
+    util::pos::{Pos, Premium},
 };
 use sycamore::prelude::*;
 
 /// The class used to style squares with a bonus.
-fn bonus_class(pos: Pos) -> &'static str {
-    match pos.bonus() {
+fn premium_class(pos: Pos) -> &'static str {
+    match pos.premium() {
         None => "",
-        Some(PosBonus::DoubleLetter) => "double-letter",
-        Some(PosBonus::TripleLetter) => "triple-letter",
-        Some(PosBonus::DoubleWord) => "double-word",
-        Some(PosBonus::TripleWord) => "triple-word",
-        Some(PosBonus::Start) => "start",
+        Some(Premium::DoubleLetter) => "double-letter",
+        Some(Premium::TripleLetter) => "triple-letter",
+        Some(Premium::DoubleWord) => "double-word",
+        Some(Premium::TripleWord) => "triple-word",
+        Some(Premium::Start) => "start",
     }
 }
 
@@ -32,7 +32,7 @@ pub fn Square<'a, G: Html>(
     SquareProps { pos, tile }: SquareProps<'a>,
 ) -> View<G> {
     view! { ctx,
-        div(class=format!("square {}", bonus_class(pos))) {
+        div(class=format!("square {}", premium_class(pos))) {
             (match *tile.get() {
                 Some(tile) => view! { ctx,
                     (tile)
