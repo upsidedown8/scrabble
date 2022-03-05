@@ -37,7 +37,7 @@ pub fn BoardRow<'a, G: Html>(ctx: ScopeRef<'a>, props: BoardRowProps<'a>) -> Vie
 
 #[derive(Prop, Clone)]
 pub struct BoardProps<'a> {
-    cells: &'a [&'a Signal<Option<Tile>>; 225],
+    cells: Vec<&'a Signal<Option<Tile>>>,
 }
 
 /// View the scrabble board, providing a single dimensional array containing

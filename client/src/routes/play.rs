@@ -1,7 +1,9 @@
 //! Implementation of the [`PlayPage`].
 
+use crate::components::Board;
 use futures::{channel::mpsc, SinkExt, StreamExt};
 use reqwasm::websocket::{futures::WebSocket, Message};
+use scrabble::game::{board::Board, play::Play, Game};
 use sycamore::{futures::ScopeSpawnFuture, prelude::*};
 
 /// Page for playing live games.
@@ -45,6 +47,12 @@ pub fn PlayPage<G: Html>(ctx: ScopeRef) -> View<G> {
         });
     };
 
+    let cells = ctx.create_signal(
+        (0..225)
+            .map(|_| ctx.create_signal(None))
+            .collect::<Vec<_>>(),
+    );
+
     view! { ctx,
         div(class="play-route is-centered is-vcentered is-flex columns") {
             div(class="box") {
@@ -56,6 +64,10 @@ pub fn PlayPage<G: Html>(ctx: ScopeRef) -> View<G> {
                     textarea(class="input", disabled=true) {
                         (recv.get())
                     }
+                }
+
+                Board {
+                    cells: cells.get().as_ref().clone(),
                 }
 
                 button(class="button is-primary is-light",on:click=onsend) {
