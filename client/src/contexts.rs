@@ -3,7 +3,7 @@
 
 use api::{auth::Auth, users::UserDetails};
 use serde::{Deserialize, Serialize};
-use sycamore::prelude::{RcSignal, ReadSignal, Scope};
+use sycamore::prelude::{ReadSignal, Scope, Signal};
 
 /// Extension trait, used to add a method to the `Scope` struct
 /// from sycamore, which makes getting auth data more ergonomic.
@@ -27,7 +27,7 @@ impl<'a> ScopeExt<'a> for Scope<'a> {
 }
 
 /// Type alias for the global auth signal.
-pub type AuthSignal = RcSignal<Option<AuthCtx>>;
+pub type AuthSignal = Signal<Option<AuthCtx>>;
 
 /// The auth data, contains user info and the auth token.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

@@ -58,8 +58,8 @@ pub fn App<G: Html>(ctx: ScopeRef) -> View<G> {
     let auth_ctx: Option<AuthCtx> = deserialized.and_then(|v| v.ok());
 
     // provide optional auth data to the entire app
-    let auth_ctx = create_rc_signal(auth_ctx);
-    ctx.provide_context(auth_ctx);
+    let auth_ctx = ctx.create_signal(auth_ctx);
+    ctx.provide_context_ref(auth_ctx);
 
     // store new value in LocalStorage whenever the auth data is updated.
     ctx.create_effect(move || {
