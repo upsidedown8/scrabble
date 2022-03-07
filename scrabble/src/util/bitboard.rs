@@ -86,12 +86,20 @@ impl BitBoard {
     /// but the vertical occupancy is rotated by 90deg anticlockwise
     /// so that vertical words read left to right. A single bitwise
     /// traversal can then be used to find all words.
-    pub fn word_boundaries(self) -> BitBoard {
+    pub fn words_h(self) -> BitBoard {
         // finds all squares which start a horizontal word
-        let horizontal_starts = (self << 1) & !BitBoard::rightmost_col();
-        let horizontal_ends = (self >> 1) & !BitBoard::leftmost_col();
+        let starts_h = (self << 1) & !BitBoard::rightmost_col();
+        let ends_h = (self >> 1) & !BitBoard::leftmost_col();
 
-        self & (horizontal_starts ^ horizontal_ends)
+        self & (starts_h ^ ends_h)
+    }
+    /// Calculates the set of tiles with no tile to the immediate left.
+    pub fn word_starts_h(self) -> BitBoard {
+        self & (!(self << 1) | Self::leftmost_col())
+    }
+    /// Calculates the set of tiles with no tile to the immediate right.
+    pub fn word_ends_h(self) -> BitBoard {
+        self & (!(self >> 1) | Self::rightmost_col())
     }
     /// Gets a bitboard containing the set of squares that
     /// are directly above.
