@@ -38,6 +38,12 @@ impl Rack {
 
         Self { counts }
     }
+    /// Creates a new [`Rack`] with the provided tiles.
+    pub fn new_with_tiles(tiles: &[Tile]) -> Self {
+        Self {
+            counts: TileCounts::from_iter(tiles.iter().take(7).copied()),
+        }
+    }
     /// Get the underlying tile counts for the rack.
     pub fn tile_counts(&self) -> &TileCounts {
         &self.counts
