@@ -54,12 +54,12 @@ impl fmt::Display for Play {
 }
 impl Play {
     /// Place a horizontal word.
-    pub fn place_horizontal() -> PlaceBuilder {
-        PlaceBuilder::horizontal()
+    pub fn horizontal(start: impl Into<Pos>) -> PlaceBuilder {
+        PlaceBuilder::horizontal(start)
     }
     /// Place a vertical word.
-    pub fn place_vertical() -> PlaceBuilder {
-        PlaceBuilder::vertical()
+    pub fn vertical(start: impl Into<Pos>) -> PlaceBuilder {
+        PlaceBuilder::vertical(start)
     }
     /// Redraw some tiles.
     pub fn redraw() -> RedrawBuilder {
@@ -96,22 +96,25 @@ impl RedrawBuilder {
 /// Convenient way to create a [`Play::Place`].
 #[derive(Debug)]
 pub struct PlaceBuilder {
-    tiles: Vec<Tile>,
+    start: Pos,
     dir: Direction,
+    tiles: Vec<Tile>,
 }
 impl PlaceBuilder {
     /// A builder for a horizontal word.
-    pub fn horizontal() -> Self {
+    pub fn horizontal(start: impl Into<Pos>) -> Self {
         Self {
-            tiles: vec![],
+            start: start.into(),
             dir: Direction::East,
+            tiles: vec![],
         }
     }
     /// A builder for vertical word.
-    pub fn vertical() -> Self {
+    pub fn vertical(start: impl Into<Pos>) -> Self {
         Self {
-            tiles: vec![],
+            start: start.into(),
             dir: Direction::South,
+            tiles: vec![],
         }
     }
     /// Adds multiple letters to the current word.
@@ -132,12 +135,14 @@ impl PlaceBuilder {
     }
     /// Returns a play containing only the tiles that would not interfere with
     /// existing ones on the board.
-    pub fn build(self, board: &Board, start: impl Into<Pos>) -> Play {
-        let tile_positions = iter::successors(Some(start.into()), |x| x.offset(self.dir, 1))
+    pub fn build(self, board: &Board) -> Play {
+        Play::Place(self.tile_positions(board))
+    }
+    /// Consumes the builder, producing a vec of tile positions.
+    pub fn tile_positions(self, board: &Board) -> Vec<(Pos, Tile)> {
+        iter::successors(Some(self.start), |x| x.offset(self.dir, 1))
             .zip(self.tiles)
             .filter(|&(pos, _)| board.at(pos).is_none())
-            .collect();
-
-        Play::Place(tile_positions)
+            .collect()
     }
 }

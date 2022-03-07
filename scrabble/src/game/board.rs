@@ -2,7 +2,7 @@
 
 use crate::{
     error::{GameError, GameResult},
-    game::tile::Tile,
+    game::{play::PlaceBuilder, tile::Tile},
     util::{self, bitboard::BitBoard, fsm::Fsm, pos::Pos, scoring, words::Words},
 };
 use std::fmt;
@@ -146,6 +146,14 @@ impl Board {
                 self.undo_placement(tile_positions);
                 Err(e)
             }
+        }
+    }
+    /// Places a word on the board, without performing any validation checks.
+    pub fn place(&mut self, builder: PlaceBuilder) {
+        for (pos, tile) in builder.tile_positions(self) {
+            self.grid[usize::from(pos)] = Some(tile);
+            self.occ_h.set_bit(pos);
+            self.occ_v.set_bit(pos.anti_clockwise90());
         }
     }
 }
