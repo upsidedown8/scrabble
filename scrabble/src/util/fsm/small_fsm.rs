@@ -100,11 +100,11 @@ impl From<FastFsm> for SmallFsm {
     }
 }
 impl<'a> Fsm<'a> for SmallFsm {
-    type TransitionsIter = FastFsmTransitionsIter<'a>;
+    type TransitionsIter = FastFsmTransitions<'a>;
 
     fn transitions(&'a self, state_id: StateId) -> Self::TransitionsIter {
         let (start, end) = self.transition_limits(state_id);
-        FastFsmTransitionsIter {
+        FastFsmTransitions {
             slice_iter: self.transitions[start..end].iter(),
         }
     }
@@ -133,15 +133,17 @@ impl<'a> Fsm<'a> for SmallFsm {
 }
 
 /// Used to iterate over the transitions in the [`SmallFsm`].
-pub struct FastFsmTransitionsIter<'a> {
+pub struct FastFsmTransitions<'a> {
     slice_iter: std::slice::Iter<'a, Transition>,
 }
 
-impl<'a> Iterator for FastFsmTransitionsIter<'a> {
-    type Item = Letter;
+impl<'a> Iterator for FastFsmTransitions<'a> {
+    type Item = (Letter, StateId);
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.slice_iter.next().map(|Transition(item, _)| *item)
+        self.slice_iter
+            .next()
+            .map(|&Transition(item, SmallStateId(id))| (item, StateId(id as usize)))
     }
 }
 

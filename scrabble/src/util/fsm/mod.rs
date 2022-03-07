@@ -24,12 +24,10 @@ pub struct StateId(usize);
 /// machine. Once constructed, finite state machines are immutable.
 ///
 /// A finite state machine implementation is constructed using
-/// [`FsmBuilder`]. Each implementation is generic over a parameter `T`,
-/// which is the type used for labelling state transitions. In this
-/// library the type used primarily [`Letter`].
+/// [`FsmBuilder`] (but can be serialized for faster load times).
 pub trait Fsm<'a>: From<FsmBuilder> {
     /// An iterator over the transitions from a state.
-    type TransitionsIter: Iterator<Item = Letter> + 'a;
+    type TransitionsIter: Iterator<Item = (Letter, StateId)> + 'a;
 
     /// Gets an iterator over the transitions from a state.
     fn transitions(&'a self, state: StateId) -> Self::TransitionsIter;

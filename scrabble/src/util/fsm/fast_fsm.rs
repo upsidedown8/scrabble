@@ -1,14 +1,12 @@
 use crate::{
     game::tile::Letter,
-    util::fsm::{small_fsm::Transition, Fsm, FsmBuilder, FsmSequence, StateId},
+    util::fsm::{
+        small_fsm::{SmallFsm, SmallStateId, Transition},
+        Fsm, FsmBuilder, FsmSequence, StateId,
+    },
 };
 use serde::{Deserialize, Serialize};
-use std::{
-    collections::{hash_map::Keys, HashMap},
-    iter,
-};
-
-use super::{small_fsm::SmallStateId, SmallFsm};
+use std::collections::{hash_map, HashMap};
 
 /// A state in the [`FastFsm`]. Stores only the transitions to other states,
 /// in a hashmap.
@@ -137,10 +135,12 @@ impl From<SmallFsm> for FastFsm {
     }
 }
 impl<'a> Fsm<'a> for FastFsm {
-    type TransitionsIter = iter::Copied<Keys<'a, Letter, StateId>>;
+    type TransitionsIter = FastFsmTransitions<'a>;
 
     fn transitions(&'a self, StateId(id): StateId) -> Self::TransitionsIter {
-        self.states[id].transitions.keys().copied()
+        FastFsmTransitions {
+            iter: self.states[id].transitions.iter(),
+        }
     }
 
     fn is_terminal(&self, StateId(id): StateId) -> bool {
@@ -168,6 +168,17 @@ impl<'a> Fsm<'a> for FastFsm {
         }
 
         Some(curr_state)
+    }
+}
+
+pub struct FastFsmTransitions<'a> {
+    iter: hash_map::Iter<'a, Letter, StateId>,
+}
+impl<'a> Iterator for FastFsmTransitions<'a> {
+    type Item = (Letter, StateId);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next().map(|(&k, &v)| (k, v))
     }
 }
 
