@@ -151,6 +151,10 @@ impl Pos {
     pub fn row_col(&self) -> (Row, Col) {
         (self.row(), self.col())
     }
+    /// Finds the pos in the grid offset by 1 in the given direction.
+    pub fn dir(&self, dir: Direction) -> Option<Self> {
+        self.offset(dir, 1)
+    }
     /// Finds the pos in the grid, offset by `count` in direction `dir`
     pub fn offset(&self, dir: Direction, count: usize) -> Option<Self> {
         let vector = dir.vector(count as i32);
