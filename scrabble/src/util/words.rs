@@ -13,17 +13,17 @@ pub struct Words {
 }
 impl Words {
     /// Creates a new `Words` iterator from the **normal occupancy**.
-    pub fn horizontal(occ: BitBoard) -> Self {
+    pub fn horizontal(occ_h: BitBoard) -> Self {
         Self {
-            word_boundaries: Bits::from(occ.word_boundaries()),
+            word_boundaries: Bits::from(occ_h.words_h()),
             dir: Direction::East,
         }
     }
     /// Creates a new `Words` iterator for vertical words from
     /// the **rotated occupancy**.
-    pub fn vertical(occ: BitBoard) -> Self {
+    pub fn vertical(occ_v: BitBoard) -> Self {
         Self {
-            word_boundaries: Bits::from(occ.word_boundaries()),
+            word_boundaries: Bits::from(occ_v.words_h()),
             dir: Direction::South,
         }
     }
