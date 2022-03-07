@@ -85,6 +85,14 @@ impl From<usize> for Tile {
         }
     }
 }
+impl From<char> for Tile {
+    fn from(ch: char) -> Tile {
+        match Letter::new(ch) {
+            Some(letter) => Tile::Letter(letter),
+            None => Tile::Blank(None),
+        }
+    }
+}
 impl Display for Tile {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -98,6 +106,10 @@ impl Tile {
     /// Checks whether `self` is a blank tile.
     pub fn is_blank(&self) -> bool {
         matches!(self, Tile::Blank(_))
+    }
+    /// A blank tile.
+    pub fn blank() -> Tile {
+        Tile::Blank(None)
     }
     /// Gets the optional letter that the tile represents.
     pub fn letter(&self) -> Option<Letter> {
