@@ -103,24 +103,24 @@ impl BitBoard {
     }
     /// Gets a bitboard containing the set of squares that
     /// are directly above.
-    pub fn up(self) -> BitBoard {
+    pub fn north(self) -> BitBoard {
         self >> 15
     }
     /// Gets a bitboard containing the set of squares that
     /// are directly below.
-    pub fn down(self) -> BitBoard {
+    pub fn south(self) -> BitBoard {
         self << 15
     }
     /// Gets a bitboard containing the set of squares that
     /// are directly to the left.
-    pub fn left(mut self) -> BitBoard {
+    pub fn west(mut self) -> BitBoard {
         // discard the leftmost column to prevent overflow
         self &= !Self::leftmost_col();
         self >> 1
     }
     /// Gets a bitboard containing the set of squares that
     /// are directly to the right.
-    pub fn right(mut self) -> BitBoard {
+    pub fn east(mut self) -> BitBoard {
         // discard the rightmost column to prevent overflow
         self &= !Self::rightmost_col();
         self << 1
@@ -129,7 +129,7 @@ impl BitBoard {
     /// are adjacent in one of the 4 orthagonal directions,
     /// to the bits in `self`.
     pub fn neighbours(self) -> BitBoard {
-        (self.up() | self.down() | self.left() | self.right()) & !self
+        (self.north() | self.south() | self.west() | self.east()) & !self
     }
     /// A bitboard with all bits set to 0.
     pub const fn zero() -> Self {
