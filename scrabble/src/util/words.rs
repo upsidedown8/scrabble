@@ -84,7 +84,7 @@ impl Iterator for Word {
             true => None,
             false => {
                 let pos = self.curr;
-                self.curr = self.curr.offset(self.dir, 1).unwrap();
+                self.curr = self.curr.dir(self.dir).unwrap();
                 Some(pos)
             }
         }
