@@ -35,10 +35,10 @@ pub fn gen<'a>(board: &Board, rack: &Rack, fsm: &'a impl Fsm<'a>) -> Vec<(Play, 
 /// so that fewer arguments need to be passed to the function. The generic
 /// parameters `G` and `H` are functions that map a position to a board
 /// tile, and a transformed position (horizontal) back to the actual position.
-struct MoveGen<'a, F, G, H> {
+struct MoveGen<'a, F, GetCell, MapPos> {
     fsm: &'a F,
-    get_cell: G,
-    map_pos: H,
+    get_cell: GetCell,
+    map_pos: MapPos,
     lookup: Vec<HashMap<Tile, usize>>,
 
     occ: BitBoard,
@@ -49,14 +49,14 @@ struct MoveGen<'a, F, G, H> {
     counts: TileCounts,
 }
 
-impl<'a, F, G, H> MoveGen<'a, F, G, H>
+impl<'a, F, GetCell, MapPos> MoveGen<'a, F, GetCell, MapPos>
 where
     F: Fsm<'a>,
-    G: Fn(Pos) -> Option<Tile>,
-    H: Fn(Pos) -> Pos,
+    GetCell: Fn(Pos) -> Option<Tile>,
+    MapPos: Fn(Pos) -> Pos,
 {
     /// Creates a new [`MoveGen`].
-    pub fn new(rack: &Rack, occ: BitBoard, fsm: &'a F, get_cell: G, map_pos: H) -> Self {
+    pub fn new(rack: &Rack, occ: BitBoard, fsm: &'a F, get_cell: GetCell, map_pos: MapPos) -> Self {
         let above_or_below = occ.above_or_below();
         let illegal_ends = occ.west();
         let lookup: Vec<_> = (0..225).map(|_| HashMap::new()).collect();
