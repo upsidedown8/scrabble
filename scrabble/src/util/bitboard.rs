@@ -131,6 +131,11 @@ impl BitBoard {
     pub fn neighbours(self) -> BitBoard {
         (self.north() | self.south() | self.west() | self.east()) & !self
     }
+    /// Gets a bitboard containing the set of squares that
+    /// are directly above or below the bits in `self`.
+    pub fn above_or_below(self) -> BitBoard {
+        (self.north() | self.south()) & !self
+    }
     /// A bitboard with all bits set to 0.
     pub const fn zero() -> Self {
         Self { boards: [0; 4] }
