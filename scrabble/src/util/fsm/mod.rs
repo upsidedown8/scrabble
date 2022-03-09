@@ -106,3 +106,10 @@ impl FsmSequence for Letter {
         iter::once(self)
     }
 }
+impl FsmSequence for char {
+    type Iter = std::option::IntoIter<Letter>;
+
+    fn into_iter(self) -> Self::Iter {
+        Letter::new(self).into_iter()
+    }
+}
