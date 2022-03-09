@@ -18,7 +18,7 @@ pub fn score<'a>(
     let mut curr_state = fsm.initial_state();
 
     for pos in word {
-        let tile = board.at(pos).expect("An occupied square");
+        let tile = board.get(pos).expect("An occupied square");
         let letter = tile.letter().expect("A letter");
 
         curr_state = fsm

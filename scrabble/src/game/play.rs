@@ -142,7 +142,7 @@ impl PlaceBuilder {
     pub fn tile_positions(self, board: &Board) -> Vec<(Pos, Tile)> {
         iter::successors(Some(self.start), |x| x.offset(self.dir, 1))
             .zip(self.tiles)
-            .filter(|&(pos, _)| board.at(pos).is_none())
+            .filter(|&(pos, _)| board.get(pos).is_none())
             .collect()
     }
 }

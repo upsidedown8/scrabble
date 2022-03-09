@@ -36,7 +36,7 @@ impl Default for Board {
 }
 impl fmt::Display for Board {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        util::write_grid(f, |pos| match self.at(pos) {
+        util::write_grid(f, |pos| match self.get(pos) {
             Some(tile) => format!("{}", tile),
             None => " . ".to_string(),
         })
@@ -70,7 +70,7 @@ impl Board {
         &self.occ_v
     }
     /// Gets the tile at `pos`.
-    pub fn at(&self, pos: impl Into<Pos>) -> Option<Tile> {
+    pub fn get(&self, pos: impl Into<Pos>) -> Option<Tile> {
         self.grid[usize::from(pos.into())]
     }
     /// Removes all tiles in `tile_positions` from the board.
