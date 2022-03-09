@@ -299,4 +299,23 @@ impl Direction {
             East => (0, scale),
         }
     }
+    /// Gets the opposite direction.
+    pub fn opposite(&self) -> Self {
+        match self {
+            Direction::North => Direction::South,
+            Direction::East => Direction::West,
+            Direction::South => Direction::North,
+            Direction::West => Direction::East,
+        }
+    }
+    /// Gets the perpendicular direction.
+    pub fn perpendicular(&self) -> Self {
+        match self {
+            Direction::East => Direction::South,
+            Direction::South => Direction::East,
+
+            Direction::North => Direction::West,
+            Direction::West => Direction::North,
+        }
+    }
 }

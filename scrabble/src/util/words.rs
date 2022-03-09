@@ -75,6 +75,10 @@ impl Word {
     pub fn contains(&self, pos: Pos) -> bool {
         self.curr <= pos && pos <= self.end
     }
+    /// Gets the direction of the word.
+    pub fn dir(&self) -> Direction {
+        self.dir
+    }
 }
 impl Iterator for Word {
     type Item = Pos;
