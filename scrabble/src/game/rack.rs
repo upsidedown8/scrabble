@@ -2,7 +2,10 @@
 
 use crate::{
     error::{GameError, GameResult},
-    game::{letter_bag::LetterBag, tile::Tile},
+    game::{
+        letter_bag::LetterBag,
+        tile::{Letter, Tile},
+    },
     util::tile_counts::TileCounts,
 };
 use std::fmt;
@@ -41,7 +44,18 @@ impl Rack {
     /// Creates a new [`Rack`] with the provided tiles.
     pub fn new_with_tiles(tiles: &[Tile]) -> Self {
         Self {
-            counts: TileCounts::from_iter(tiles.iter().take(7).copied()),
+            counts: tiles.iter().take(7).copied().collect(),
+        }
+    }
+    /// Creates a new [`Rack`] from a string of letters.
+    pub fn new_with_str(tiles: &str) -> Self {
+        Self {
+            counts: tiles
+                .chars()
+                .filter_map(Letter::new)
+                .map(Tile::from)
+                .take(7)
+                .collect(),
         }
     }
     /// Get the underlying tile counts for the rack.
