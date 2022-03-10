@@ -106,6 +106,11 @@ where
                     // prevents doubled up moves from horizontal and vertical generation.
                     // if there is only one tile, it must not be adjacent.
                     if self.stack.len() > 1 || !self.above_or_below.is_bit_set(pos) {
+                        let all_tiles_bonus = match self.stack.len() {
+                            7 => 50,
+                            _ => 0,
+                        };
+
                         plays.push((
                             Play::Place(
                                 self.stack
@@ -116,7 +121,7 @@ where
                                     .map(|(pos, tile)| ((self.map_pos)(pos), tile))
                                     .collect(),
                             ),
-                            score * multiplier,
+                            score * multiplier + all_tiles_bonus,
                         ));
                     }
                 }
@@ -130,11 +135,14 @@ where
                 // Already a tile: see whether traversal can continue (no branching).
                 // Add the tile score to the total score.
                 Some(tile @ Tile::Letter(letter) | tile @ Tile::Blank(Some(letter))) => {
-                    let score = score + tile.score();
-
                     if let Some(next_state) = self.fsm.traverse_from(state, letter) {
                         self.push_moves_recursive(
-                            plays, next_pos, next_state, score, multiplier, true,
+                            plays,
+                            next_pos,
+                            next_state,
+                            score + tile.score(),
+                            multiplier,
+                            true,
                         );
                     }
                 }
