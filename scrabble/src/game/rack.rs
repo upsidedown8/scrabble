@@ -42,13 +42,13 @@ impl Rack {
         Self { counts }
     }
     /// Creates a new [`Rack`] with the provided tiles.
-    pub fn new_with_tiles(tiles: &[Tile]) -> Self {
+    pub fn with_tiles(tiles: &[Tile]) -> Self {
         Self {
             counts: tiles.iter().take(7).copied().collect(),
         }
     }
     /// Creates a new [`Rack`] from a string of letters.
-    pub fn new_with_str(tiles: &str) -> Self {
+    pub fn with_str(tiles: &str) -> Self {
         Self {
             counts: tiles
                 .chars()
