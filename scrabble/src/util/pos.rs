@@ -52,7 +52,7 @@ impl Premium {
 
 /// A position on the board. Ranges from `0..`[`CELLS`].
 #[repr(transparent)]
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Serialize, Deserialize)]
+#[derive(Default, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Serialize, Deserialize)]
 pub struct Pos(usize);
 
 impl From<usize> for Pos {
@@ -76,6 +76,11 @@ impl<R: Into<Row>, C: Into<Col>> From<(R, C)> for Pos {
 impl fmt::Display for Pos {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}{}", self.col(), self.row())
+    }
+}
+impl fmt::Debug for Pos {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Pos({})", self)
     }
 }
 impl Pos {
