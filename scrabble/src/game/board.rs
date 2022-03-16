@@ -14,6 +14,27 @@ pub const COLS: usize = 15;
 /// The number of squares on the board.
 pub const CELLS: usize = ROWS * COLS;
 
+/// Used to construct an arbitrary board position without validation.
+#[derive(Debug, Default)]
+pub struct BoardBuilder {
+    board: Board,
+}
+impl BoardBuilder {
+    /// Places a word on the board, without performing any validation checks.
+    pub fn place(mut self, builder: PlaceBuilder) -> Self {
+        for (pos, tile) in builder.tile_positions(&self.board) {
+            self.board.grid[usize::from(pos)] = Some(tile);
+            self.board.occ_h.set_bit(pos);
+            self.board.occ_v.set_bit(pos.anti_clockwise90());
+        }
+        self
+    }
+    /// Constructs the [`Board`].
+    pub fn build(self) -> Board {
+        self.board
+    }
+}
+
 /// Represents the 15 x 15 scrabble board, storing the location of
 /// tiles, and allowing [`Play`](super::play::Play)s to be made
 /// and validated.
@@ -146,14 +167,6 @@ impl Board {
                 self.undo_placement(tile_positions);
                 Err(e)
             }
-        }
-    }
-    /// Places a word on the board, without performing any validation checks.
-    pub fn place(&mut self, builder: PlaceBuilder) {
-        for (pos, tile) in builder.tile_positions(self) {
-            self.grid[usize::from(pos)] = Some(tile);
-            self.occ_h.set_bit(pos);
-            self.occ_v.set_bit(pos.anti_clockwise90());
         }
     }
 }
