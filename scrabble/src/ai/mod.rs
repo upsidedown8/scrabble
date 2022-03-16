@@ -1,11 +1,16 @@
 //! Scrabble AI implementation.
 
-use crate::game::{play::Play, board::Board};
+use crate::{game::{play::Play, board::Board, rack::Rack}, util::fsm::Fsm};
 
 pub mod movegen;
+pub mod lookup;
+pub mod highest_scoring;
 
-/// Serves as a common interface over AI implementations.
+/// Trait providing a `select_play` method 
 pub trait Ai {
-    /// Finds the best move from a given position.
-    fn best_move(board: &Board) -> Play;
+    /// A custom type for setting the difficulty level.
+    type Difficulty: Default;
+
+    /// Chooses a play based on the position and `difficulty`.
+    fn select_play<'a, F: Fsm<'a>>(&self, fsm: &'a F, board: &Board, rack: &Rack, difficulty: Self::Difficulty) -> Play;
 }
