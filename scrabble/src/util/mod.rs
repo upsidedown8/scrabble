@@ -127,3 +127,30 @@ pub fn is_connected(mut connected: BitBoard, mut new: BitBoard) -> bool {
         }
     }
 }
+
+/// Gets a bitboard containing the set of squares on which a
+/// horizontal word could start.
+pub fn possible_starts_h(occ_h: BitBoard, rack_len: usize) -> BitBoard {
+    println!("rack: {rack_len}, \n{occ_h}");
+
+    // find all word stems. that is: all tiles shifted up, down and left.
+    let mut stems = occ_h.north() | occ_h.south() | occ_h.west();
+    // shift and add `stems` to the left (rack_len - 1) times, as one shift
+    // was already performed above.
+    for _ in 0..rack_len - 1 {
+        stems |= stems.west();
+    }
+    // exclude any overlap with the existing occupancy.
+    let stems = stems & !occ_h;
+
+    // find the starts of all existing words
+    let starts = occ_h.word_starts_h();
+
+    println!("{}", (stems | starts) & !occ_h.east() & !BitBoard::rightmost_col());
+
+    // final set of starting positions is the `stems` OR the `starts`,
+    // without any squares that have a neighbour to the left (as these
+    // squares cannot start a word), minus the rightmost column as no word
+    // can start there.
+    (stems | starts) & !occ_h.east() & !BitBoard::rightmost_col()
+}
