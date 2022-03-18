@@ -46,49 +46,35 @@ impl Iterator for Boundaries {
     }
 }
 
-/// Adapts [`WordBoundaries`] to iterate over
+/// Adapts an iterator over [`Boundary`]s to only yield those
+/// that intersect the provided bitboard.
 #[derive(Debug)]
 pub struct Intersecting<I> {
-    word_boundaries: I,
+    boundaries: I,
     new: Bits,
-    curr: Option<Pos>,
 }
 impl<I: Iterator<Item = Boundary>> Iterator for Intersecting<I> {
     type Item = Boundary;
 
     fn next(&mut self) -> Option<Self::Item> {
-        // if the current pos is `None` then stop.
-        let curr = self.curr?;
-
         loop {
-            // advance the `words` iterator until the current position
-            // is within the current word. (skip all words which do not
-            // contain new tiles).
-            let wb = self.word_boundaries.next()?;
-            if wb.contains(curr) {
-                // this word will be returned as the next item, but the current
-                // position needs to be advanced until it is no longer within the
-                // word.
-                loop {
-                    self.curr = self.new.next();
+            let boundary = self.boundaries.next()?;
+            let mut curr = self.new.next()?;
 
-                    match self.curr {
-                        // no more bits so return the word.
-                        None => break,
-                        // check that the current bit is no longer within the word.
-                        Some(curr) if !wb.contains(curr) => break,
-                        // otherwise continue to advance the bit iterator.
-                        _ => continue,
-                    }
-                }
+            // skip new positions that come before
+            while curr < boundary.start {
+                curr = self.new.next()?;
+            }
 
-                return Some(wb);
+            // check whether current position is within boundary
+            if boundary.contains(curr) {
+                return Some(boundary);
             }
         }
     }
 }
 
-/// Adapts an iterator over [`WordBoundary`]s to an iterator
+/// Adapts an iterator over [`Boundary`]s to an iterator
 /// over horizontal [`Word`]s.
 #[derive(Debug)]
 pub struct Horizontal<I> {
@@ -106,7 +92,7 @@ impl<I: Iterator<Item = Boundary>> Iterator for Horizontal<I> {
     }
 }
 
-/// Adapts an iterator over [`WordBoundary`]s to an iterator
+/// Adapts an iterator over [`Boundary`]s to an iterator
 /// over vertical [`Word`]s.
 #[derive(Debug)]
 pub struct Vertical<I> {
@@ -183,13 +169,9 @@ impl<I: Iterator<Item = Boundary>> WordsIteratorExt for I {
         Vertical { inner: self }
     }
     fn intersecting(self, new: BitBoard) -> Intersecting<Self> {
-        let mut bits = Bits::from(new);
-        let curr = bits.next();
-
         Intersecting {
-            word_boundaries: self,
-            new: bits,
-            curr,
+            boundaries: self,
+            new: Bits::from(new),
         }
     }
 }
