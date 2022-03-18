@@ -1,36 +1,25 @@
 //! Structures for iterating over the words in a bitboard.
 
 use super::{
-    bitboard::{BitBoard, Bits},
+    bitboard::{BitBoard, Bits, ReverseBits},
     pos::{Direction, Pos},
 };
 
-/// Used to iterate over complete words in a bitboard.
+/// Used to iterate over complete horizontal words in a bitboard.
 #[derive(Debug)]
-pub struct Words {
+pub struct HorizontalWords {
     word_boundaries: Bits,
-    dir: Direction,
 }
-impl Words {
-    /// Creates a new `Words` iterator from the **normal occupancy**.
-    pub fn horizontal(occ_h: BitBoard) -> Self {
+impl HorizontalWords {
+    /// Creates a new `HorizontalWords` iterator from the **normal occupancy**.
+    pub fn new(occ_h: BitBoard) -> Self {
         Self {
             word_boundaries: Bits::from(occ_h.words_h()),
-            dir: Direction::East,
         }
     }
-    /// Creates a new `Words` iterator for vertical words from
-    /// the **rotated occupancy**.
-    pub fn vertical(occ_v: BitBoard) -> Self {
-        Self {
-            word_boundaries: Bits::from(occ_v.words_h()),
-            dir: Direction::South,
-        }
-    }
-    /// Gets an iterator that only contains newly placed words. `new`
-    /// is a (horizontal) bitboard containing the newly placed tiles.
-    pub fn new_words(self, new: BitBoard) -> NewWords {
-        let mut new = Bits::from(new);
+    /// Creates an iterator over only the new horizontal words.
+    pub fn new_words(self, new_h: BitBoard) -> NewWords<Self> {
+        let mut new = Bits::from(new_h);
         let curr = new.next();
 
         NewWords {
@@ -40,69 +29,124 @@ impl Words {
         }
     }
 }
-impl Iterator for Words {
+impl Iterator for HorizontalWords {
     type Item = Word;
 
     fn next(&mut self) -> Option<Word> {
-        let curr = self.word_boundaries.next()?;
+        let start = self.word_boundaries.next()?;
         let end = self.word_boundaries.next()?;
+        Some(Word {
+            start,
+            end,
+            dir: Direction::East,
+        })
+    }
+}
 
-        Some(match self.dir {
-            Direction::South => Word {
-                curr: curr.clockwise90(),
-                end: end.clockwise90(),
-                dir: self.dir,
-            },
-            _ => Word {
-                curr,
-                end,
-                dir: self.dir,
-            },
+/// Used to iterate over complete vertical words in a bitboard.
+#[derive(Debug)]
+pub struct VerticalWords {
+    word_boundaries: ReverseBits,
+}
+impl VerticalWords {
+    /// Creates a new `Words` iterator for vertical words from
+    /// the **rotated occupancy**.
+    pub fn new(occ_v: BitBoard) -> Self {
+        Self {
+            word_boundaries: ReverseBits::from(occ_v.words_h()),
+        }
+    }
+    /// Creates an iterator over only the new vertical words.
+    pub fn new_words(self, new_h: BitBoard) -> NewWords<Self> {
+        let mut new = Bits::from(new_h);
+        let curr = new.next();
+
+        NewWords {
+            words: self,
+            new,
+            curr,
+        }
+    }
+}
+impl Iterator for VerticalWords {
+    type Item = Word;
+
+    fn next(&mut self) -> Option<Word> {
+        // since iteration is in reverse, start & end are flipped
+        let end = self.word_boundaries.next()?;
+        let start = self.word_boundaries.next()?;
+        Some(Word {
+            start: start.clockwise90(),
+            end: end.clockwise90(),
+            dir: Direction::South,
         })
     }
 }
 
 /// Used to iterate over the positions ([`Pos`]) in a word. Positons from
 /// this iterator have been mapped back to the horizontal versions.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Word {
-    curr: Pos,
+    start: Pos,
     end: Pos,
     dir: Direction,
 }
 impl Word {
     /// Checks whether a position is contained within the word.
     pub fn contains(&self, pos: Pos) -> bool {
-        self.curr <= pos && pos <= self.end
+        // the position should be numerically between the start and end,
+        // and in the same row or col, depending on `self.dir`.
+        self.start <= pos && pos <= self.end && match self.dir {
+            Direction::South => pos.col() == self.start.col(),
+            // east
+            _ => pos.row() == self.start.row(),
+        }
     }
     /// Gets the direction of the word.
     pub fn dir(&self) -> Direction {
         self.dir
     }
 }
-impl Iterator for Word {
+impl IntoIterator for Word {
+    type IntoIter = WordIntoIter;
+    type Item = Pos;
+
+    fn into_iter(self) -> Self::IntoIter {
+        WordIntoIter {
+            curr: Some(self.start),
+            end: self.end,
+            dir: self.dir,
+        }
+    }
+}
+
+/// Struct used to iterate over the positions in a word.
+pub struct WordIntoIter {
+    curr: Option<Pos>,
+    end: Pos,
+    dir: Direction
+}
+impl Iterator for WordIntoIter {
     type Item = Pos;
 
     fn next(&mut self) -> Option<Self::Item> {
-        match self.curr > self.end {
-            true => None,
-            false => {
-                let pos = self.curr;
-                self.curr = self.curr.dir(self.dir).unwrap();
-                Some(pos)
-            }
-        }
+        let curr = self.curr?;
+        self.curr = match curr.dir(self.dir) {
+            Some(next_pos) if next_pos <= self.end => Some(next_pos),
+            _ => None,
+        };
+        Some(curr)
     }
 }
 
 /// Used to iterate over words which contain at least one new tile.
 #[derive(Debug)]
-pub struct NewWords {
-    words: Words,
+pub struct NewWords<I> {
+    words: I,
     new: Bits,
     curr: Option<Pos>,
 }
-impl Iterator for NewWords {
+impl<I: Iterator<Item = Word>> Iterator for NewWords<I> {
     type Item = Word;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -153,14 +197,14 @@ mod tests {
         let mut bb = BitBoard::default();
         place_word(&mut bb, Pos::start(), Direction::East, 4);
 
-        let mut words = Words::horizontal(bb);
+        let mut words = HorizontalWords::new(bb);
 
         let first = words.next().expect("at least one word");
 
         assert_eq!(
             first,
             Word {
-                curr: Pos::start(),
+                start: Pos::start(),
                 end: Pos::start().offset(Direction::East, 3).unwrap(),
                 dir: Direction::East,
             }
@@ -173,14 +217,14 @@ mod tests {
         let mut bb = BitBoard::default();
         place_word(&mut bb, Pos::start(), Direction::East, 7);
 
-        let mut words = Words::vertical(bb);
+        let mut words = VerticalWords::new(bb);
 
         let first = words.next().expect("at least one word");
 
         assert_eq!(
             first,
             Word {
-                curr: Pos::start(),
+                start: Pos::start(),
                 end: Pos::start().offset(Direction::South, 6).unwrap(),
                 dir: Direction::South,
             }
@@ -190,16 +234,16 @@ mod tests {
 
     #[test]
     fn empty() {
-        assert!(Words::horizontal(BitBoard::default()).next().is_none());
-        assert!(Words::vertical(BitBoard::default()).next().is_none());
+        assert!(HorizontalWords::new(BitBoard::default()).next().is_none());
+        assert!(VerticalWords::new(BitBoard::default()).next().is_none());
 
         let mut horizontal_bb = BitBoard::default();
         place_word(&mut horizontal_bb, Pos::start(), Direction::North, 7);
-        assert!(Words::horizontal(horizontal_bb).next().is_none());
+        assert!(HorizontalWords::new(horizontal_bb).next().is_none());
 
         let mut vertical_bb = BitBoard::default();
         place_word(&mut vertical_bb, Pos::start(), Direction::North, 7);
-        assert!(Words::vertical(vertical_bb).next().is_none());
+        assert!(VerticalWords::new(vertical_bb).next().is_none());
     }
 
     #[test]
@@ -225,17 +269,17 @@ mod tests {
         );
 
         // two words in total
-        let mut words = Words::horizontal(bb);
+        let mut words = HorizontalWords::new(bb);
         assert!(words.next().is_some());
         assert!(words.next().is_some());
         assert!(words.next().is_none());
 
         // only a single word with a new letter
-        let mut new_words = Words::horizontal(bb).new_words(new);
+        let mut new_words = HorizontalWords::new(bb).new_words(new);
         assert_eq!(
             new_words.next(),
             Some(Word {
-                curr: Pos::start().offset(Direction::South, 2).unwrap(),
+                start: Pos::start().offset(Direction::South, 2).unwrap(),
                 end: Pos::start()
                     .offset(Direction::South, 2)
                     .unwrap()
