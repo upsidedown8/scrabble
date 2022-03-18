@@ -3,7 +3,7 @@
 use crate::{
     error::{GameError, GameResult},
     game::{play::PlaceBuilder, tile::Tile},
-    util::{self, bitboard::BitBoard, fsm::Fsm, pos::Pos, scoring, words::Words},
+    util::{self, bitboard::BitBoard, fsm::Fsm, pos::Pos, scoring, words::WordsIteratorExt},
 };
 use std::fmt;
 
@@ -67,12 +67,28 @@ impl Board {
     /// Computes the combined score for horizontal and vertical words, adding
     /// the 50 point bonus where appropriate. `new` is the (horizontal) bitboard
     /// of added tiles. If an invalid word is encountered, returns an error.
-    fn score_and_validate<'a>(&self, new_h: BitBoard, fsm: &impl Fsm<'a>) -> GameResult<usize> {
-        let words_h = Words::horizontal(self.occ_h).new_words(new_h);
-        let words_v = Words::vertical(self.occ_v).new_words(new_h);
+    fn score_and_validate<'a>(
+        &self,
+        new_h: BitBoard,
+        new_v: BitBoard,
+        fsm: &impl Fsm<'a>,
+    ) -> GameResult<usize> {
+        let words_h = self.occ_h.word_boundaries().new_words(new_h).horizontal();
+        let words_v = self.occ_v.word_boundaries().new_words(new_v).vertical();
 
         let mut score = 0;
         for word in words_h.chain(words_v) {
+            // println!("{word:?}");
+            // for pos in word {
+            //     println!(
+            //         "{pos} {:?} {}",
+            //         pos.premium(),
+            //         self.grid[usize::from(pos)].unwrap().score()
+            //     );
+            // }
+
+            // println!("  score: {}", scoring::score(word, &new_h, self, fsm)?);
+
             score += scoring::score(word, &new_h, self, fsm)?;
         }
 
@@ -159,7 +175,7 @@ impl Board {
         }
 
         // checks that words are valid then returns the score
-        match self.score_and_validate(new_h, fsm) {
+        match self.score_and_validate(new_h, new_v, fsm) {
             // everything was ok, update the bitboards.
             Ok(score) => Ok(score),
             // error occured, reverse the state change
