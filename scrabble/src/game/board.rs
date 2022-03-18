@@ -65,8 +65,8 @@ impl fmt::Display for Board {
 }
 impl Board {
     /// Computes the combined score for horizontal and vertical words, adding
-    /// the 50 point bonus where appropriate. `new` is the (horizontal) bitboard
-    /// of added tiles. If an invalid word is encountered, returns an error.
+    /// the 50 point bonus where appropriate. If an invalid word is encountered,
+    /// returns an error.
     fn score_and_validate<'a>(
         &self,
         new_h: BitBoard,
@@ -80,23 +80,8 @@ impl Board {
             .horizontal();
         let words_v = self.occ_v.word_boundaries().intersecting(new_v).vertical();
 
-        for w in self.occ_v.word_boundaries().intersecting(new_v).vertical() {
-            println!("{w:?}");
-        }
-
         let mut score = 0;
         for word in words_h.chain(words_v) {
-            println!("{word:?}");
-            for pos in word {
-                println!(
-                    "{pos} {:?} {}",
-                    pos.premium(),
-                    self.grid[usize::from(pos)].unwrap().score()
-                );
-            }
-
-            println!("  score: {}", scoring::score(word, &new_h, self, fsm)?);
-
             score += scoring::score(word, &new_h, self, fsm)?;
         }
 
