@@ -75,7 +75,9 @@ impl Iterator for ReverseBits {
                 let leading_zeros = word.leading_zeros() as usize;
                 self.boards[3 - self.word_idx] &= !(1 << (63 - leading_zeros));
 
-                return Some(Pos::from((63 - leading_zeros) + WORD_SIZE * (3 - self.word_idx)));
+                return Some(Pos::from(
+                    (63 - leading_zeros) + WORD_SIZE * (3 - self.word_idx),
+                ));
             }
         }
 

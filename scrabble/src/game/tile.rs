@@ -1,13 +1,11 @@
 //! Module modelling the scrabble tile.
 
 use serde::{Deserialize, Serialize};
-use std::fmt::{Display, Formatter, self};
+use std::fmt::{self, Display, Formatter};
 
 /// A letter `A..=Z`. Represented as a newtype containing an unsigned
 /// integer from `0..=25` to make game operations easier.
-#[derive(
-    Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
-)]
+#[derive(Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[repr(transparent)]
 pub struct Letter(u8);
 

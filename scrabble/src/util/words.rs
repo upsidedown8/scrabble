@@ -96,11 +96,13 @@ impl Word {
     pub fn contains(&self, pos: Pos) -> bool {
         // the position should be numerically between the start and end,
         // and in the same row or col, depending on `self.dir`.
-        self.start <= pos && pos <= self.end && match self.dir {
-            Direction::South => pos.col() == self.start.col(),
-            // east
-            _ => pos.row() == self.start.row(),
-        }
+        self.start <= pos
+            && pos <= self.end
+            && match self.dir {
+                Direction::South => pos.col() == self.start.col(),
+                // east
+                _ => pos.row() == self.start.row(),
+            }
     }
     /// Gets the direction of the word.
     pub fn dir(&self) -> Direction {
@@ -124,7 +126,7 @@ impl IntoIterator for Word {
 pub struct WordIntoIter {
     curr: Option<Pos>,
     end: Pos,
-    dir: Direction
+    dir: Direction,
 }
 impl Iterator for WordIntoIter {
     type Item = Pos;

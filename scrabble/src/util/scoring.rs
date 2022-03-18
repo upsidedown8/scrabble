@@ -3,11 +3,7 @@
 use crate::{
     error::{GameError, GameResult},
     game::board::Board,
-    util::{
-        bitboard::BitBoard,
-        fsm::Fsm,
-        words::Word,
-    },
+    util::{bitboard::BitBoard, fsm::Fsm, words::Word},
 };
 
 /// Validates a word and finds its score.

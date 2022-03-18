@@ -1,16 +1,16 @@
 //! Precalculates the scores for vertical (perpendicular) words
 //! with a single letter placed in each column.
 
-use std::{collections::HashMap, iter::successors};
 use crate::{
+    game::{board::CELLS, tile::Tile},
     util::{
         bitboard::BitBoard,
-        tile_counts::TileCounts,
         fsm::{Fsm, StateId},
-        pos::{Pos, Direction, Col, Row}
+        pos::{Col, Direction, Pos, Row},
+        tile_counts::TileCounts,
     },
-    game::{tile::Tile, board::CELLS}
 };
+use std::{collections::HashMap, iter::successors};
 
 /// Vertical words can be considered seperately. Since placement
 /// always occurs in a single row, only 1 tile can be placed in each
@@ -26,17 +26,23 @@ impl Lookup {
     /// Creates a lookup for the perpendicular direction.
     /// `counts` are the frequency of each tile on the rack, `get_cell` is
     /// a function that accesses the board at the (maybe rotated) position.
-    pub fn new<'a, F, GetCell>(fsm: &'a F, get_cell: GetCell, counts: &TileCounts, occ: BitBoard) -> Self
+    pub fn new<'a, F, GetCell>(
+        fsm: &'a F,
+        get_cell: GetCell,
+        counts: &TileCounts,
+        occ: BitBoard,
+    ) -> Self
     where
         F: Fsm<'a>,
-        GetCell: Fn(Pos) -> Option<Tile>
+        GetCell: Fn(Pos) -> Option<Tile>,
     {
         LookupBuilder {
             fsm,
             get_cell,
             counts,
             occ,
-        }.build()
+        }
+        .build()
     }
     /// Finds the score when a tile is placed on a square. If the word is invalid,
     /// returns `None`, if the word has only one letter returns `Some(0)`, otherwise
@@ -63,7 +69,7 @@ struct LookupBuilder<'a, 'b, F, GetCell> {
 impl<'a, 'b, F, GetCell> LookupBuilder<'a, 'b, F, GetCell>
 where
     F: Fsm<'a>,
-    GetCell: Fn(Pos) -> Option<Tile>
+    GetCell: Fn(Pos) -> Option<Tile>,
 {
     /// Constructs a `Lookup` from the builder.
     pub fn build(mut self) -> Lookup {
@@ -118,7 +124,7 @@ where
             above_or_below,
             lookup,
         }
-    }    
+    }
     /// Finds the scores for a vertical word from a position.
     fn score_v(
         &mut self,
