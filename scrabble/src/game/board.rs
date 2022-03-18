@@ -73,21 +73,29 @@ impl Board {
         new_v: BitBoard,
         fsm: &impl Fsm<'a>,
     ) -> GameResult<usize> {
-        let words_h = self.occ_h.word_boundaries().new_words(new_h).horizontal();
-        let words_v = self.occ_v.word_boundaries().new_words(new_v).vertical();
+        let words_h = self
+            .occ_h
+            .word_boundaries()
+            .intersecting(new_h)
+            .horizontal();
+        let words_v = self.occ_v.word_boundaries().intersecting(new_v).vertical();
+
+        for w in self.occ_v.word_boundaries().intersecting(new_v).vertical() {
+            println!("{w:?}");
+        }
 
         let mut score = 0;
         for word in words_h.chain(words_v) {
-            // println!("{word:?}");
-            // for pos in word {
-            //     println!(
-            //         "{pos} {:?} {}",
-            //         pos.premium(),
-            //         self.grid[usize::from(pos)].unwrap().score()
-            //     );
-            // }
+            println!("{word:?}");
+            for pos in word {
+                println!(
+                    "{pos} {:?} {}",
+                    pos.premium(),
+                    self.grid[usize::from(pos)].unwrap().score()
+                );
+            }
 
-            // println!("  score: {}", scoring::score(word, &new_h, self, fsm)?);
+            println!("  score: {}", scoring::score(word, &new_h, self, fsm)?);
 
             score += scoring::score(word, &new_h, self, fsm)?;
         }

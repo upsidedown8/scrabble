@@ -1,7 +1,7 @@
 //! Module containing a bitboard implementation to represent
 //! the occupancy on the 15 by 15 board.
 
-use super::{pos::Pos, words::WordBoundaries, write_grid};
+use super::{pos::Pos, words::Boundaries, write_grid};
 use std::{
     fmt,
     ops::{
@@ -111,8 +111,8 @@ pub struct BitBoard {
 impl BitBoard {
     /// Gets an iterator over the [`WordBoundary`](super::words::WordBoundary)s
     /// on the board.
-    pub fn word_boundaries(self) -> WordBoundaries {
-        WordBoundaries::new(self)
+    pub fn word_boundaries(self) -> Boundaries {
+        Boundaries::from(self)
     }
     /// Calculates the set of tiles which start a word.
     ///

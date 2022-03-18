@@ -11,11 +11,11 @@ use std::{iter::StepBy, ops::RangeInclusive};
 
 /// A start and end position for a word.
 #[derive(Debug)]
-pub struct WordBoundary {
+pub struct Boundary {
     start: Pos,
     end: Pos,
 }
-impl WordBoundary {
+impl Boundary {
     /// Tests whether a position is within the horizontal
     /// span of the [`WordBoundary`].
     pub fn contains(&self, pos: Pos) -> bool {
@@ -25,49 +25,36 @@ impl WordBoundary {
 
 /// Iterates over the (start, end) position tuples on the board.
 #[derive(Debug)]
-pub struct WordBoundaries {
+pub struct Boundaries {
     word_boundaries: Bits,
 }
-impl WordBoundaries {
-    /// Creates a new iterator over words.
-    pub fn new(occ: BitBoard) -> Self {
+impl From<BitBoard> for Boundaries {
+    fn from(occ: BitBoard) -> Self {
         Self {
             word_boundaries: Bits::from(occ.words_h()),
         }
     }
-    /// Creates an iterator over only new words (words for which
-    /// at least one letter is in the `new` bitboard).
-    pub fn new_words(self, new: BitBoard) -> NewWords<Self> {
-        let mut bits = Bits::from(new);
-        let curr = bits.next();
-
-        NewWords {
-            word_boundaries: self,
-            new: bits,
-            curr,
-        }
-    }
 }
-impl Iterator for WordBoundaries {
-    type Item = WordBoundary;
+impl Iterator for Boundaries {
+    type Item = Boundary;
 
     fn next(&mut self) -> Option<Self::Item> {
         let start = self.word_boundaries.next()?;
         let end = self.word_boundaries.next()?;
 
-        Some(WordBoundary { start, end })
+        Some(Boundary { start, end })
     }
 }
 
 /// Adapts [`WordBoundaries`] to iterate over
 #[derive(Debug)]
-pub struct NewWords<I> {
+pub struct Intersecting<I> {
     word_boundaries: I,
     new: Bits,
     curr: Option<Pos>,
 }
-impl<I: Iterator<Item = WordBoundary>> Iterator for NewWords<I> {
-    type Item = WordBoundary;
+impl<I: Iterator<Item = Boundary>> Iterator for Intersecting<I> {
+    type Item = Boundary;
 
     fn next(&mut self) -> Option<Self::Item> {
         // if the current pos is `None` then stop.
@@ -104,14 +91,14 @@ impl<I: Iterator<Item = WordBoundary>> Iterator for NewWords<I> {
 /// Adapts an iterator over [`WordBoundary`]s to an iterator
 /// over horizontal [`Word`]s.
 #[derive(Debug)]
-pub struct HorizontalWords<I> {
+pub struct Horizontal<I> {
     inner: I,
 }
-impl<I: Iterator<Item = WordBoundary>> Iterator for HorizontalWords<I> {
+impl<I: Iterator<Item = Boundary>> Iterator for Horizontal<I> {
     type Item = Word;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.inner.next().map(|WordBoundary { start, end }| Word {
+        self.inner.next().map(|Boundary { start, end }| Word {
             start,
             end,
             dir: Direction::East,
@@ -122,14 +109,14 @@ impl<I: Iterator<Item = WordBoundary>> Iterator for HorizontalWords<I> {
 /// Adapts an iterator over [`WordBoundary`]s to an iterator
 /// over vertical [`Word`]s.
 #[derive(Debug)]
-pub struct VerticalWords<I> {
+pub struct Vertical<I> {
     inner: I,
 }
-impl<I: Iterator<Item = WordBoundary>> Iterator for VerticalWords<I> {
+impl<I: Iterator<Item = Boundary>> Iterator for Vertical<I> {
     type Item = Word;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.inner.next().map(|WordBoundary { start, end }| Word {
+        self.inner.next().map(|Boundary { start, end }| Word {
             start: start.clockwise90(),
             end: end.clockwise90(),
             dir: Direction::South,
@@ -181,16 +168,29 @@ impl Iterator for WordIntoIter {
 /// module more ergonomic.
 pub trait WordsIteratorExt: Sized {
     /// Gets an iterator over horizontal words.
-    fn horizontal(self) -> HorizontalWords<Self>;
+    fn horizontal(self) -> Horizontal<Self>;
     /// Gets an iterator over vertical words.
-    fn vertical(self) -> VerticalWords<Self>;
+    fn vertical(self) -> Vertical<Self>;
+    /// Creates an iterator over only new words (words for which
+    /// at least one letter is in the `new` bitboard).
+    fn intersecting(self, new: BitBoard) -> Intersecting<Self>;
 }
-impl<I: Iterator<Item = WordBoundary>> WordsIteratorExt for I {
-    fn horizontal(self) -> HorizontalWords<Self> {
-        HorizontalWords { inner: self }
+impl<I: Iterator<Item = Boundary>> WordsIteratorExt for I {
+    fn horizontal(self) -> Horizontal<Self> {
+        Horizontal { inner: self }
     }
-    fn vertical(self) -> VerticalWords<Self> {
-        VerticalWords { inner: self }
+    fn vertical(self) -> Vertical<Self> {
+        Vertical { inner: self }
+    }
+    fn intersecting(self, new: BitBoard) -> Intersecting<Self> {
+        let mut bits = Bits::from(new);
+        let curr = bits.next();
+
+        Intersecting {
+            word_boundaries: self,
+            new: bits,
+            curr,
+        }
     }
 }
 
@@ -300,7 +300,7 @@ mod tests {
         assert!(words.next().is_none());
 
         // only a single word with a new letter
-        let mut new_words = bb.word_boundaries().new_words(new).horizontal();
+        let mut new_words = bb.word_boundaries().intersecting(new).horizontal();
         assert_eq!(
             new_words.next(),
             Some(Word {
