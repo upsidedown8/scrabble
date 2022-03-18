@@ -3,12 +3,18 @@
 
 use crate::{
     ai::lookup::Lookup,
-    game::{board::Board, play::Play, rack::Rack, tile::{Tile, Letter}},
+    game::{
+        board::Board,
+        play::Play,
+        rack::Rack,
+        tile::{Letter, Tile},
+    },
     util::{
+        self,
         bitboard::BitBoard,
         fsm::{Fsm, StateId},
         pos::{Direction, Pos},
-        tile_counts::TileCounts, self,
+        tile_counts::TileCounts,
     },
 };
 
@@ -17,13 +23,18 @@ pub fn gen<'a>(board: &Board, rack: &Rack, fsm: &'a impl Fsm<'a>) -> Vec<ScoredP
     let mut plays = vec![];
 
     gen_horizontal(&mut plays, board, rack, fsm);
-    gen_vertical(&mut plays, board, rack, fsm);
+    // gen_vertical(&mut plays, board, rack, fsm);
 
     plays
 }
 
 /// Adds all horizontal moves in a position to the list of plays.
-fn gen_horizontal<'a>(plays: &mut Vec<ScoredPlay>, board: &Board, rack: &Rack, fsm: &'a impl Fsm<'a>) {
+fn gen_horizontal<'a>(
+    plays: &mut Vec<ScoredPlay>,
+    board: &Board,
+    rack: &Rack,
+    fsm: &'a impl Fsm<'a>,
+) {
     let get_cell = |pos: Pos| board.get(pos);
     let map_pos = |pos: Pos| pos;
     let &occ_h = board.occ_h();
@@ -32,7 +43,12 @@ fn gen_horizontal<'a>(plays: &mut Vec<ScoredPlay>, board: &Board, rack: &Rack, f
 }
 
 /// Adds all vertical moves in a position to the list of plays.
-fn gen_vertical<'a>(plays: &mut Vec<ScoredPlay>, board: &Board, rack: &Rack, fsm: &'a impl Fsm<'a>) {
+fn gen_vertical<'a>(
+    plays: &mut Vec<ScoredPlay>,
+    board: &Board,
+    rack: &Rack,
+    fsm: &'a impl Fsm<'a>,
+) {
     let get_cell = |pos: Pos| board.get(pos.anti_clockwise90());
     let map_pos = |pos: Pos| pos.anti_clockwise90();
     let &occ_v = board.occ_v();
@@ -49,8 +65,13 @@ impl ScoredPlay {
     where
         MapPos: Fn(Pos) -> Pos,
     {
-        let play = Play::Place(tiles.iter().map(|&(pos, tile)| (map_pos(pos), tile)).collect());
-        
+        let play = Play::Place(
+            tiles
+                .iter()
+                .map(|&(pos, tile)| (map_pos(pos), tile))
+                .collect(),
+        );
+
         ScoredPlay(play, score)
     }
 }
@@ -108,17 +129,19 @@ where
     /// Adds all moves for a position to the list.
     pub fn gen(&mut self, plays: &mut Vec<ScoredPlay>) {
         for start in util::possible_starts_h(self.occ, self.counts.len()) {
-            if start == Pos::from((5, 8)) {
-                self.gen_recursive(plays, Some(start), WordState {
+            self.gen_recursive(
+                plays,
+                Some(start),
+                WordState {
                     state: self.fsm.initial_state(),
                     score: 0,
                     multiplier: 1,
                     connected: false,
-                });
-            }
+                },
+            );
         }
     }
-    
+
     /// Recursively traverses possible moves and adds them to the list.
     fn gen_recursive(&mut self, plays: &mut Vec<ScoredPlay>, pos: Option<Pos>, ws: WordState) {
         self.check_position(plays, &ws);
@@ -142,43 +165,61 @@ where
 
     /// Handles the case in `gen_recursive` where the board square is
     /// already occupied.
-    fn occupied_square(&mut self, plays: &mut Vec<ScoredPlay>, ws: WordState, next_pos: Option<Pos>, tile: Tile, letter: Letter) {
+    fn occupied_square(
+        &mut self,
+        plays: &mut Vec<ScoredPlay>,
+        ws: WordState,
+        next_pos: Option<Pos>,
+        tile: Tile,
+        letter: Letter,
+    ) {
         if let Some(next_state) = self.fsm.traverse_from(ws.state, letter) {
-            self.gen_recursive(plays, next_pos, WordState {
-                state: next_state,
-                score: ws.score + tile.score(),
-                multiplier: ws.multiplier,
-                connected: true,
-            });
+            self.gen_recursive(
+                plays,
+                next_pos,
+                WordState {
+                    state: next_state,
+                    score: ws.score + tile.score(),
+                    multiplier: ws.multiplier,
+                    connected: true,
+                },
+            );
         }
     }
 
     /// Handles the case in `gen_recursive` where the board square is
     /// not yet occupied.
-    fn empty_square(&mut self, plays: &mut Vec<ScoredPlay>, ws: WordState, next_pos: Option<Pos>, pos: Pos) {
-        let (tile_m, word_m) = pos.premium_multipliers();
-
+    fn empty_square(
+        &mut self,
+        plays: &mut Vec<ScoredPlay>,
+        ws: WordState,
+        next_pos: Option<Pos>,
+        pos: Pos,
+    ) {
         // try each transition from this state.
         for (letter, next_state) in self.fsm.transitions(ws.state) {
             for tile in [Tile::Letter(letter), Tile::Blank(Some(letter))] {
-                let perpendicular_score = match self.lookup.score_tile(pos, tile) {
-                    Some(score) => score,
-                    _ => continue,
-                };
+                if let Some(perpendicular_score) = self.lookup.score_tile(pos, tile) {
+                    if self.counts.any(tile) {
+                        self.counts.remove_one(letter);
+                        self.stack.push((pos, tile));
 
-                if self.counts.any(tile) {
-                    self.counts.remove_one(letter);
-                    self.stack.push((pos, tile));
+                        let (tile_m, word_m) = pos.premium_multipliers();
 
-                    self.gen_recursive(plays, next_pos, WordState {
-                        state: next_state,
-                        score: ws.score + tile_m * tile.score() + perpendicular_score,
-                        multiplier: ws.multiplier * word_m,
-                        connected: ws.connected || self.lookup.is_above_or_below(pos),
-                    });
+                        self.gen_recursive(
+                            plays,
+                            next_pos,
+                            WordState {
+                                state: next_state,
+                                score: ws.score + tile_m * tile.score() + perpendicular_score,
+                                multiplier: ws.multiplier * word_m,
+                                connected: ws.connected || self.lookup.is_above_or_below(pos),
+                            },
+                        );
 
-                    self.stack.pop();
-                    self.counts.insert_one(letter);
+                        self.stack.pop();
+                        self.counts.insert_one(letter);
+                    }
                 }
             }
         }
@@ -204,7 +245,7 @@ where
                         plays.push(ScoredPlay::new(
                             &self.stack,
                             ws.score * ws.multiplier + all_tiles_bonus,
-                            self.map_pos
+                            self.map_pos,
                         ));
                     }
                 }
