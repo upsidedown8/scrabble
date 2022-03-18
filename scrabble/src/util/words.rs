@@ -1,41 +1,117 @@
 //! Structures for iterating over the words in a bitboard.
 
-use super::{
-    bitboard::{BitBoard, Bits, ReverseBits},
-    pos::{Direction, Pos},
+use crate::{
+    game::board::COLS,
+    util::{
+        bitboard::{BitBoard, Bits},
+        pos::{Direction, Pos},
+    },
 };
+use std::{iter::StepBy, ops::Range};
 
-/// Used to iterate over complete horizontal words in a bitboard.
+/// A start and end position for a word.
 #[derive(Debug)]
-pub struct HorizontalWords {
+pub struct WordBoundary {
+    start: Pos,
+    end: Pos,
+}
+impl WordBoundary {
+    /// Tests whether a position is within the horizontal
+    /// span of the [`WordBoundary`].
+    pub fn contains(&self, pos: Pos) -> bool {
+        self.start <= pos && pos <= self.end
+    }
+}
+
+/// Iterates over the (start, end) position tuples on the board.
+#[derive(Debug)]
+pub struct WordBoundaries {
     word_boundaries: Bits,
 }
-impl HorizontalWords {
-    /// Creates a new `HorizontalWords` iterator from the **normal occupancy**.
-    pub fn new(occ_h: BitBoard) -> Self {
+impl WordBoundaries {
+    /// Creates a new iterator over words.
+    pub fn new(occ: BitBoard) -> Self {
         Self {
-            word_boundaries: Bits::from(occ_h.words_h()),
+            word_boundaries: Bits::from(occ.words_h()),
         }
     }
-    /// Creates an iterator over only the new horizontal words.
-    pub fn new_words(self, new_h: BitBoard) -> NewWords<Self> {
-        let mut new = Bits::from(new_h);
-        let curr = new.next();
+    /// Creates an iterator over only new words (words for which
+    /// at least one letter is in the `new` bitboard).
+    pub fn new_words(self, new: BitBoard) -> NewWords<Self> {
+        let mut bits = Bits::from(new);
+        let curr = bits.next();
 
         NewWords {
-            words: self,
-            new,
+            word_boundaries: self,
+            new: bits,
             curr,
         }
     }
 }
-impl Iterator for HorizontalWords {
-    type Item = Word;
+impl Iterator for WordBoundaries {
+    type Item = WordBoundary;
 
-    fn next(&mut self) -> Option<Word> {
+    fn next(&mut self) -> Option<Self::Item> {
         let start = self.word_boundaries.next()?;
         let end = self.word_boundaries.next()?;
-        Some(Word {
+
+        Some(WordBoundary { start, end })
+    }
+}
+
+/// Adapts [`WordBoundaries`] to iterate over
+#[derive(Debug)]
+pub struct NewWords<I> {
+    word_boundaries: I,
+    new: Bits,
+    curr: Option<Pos>,
+}
+impl<I: Iterator<Item = WordBoundary>> Iterator for NewWords<I> {
+    type Item = WordBoundary;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        // if the current pos is `None` then stop.
+        let curr = self.curr?;
+
+        loop {
+            // advance the `words` iterator until the current position
+            // is within the current word. (skip all words which do not
+            // contain new tiles).
+            let wb = self.word_boundaries.next()?;
+            if wb.contains(curr) {
+                // this word will be returned as the next item, but the current
+                // position needs to be advanced until it is no longer within the
+                // word.
+                loop {
+                    self.curr = self.new.next();
+
+                    match self.curr {
+                        // no more bits so return the word.
+                        None => break,
+                        // check that the current bit is no longer within the word.
+                        Some(curr) if !wb.contains(curr) => break,
+                        // otherwise continue to advance the bit iterator.
+                        _ => continue,
+                    }
+                }
+
+                return Some(wb);
+            }
+        }
+    }
+}
+
+/// Adapts an iterator over [`WordBoundary`]s to an iterator
+/// over horizontal [`Word`]s.
+#[derive(Debug)]
+pub struct HorizontalWords<I> {
+    inner: I,
+}
+impl<I: Iterator<Item = WordBoundary>> Iterator for HorizontalWords<I> {
+    type Item = Word;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.inner.next().map(|WordBoundary { start, end }| Word {
             start,
             end,
             dir: Direction::East,
@@ -43,39 +119,17 @@ impl Iterator for HorizontalWords {
     }
 }
 
-/// Used to iterate over complete vertical words in a bitboard.
+/// Adapts an iterator over [`WordBoundary`]s to an iterator
+/// over vertical [`Word`]s.
 #[derive(Debug)]
-pub struct VerticalWords {
-    word_boundaries: ReverseBits,
+pub struct VerticalWords<I> {
+    inner: I,
 }
-impl VerticalWords {
-    /// Creates a new `Words` iterator for vertical words from
-    /// the **rotated occupancy**.
-    pub fn new(occ_v: BitBoard) -> Self {
-        Self {
-            word_boundaries: ReverseBits::from(occ_v.words_h()),
-        }
-    }
-    /// Creates an iterator over only the new vertical words.
-    pub fn new_words(self, new_h: BitBoard) -> NewWords<Self> {
-        let mut new = Bits::from(new_h);
-        let curr = new.next();
-
-        NewWords {
-            words: self,
-            new,
-            curr,
-        }
-    }
-}
-impl Iterator for VerticalWords {
+impl<I: Iterator<Item = WordBoundary>> Iterator for VerticalWords<I> {
     type Item = Word;
 
-    fn next(&mut self) -> Option<Word> {
-        // since iteration is in reverse, start & end are flipped
-        let end = self.word_boundaries.next()?;
-        let start = self.word_boundaries.next()?;
-        Some(Word {
+    fn next(&mut self) -> Option<Self::Item> {
+        self.inner.next().map(|WordBoundary { start, end }| Word {
             start: start.clockwise90(),
             end: end.clockwise90(),
             dir: Direction::South,
@@ -91,95 +145,52 @@ pub struct Word {
     end: Pos,
     dir: Direction,
 }
-impl Word {
-    /// Checks whether a position is contained within the word.
-    pub fn contains(&self, pos: Pos) -> bool {
-        // the position should be numerically between the start and end,
-        // and in the same row or col, depending on `self.dir`.
-        self.start <= pos
-            && pos <= self.end
-            && match self.dir {
-                Direction::South => pos.col() == self.start.col(),
-                // east
-                _ => pos.row() == self.start.row(),
-            }
-    }
-    /// Gets the direction of the word.
-    pub fn dir(&self) -> Direction {
-        self.dir
-    }
-}
 impl IntoIterator for Word {
     type IntoIter = WordIntoIter;
     type Item = Pos;
 
     fn into_iter(self) -> Self::IntoIter {
+        let start = usize::from(self.start);
+        let end = usize::from(self.end);
+        let inc = match self.dir {
+            Direction::East => 1,
+            Direction::South => COLS,
+            // words can only go left to right or down.
+            _ => unreachable!(),
+        };
+
         WordIntoIter {
-            curr: Some(self.start),
-            end: self.end,
-            dir: self.dir,
+            range: (start..end).step_by(inc),
         }
     }
 }
 
 /// Struct used to iterate over the positions in a word.
 pub struct WordIntoIter {
-    curr: Option<Pos>,
-    end: Pos,
-    dir: Direction,
+    range: StepBy<Range<usize>>,
 }
 impl Iterator for WordIntoIter {
     type Item = Pos;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let curr = self.curr?;
-        self.curr = match curr.dir(self.dir) {
-            Some(next_pos) if next_pos <= self.end => Some(next_pos),
-            _ => None,
-        };
-        Some(curr)
+        self.range.next().map(Pos::from)
     }
 }
 
-/// Used to iterate over words which contain at least one new tile.
-#[derive(Debug)]
-pub struct NewWords<I> {
-    words: I,
-    new: Bits,
-    curr: Option<Pos>,
+/// Iterator extension trait that makes the API for this
+/// module more ergonomic.
+pub trait WordsIteratorExt: Sized {
+    /// Gets an iterator over horizontal words.
+    fn horizontal(self) -> HorizontalWords<Self>;
+    /// Gets an iterator over vertical words.
+    fn vertical(self) -> VerticalWords<Self>;
 }
-impl<I: Iterator<Item = Word>> Iterator for NewWords<I> {
-    type Item = Word;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        // if the current pos is `None` then stop.
-        let curr = self.curr?;
-
-        loop {
-            // advance the `words` iterator until the current position
-            // is within the current word. (skip all words which do not
-            // contain new tiles).
-            let word = self.words.next()?;
-            if word.contains(curr) {
-                // this word will be returned as the next item, but the current
-                // position needs to be advanced until it is no longer within the
-                // word.
-                loop {
-                    self.curr = self.new.next();
-
-                    match self.curr {
-                        // no more bits so return the word.
-                        None => break,
-                        // check that the current bit is no longer within the word.
-                        Some(curr) if !word.contains(curr) => break,
-                        // otherwise continue to advance the bit iterator.
-                        _ => continue,
-                    }
-                }
-
-                return Some(word);
-            }
-        }
+impl<I: Iterator<Item = WordBoundary>> WordsIteratorExt for I {
+    fn horizontal(self) -> HorizontalWords<Self> {
+        HorizontalWords { inner: self }
+    }
+    fn vertical(self) -> VerticalWords<Self> {
+        VerticalWords { inner: self }
     }
 }
 
@@ -199,7 +210,7 @@ mod tests {
         let mut bb = BitBoard::default();
         place_word(&mut bb, Pos::start(), Direction::East, 4);
 
-        let mut words = HorizontalWords::new(bb);
+        let mut words = bb.word_boundaries().horizontal();
 
         let first = words.next().expect("at least one word");
 
@@ -219,7 +230,7 @@ mod tests {
         let mut bb = BitBoard::default();
         place_word(&mut bb, Pos::start(), Direction::East, 7);
 
-        let mut words = VerticalWords::new(bb);
+        let mut words = bb.word_boundaries().vertical();
 
         let first = words.next().expect("at least one word");
 
@@ -236,16 +247,28 @@ mod tests {
 
     #[test]
     fn empty() {
-        assert!(HorizontalWords::new(BitBoard::default()).next().is_none());
-        assert!(VerticalWords::new(BitBoard::default()).next().is_none());
+        assert!(BitBoard::default()
+            .word_boundaries()
+            .horizontal()
+            .next()
+            .is_none());
+        assert!(BitBoard::default()
+            .word_boundaries()
+            .vertical()
+            .next()
+            .is_none());
 
         let mut horizontal_bb = BitBoard::default();
         place_word(&mut horizontal_bb, Pos::start(), Direction::North, 7);
-        assert!(HorizontalWords::new(horizontal_bb).next().is_none());
+        assert!(horizontal_bb
+            .word_boundaries()
+            .horizontal()
+            .next()
+            .is_none());
 
         let mut vertical_bb = BitBoard::default();
         place_word(&mut vertical_bb, Pos::start(), Direction::North, 7);
-        assert!(VerticalWords::new(vertical_bb).next().is_none());
+        assert!(vertical_bb.word_boundaries().vertical().next().is_none());
     }
 
     #[test]
@@ -271,13 +294,13 @@ mod tests {
         );
 
         // two words in total
-        let mut words = HorizontalWords::new(bb);
+        let mut words = bb.word_boundaries().horizontal();
         assert!(words.next().is_some());
         assert!(words.next().is_some());
         assert!(words.next().is_none());
 
         // only a single word with a new letter
-        let mut new_words = HorizontalWords::new(bb).new_words(new);
+        let mut new_words = bb.word_boundaries().new_words(new).horizontal();
         assert_eq!(
             new_words.next(),
             Some(Word {
