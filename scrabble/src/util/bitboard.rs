@@ -222,19 +222,19 @@ impl BitBoard {
     }
 
     /// Checks whether the bit at `pos` is set.
-    pub fn is_bit_set<T: Into<Pos>>(&self, pos: T) -> bool {
+    pub fn is_set(&self, pos: impl Into<Pos>) -> bool {
         let idx = usize::from(pos.into());
 
         (self.boards[idx / WORD_SIZE] & (1 << (idx % WORD_SIZE))) != 0
     }
     /// Sets the bit at `pos` to 1.
-    pub fn set_bit<T: Into<Pos>>(&mut self, pos: T) {
+    pub fn set<T: Into<Pos>>(&mut self, pos: T) {
         let idx = usize::from(pos.into());
 
         self.boards[idx / WORD_SIZE] |= 1 << (idx % WORD_SIZE);
     }
     /// Sets the bit at `pos` to 0.
-    pub fn clear_bit<T: Into<Pos>>(&mut self, pos: T) {
+    pub fn clear<T: Into<Pos>>(&mut self, pos: T) {
         let idx = usize::from(pos.into());
 
         self.boards[idx / WORD_SIZE] &= !(1 << (idx % WORD_SIZE));
@@ -433,10 +433,21 @@ impl From<[u64; 4]> for BitBoard {
         Self { boards }
     }
 }
+impl FromIterator<Pos> for BitBoard {
+    fn from_iter<T: IntoIterator<Item = Pos>>(iter: T) -> Self {
+        let mut bb = BitBoard::default();
+
+        for pos in iter {
+            bb.set(pos);
+        }
+
+        bb
+    }
+}
 
 impl fmt::Display for BitBoard {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write_grid(f, |pos| match self.is_bit_set(pos) {
+        write_grid(f, |pos| match self.is_set(pos) {
             true => " x ",
             false => "   ",
         })
@@ -531,10 +542,10 @@ mod tests {
     fn bits() {
         let mut bb = BitBoard::default();
         for pos in Pos::iter() {
-            bb.set_bit(pos);
-            assert!(bb.is_bit_set(pos));
+            bb.set(pos);
+            assert!(bb.is_set(pos));
 
-            bb.clear_bit(pos);
+            bb.clear(pos);
             assert!(bb.is_zero());
         }
     }

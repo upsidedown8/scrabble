@@ -233,10 +233,10 @@ where
             // a disallowed end position & that stack is not empty.
             if let Some(&(pos, _)) = self.stack.last() {
                 // prevents illegal plays if the end of a word is adjacent to a tile.
-                if !self.illegal_ends.is_bit_set(pos) {
+                if !self.illegal_ends.is_set(pos) {
                     // prevents doubled up moves from horizontal and vertical generation.
                     // if there is only one tile, it must not be adjacent.
-                    if self.stack.len() > 1 || !self.above_or_below.is_bit_set(pos) {
+                    if self.stack.len() > 1 || !self.above_or_below.is_set(pos) {
                         let all_tiles_bonus = match self.stack.len() {
                             7 => 50,
                             _ => 0,

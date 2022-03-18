@@ -24,8 +24,8 @@ impl BoardBuilder {
     pub fn place(mut self, builder: PlaceBuilder) -> Self {
         for (pos, tile) in builder.tile_positions(&self.board) {
             self.board.grid[usize::from(pos)] = Some(tile);
-            self.board.occ_h.set_bit(pos);
-            self.board.occ_v.set_bit(pos.anti_clockwise90());
+            self.board.occ_h.set(pos);
+            self.board.occ_v.set(pos.anti_clockwise90());
         }
         self
     }
@@ -114,8 +114,8 @@ impl Board {
     pub fn undo_placement(&mut self, tile_positions: &[(Pos, Tile)]) {
         for &(pos, _) in tile_positions {
             self.grid[usize::from(pos)] = None;
-            self.occ_h.clear_bit(pos);
-            self.occ_v.clear_bit(pos.anti_clockwise90());
+            self.occ_h.clear(pos);
+            self.occ_v.clear(pos.anti_clockwise90());
         }
     }
     /// Attempts to perform a [`Play::Place`](super::play::Play::Place)
@@ -144,7 +144,7 @@ impl Board {
         for &(pos_h, _) in tile_positions {
             // if the bit has already been set then `tile_positions` contains
             // a duplicate tile.
-            if new_h.is_bit_set(pos_h) {
+            if new_h.is_set(pos_h) {
                 return Err(GameError::DuplicatePosition);
             }
 
@@ -152,8 +152,8 @@ impl Board {
             same_row &= row == pos_h.row();
             same_col &= col == pos_h.col();
 
-            new_h.set_bit(pos_h);
-            new_v.set_bit(pos_h.anti_clockwise90());
+            new_h.set(pos_h);
+            new_v.set(pos_h.anti_clockwise90());
         }
 
         if !same_row && !same_col {

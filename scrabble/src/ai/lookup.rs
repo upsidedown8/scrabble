@@ -48,14 +48,14 @@ impl Lookup {
     /// returns `None`, if the word has only one letter returns `Some(0)`, otherwise
     /// returns the score of the word.
     pub fn score_tile(&self, pos: Pos, tile: Tile) -> Option<usize> {
-        match self.above_or_below.is_bit_set(pos) {
+        match self.above_or_below.is_set(pos) {
             true => self.lookup[usize::from(pos)].get(&tile).copied(),
             false => Some(0),
         }
     }
     /// Checks whether a postion has an existing tile above or below it.
     pub fn is_above_or_below(&self, pos: Pos) -> bool {
-        self.above_or_below.is_bit_set(pos)
+        self.above_or_below.is_set(pos)
     }
 }
 
@@ -97,7 +97,7 @@ where
                         // if the position is not directly above or below
                         // an existing square then words placed there ignore
                         // the map for that square.
-                        if above_or_below.is_bit_set(pos) {
+                        if above_or_below.is_set(pos) {
                             // try all tiles that could be placed here.
                             for (letter, next_state) in self.fsm.transitions(state) {
                                 for tile in [Tile::Letter(letter), Tile::Blank(Some(letter))] {

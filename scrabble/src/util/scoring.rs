@@ -25,7 +25,7 @@ pub fn score<'a>(
             .traverse_from(curr_state, letter)
             .ok_or(GameError::InvalidWord)?;
 
-        let (tile_m, word_m) = match new.is_bit_set(pos) {
+        let (tile_m, word_m) = match new.is_set(pos) {
             true => pos.premium_multipliers(),
             false => (1, 1),
         };

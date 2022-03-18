@@ -70,7 +70,7 @@ pub fn validate_occ_h(occ_h: BitBoard, mut new_h: BitBoard) -> GameResult<()> {
     let occ = occ_h | new_h;
 
     // there must be a tile on the start square.
-    if !occ.is_bit_set(Pos::start()) {
+    if !occ.is_set(Pos::start()) {
         return Err(GameError::MustIntersectStart);
     }
 
@@ -90,10 +90,10 @@ pub fn validate_occ_h(occ_h: BitBoard, mut new_h: BitBoard) -> GameResult<()> {
 
     // Set the start bit, required for first move when occupancy
     // is zero.
-    connected.set_bit(Pos::start());
+    connected.set(Pos::start());
 
     // remove the start bit from `new_h`
-    new_h.clear_bit(Pos::start());
+    new_h.clear(Pos::start());
 
     match is_connected(connected, new_h) {
         // if there are still tiles remaining in `new_h` then

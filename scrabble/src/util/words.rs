@@ -201,7 +201,7 @@ mod tests {
 
     fn place_word(bb: &mut BitBoard, start: Pos, dir: Direction, len: usize) {
         for pos in iter::successors(Some(start), |x| x.offset(dir, 1)).take(len) {
-            bb.set_bit(pos);
+            bb.set(pos);
         }
     }
 
@@ -285,7 +285,7 @@ mod tests {
         );
 
         let mut new = BitBoard::default();
-        new.set_bit(
+        new.set(
             Pos::start()
                 .offset(Direction::South, 2)
                 .unwrap()
