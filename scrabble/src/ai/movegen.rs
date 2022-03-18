@@ -23,7 +23,7 @@ pub fn gen<'a>(board: &Board, rack: &Rack, fsm: &'a impl Fsm<'a>) -> Vec<ScoredP
     let mut plays = vec![];
 
     gen_horizontal(&mut plays, board, rack, fsm);
-    // gen_vertical(&mut plays, board, rack, fsm);
+    gen_vertical(&mut plays, board, rack, fsm);
 
     plays
 }
@@ -50,7 +50,7 @@ fn gen_vertical<'a>(
     fsm: &'a impl Fsm<'a>,
 ) {
     let get_cell = |pos: Pos| board.get(pos.anti_clockwise90());
-    let map_pos = |pos: Pos| pos.anti_clockwise90();
+    let map_pos = |pos: Pos| pos.clockwise90();
     let &occ_v = board.occ_v();
 
     MoveGen::new(rack, occ_v, fsm, get_cell, map_pos).gen(plays);
