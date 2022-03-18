@@ -27,7 +27,6 @@ pub struct Bits {
     boards: [u64; 4],
     word_idx: usize,
 }
-
 impl Iterator for Bits {
     type Item = Pos;
 
@@ -38,8 +37,7 @@ impl Iterator for Bits {
             if word == 0 {
                 self.word_idx += 1;
             } else {
-                let rev = word.reverse_bits();
-                let trailing_zeros = rev.leading_zeros() as usize;
+                let trailing_zeros = word.trailing_zeros() as usize;
                 self.boards[self.word_idx] &= !(1 << trailing_zeros);
 
                 return Some(Pos::from(trailing_zeros + WORD_SIZE * self.word_idx));
@@ -52,6 +50,41 @@ impl Iterator for Bits {
 impl From<BitBoard> for Bits {
     fn from(bb: BitBoard) -> Bits {
         Bits {
+            boards: bb.boards,
+            word_idx: 0,
+        }
+    }
+}
+
+/// Used to iterate over the bits in a [`BitBoard`] in reverse order.
+#[derive(Debug)]
+pub struct ReverseBits {
+    boards: [u64; 4],
+    word_idx: usize,
+}
+impl Iterator for ReverseBits {
+    type Item = Pos;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        while self.word_idx < 4 {
+            let word = self.boards[3 - self.word_idx];
+
+            if word == 0 {
+                self.word_idx += 1;
+            } else {
+                let leading_zeros = word.leading_zeros() as usize;
+                self.boards[3 - self.word_idx] &= !(1 << (63 - leading_zeros));
+
+                return Some(Pos::from((63 - leading_zeros) + WORD_SIZE * (3 - self.word_idx)));
+            }
+        }
+
+        None
+    }
+}
+impl From<BitBoard> for ReverseBits {
+    fn from(bb: BitBoard) -> ReverseBits {
+        ReverseBits {
             boards: bb.boards,
             word_idx: 0,
         }
@@ -88,8 +121,8 @@ impl BitBoard {
     /// traversal can then be used to find all words.
     pub fn words_h(self) -> BitBoard {
         // finds all squares which start a horizontal word
-        let starts_h = (self << 1) & !BitBoard::rightmost_col();
-        let ends_h = (self >> 1) & !BitBoard::leftmost_col();
+        let starts_h = (self >> 1) & !BitBoard::rightmost_col();
+        let ends_h = (self << 1) & !BitBoard::leftmost_col();
 
         self & (starts_h ^ ends_h)
     }
@@ -214,6 +247,14 @@ impl BitBoard {
     /// Counts the number of bits that are set on the board.
     pub fn bit_count(&self) -> usize {
         self.boards.iter().map(|b| b.count_ones() as usize).sum()
+    }
+    /// Iterates over the bits.
+    pub fn iter(self) -> Bits {
+        Bits::from(self)
+    }
+    /// Iterates over the bits in reverse order.
+    pub fn iter_reverse(self) -> ReverseBits {
+        ReverseBits::from(self)
     }
 }
 
