@@ -52,6 +52,7 @@ impl Iterator for Boundaries {
 pub struct Intersecting<I> {
     boundaries: I,
     new: Bits,
+    curr: Option<Pos>,
 }
 impl<I: Iterator<Item = Boundary>> Iterator for Intersecting<I> {
     type Item = Boundary;
@@ -59,15 +60,14 @@ impl<I: Iterator<Item = Boundary>> Iterator for Intersecting<I> {
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             let boundary = self.boundaries.next()?;
-            let mut curr = self.new.next()?;
 
             // skip new positions that come before
-            while curr < boundary.start {
-                curr = self.new.next()?;
+            while self.curr? < boundary.start {
+                self.curr = self.new.next();
             }
 
             // check whether current position is within boundary
-            if boundary.contains(curr) {
+            if boundary.contains(self.curr?) {
                 return Some(boundary);
             }
         }
@@ -169,9 +169,13 @@ impl<I: Iterator<Item = Boundary>> WordsIteratorExt for I {
         Vertical { inner: self }
     }
     fn intersecting(self, new: BitBoard) -> Intersecting<Self> {
+        let mut new = Bits::from(new);
+        let curr = new.next();
+
         Intersecting {
             boundaries: self,
-            new: Bits::from(new),
+            new,
+            curr,
         }
     }
 }
