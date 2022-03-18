@@ -7,7 +7,7 @@ use crate::{
         pos::{Direction, Pos},
     },
 };
-use std::{iter::StepBy, ops::Range};
+use std::{iter::StepBy, ops::RangeInclusive};
 
 /// A start and end position for a word.
 #[derive(Debug)]
@@ -160,14 +160,14 @@ impl IntoIterator for Word {
         };
 
         WordIntoIter {
-            range: (start..end).step_by(inc),
+            range: (start..=end).step_by(inc),
         }
     }
 }
 
 /// Struct used to iterate over the positions in a word.
 pub struct WordIntoIter {
-    range: StepBy<Range<usize>>,
+    range: StepBy<RangeInclusive<usize>>,
 }
 impl Iterator for WordIntoIter {
     type Item = Pos;
