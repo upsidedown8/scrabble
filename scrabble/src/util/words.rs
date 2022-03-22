@@ -153,6 +153,22 @@ impl<'a> fmt::Debug for Word<'a> {
             .finish()
     }
 }
+impl<'a> fmt::Display for Word<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let WordBoundaryIter { curr, end, .. } = &self.boundary;
+        let curr = usize::from(*curr);
+        let end = usize::from(*end);
+        for pos in (curr..=end).map(Pos::from) {
+            write!(
+                f,
+                "{}",
+                self.grid[pos].expect("a tile").letter().expect("a letter")
+            )?;
+        }
+
+        Ok(())
+    }
+}
 
 /// Provides implementations of the `words` and `intersecting` methods
 /// for any iterator over [`WordBoundary`]s.
