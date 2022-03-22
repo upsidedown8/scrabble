@@ -3,9 +3,9 @@
 use crate::{
     error::{GameError, GameResult},
     game::{play::PlaceBuilder, tile::Tile},
-    util::{self, bitboard::BitBoard, fsm::Fsm, pos::Pos, scoring, words::WordsIteratorExt},
+    util::{self, bitboard::BitBoard, fsm::Fsm, grid::Grid, pos::Pos, scoring, words::WordsExt},
 };
-use std::fmt;
+use std::{fmt, ops::Index};
 
 /// The number of rows on the board.
 pub const ROWS: usize = 15;
@@ -23,9 +23,7 @@ impl BoardBuilder {
     /// Places a word on the board, without performing any validation checks.
     pub fn place(mut self, builder: PlaceBuilder) -> Self {
         for (pos, tile) in builder.tile_positions(&self.board) {
-            self.board.grid[usize::from(pos)] = Some(tile);
-            self.board.occ_h.set(pos);
-            self.board.occ_v.set(pos.anti_clockwise90());
+            self.board.set(pos, Some(tile));
         }
         self
     }
@@ -38,29 +36,24 @@ impl BoardBuilder {
 /// Represents the 15 x 15 scrabble board, storing the location of
 /// tiles, and allowing [`Play`](super::play::Play)s to be made
 /// and validated.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct Board {
-    grid: [Option<Tile>; CELLS],
-    /// regular occupancy, for finding horizontal words.
-    occ_h: BitBoard,
-    /// vertical occupancy, rotated 90deg. For finding vertical words.
-    occ_v: BitBoard,
-}
-impl Default for Board {
-    fn default() -> Self {
-        Self {
-            grid: [None; CELLS],
-            occ_h: BitBoard::default(),
-            occ_v: BitBoard::default(),
-        }
-    }
+    grid_h: Grid,
+    grid_v: Grid,
 }
 impl fmt::Display for Board {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        util::write_grid(f, |pos| match self.get(pos) {
+        util::write_grid(f, |pos| match self[pos] {
             Some(tile) => format!("{}", tile),
             None => " . ".to_string(),
         })
+    }
+}
+impl<T: Into<Pos>> Index<T> for Board {
+    type Output = Option<Tile>;
+
+    fn index(&self, index: T) -> &Self::Output {
+        self.grid_h().index(index.into())
     }
 }
 impl Board {
@@ -74,15 +67,19 @@ impl Board {
         fsm: &impl Fsm<'a>,
     ) -> GameResult<usize> {
         let words_h = self
-            .occ_h
+            .grid_h
             .word_boundaries()
             .intersecting(new_h)
-            .horizontal();
-        let words_v = self.occ_v.word_boundaries().intersecting(new_v).vertical();
+            .words(&self.grid_h);
+        let words_v = self
+            .grid_v
+            .word_boundaries()
+            .intersecting(new_v)
+            .words(&self.grid_v);
 
         let mut score = 0;
         for word in words_h.chain(words_v) {
-            score += scoring::score(word, &new_h, self, fsm)?;
+            score += scoring::score(word, &new_h, fsm)?;
         }
 
         // If the bitcount for `new_h` is 7, add a 50 point bonus.
@@ -92,23 +89,21 @@ impl Board {
         }
     }
     /// Gets the board occupancy.
-    pub fn occ_h(&self) -> &BitBoard {
-        &self.occ_h
+    pub fn grid_h(&self) -> &Grid {
+        &self.grid_h
     }
     /// Gets the rotated board occupancy.
-    pub fn occ_v(&self) -> &BitBoard {
-        &self.occ_v
+    pub fn grid_v(&self) -> &Grid {
+        &self.grid_v
     }
-    /// Gets the tile at `pos`.
-    pub fn get(&self, pos: impl Into<Pos>) -> Option<Tile> {
-        self.grid[usize::from(pos.into())]
+    /// Sets the tile at `pos`.
+    fn set(&mut self, pos: impl Into<Pos>, tile: impl Into<Option<Tile>>) {
+        self.grid_h.set(pos, tile);
     }
     /// Removes all tiles in `tile_positions` from the board.
     pub fn undo_placement(&mut self, tile_positions: &[(Pos, Tile)]) {
         for &(pos, _) in tile_positions {
-            self.grid[usize::from(pos)] = None;
-            self.occ_h.clear(pos);
-            self.occ_v.clear(pos.anti_clockwise90());
+            self.set(pos, None);
         }
     }
     /// Attempts to perform a [`Play::Place`](super::play::Play::Place)
@@ -125,7 +120,8 @@ impl Board {
         }
 
         // store the row and column of the first tile.
-        let (row, col) = tile_positions[0].0.row_col();
+        let (first_pos, _) = tile_positions[0];
+        let (row, col) = first_pos.row_col();
         let mut same_row = true;
         let mut same_col = true;
 
@@ -137,7 +133,7 @@ impl Board {
         for &(pos_h, _) in tile_positions {
             // if the bit has already been set then `tile_positions` contains
             // a duplicate tile.
-            if new_h.is_set(pos_h) {
+            if new_h[pos_h] {
                 return Err(GameError::DuplicatePosition);
             }
 
@@ -154,17 +150,13 @@ impl Board {
         }
 
         // perform tile placement validation
-        util::validate_occ_h(self.occ_h, new_h)?;
-
-        // update bitboards
-        self.occ_h |= new_h;
-        self.occ_v |= new_v;
+        util::validate_occ_h(*self.grid_h().occ(), new_h)?;
 
         // Tiles positions have now been validated: place the tiles on the board.
         // Word validation requires that these tiles are present. If an invalid
         // word exists on the board, the tiles will be removed.
         for &(pos, tile) in tile_positions {
-            self.grid[usize::from(pos)] = Some(tile);
+            self.set(pos, tile);
         }
 
         // checks that words are valid then returns the score
