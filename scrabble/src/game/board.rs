@@ -86,8 +86,7 @@ impl Board {
         let words_h = occ_h
             .word_boundaries()
             .intersecting(new_h)
-            .words(&self.grid_h)
-            .inspect(|w| println!("{w}"));
+            .words(&self.grid_h);
         for word in words_h {
             score += scoring::score(word, &new_h, fsm)?;
         }
