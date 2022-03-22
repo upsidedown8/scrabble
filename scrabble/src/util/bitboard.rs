@@ -1,12 +1,12 @@
 //! Module containing a bitboard implementation to represent
 //! the occupancy on the 15 by 15 board.
 
-use super::{pos::Pos, words::Boundaries, write_grid};
+use super::{pos::Pos, words::WordBoundaries, write_grid};
 use std::{
     fmt,
     ops::{
-        BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Not, Shl, ShlAssign, Shr,
-        ShrAssign,
+        BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Index, Not, Shl, ShlAssign,
+        Shr, ShrAssign,
     },
 };
 
@@ -107,12 +107,50 @@ pub struct BitBoard {
     /// be used, but a [`u64`] uses the fewest words so is most efficient.
     boards: [u64; 4],
 }
+impl<T: Into<Pos>> Index<T> for BitBoard {
+    type Output = bool;
 
+    fn index(&self, index: T) -> &Self::Output {
+        let idx = usize::from(index.into());
+        let is_set = (self.boards[idx / WORD_SIZE] & (1 << (idx % WORD_SIZE))) != 0;
+
+        &is_set
+    }
+}
 impl BitBoard {
-    /// Gets an iterator over the [`WordBoundary`](super::words::WordBoundary)s
+    pub const ZERO: BitBoard = BitBoard {
+        boards: [0, 0, 0, 0],
+    };
+    pub const FULL: BitBoard = BitBoard {
+        boards: [u64::MAX, u64::MAX, u64::MAX, FINAL_WORD_MASK],
+    };
+    pub const TOP_ROW: BitBoard = BitBoard {
+        boards: [0x7FFF, 0, 0, 0],
+    };
+    pub const BOTTOM_ROW: BitBoard = BitBoard {
+        boards: [0, 0, 0, 0x1FFFC0000],
+    };
+    pub const LEFT_COL: BitBoard = BitBoard {
+        boards: [
+            0x1000200040008001,
+            0x100020004000800,
+            0x10002000400080,
+            0x40008,
+        ],
+    };
+    pub const RIGHT_COL: BitBoard = BitBoard {
+        boards: [
+            0x800100020004000,
+            0x80010002000400,
+            0x8001000200040,
+            0x100020004,
+        ],
+    };
+
+    /// Gets an iterator over the [`WordBoundaries`](super::words::WordBoundaries)s
     /// on the board.
-    pub fn word_boundaries(self) -> Boundaries {
-        Boundaries::from(self)
+    pub fn word_boundaries(self) -> WordBoundaries {
+        WordBoundaries::new(self)
     }
     /// Calculates the set of tiles which start a word.
     ///
@@ -128,19 +166,20 @@ impl BitBoard {
     /// traversal can then be used to find all words.
     pub fn words_h(self) -> BitBoard {
         // finds all squares which start a horizontal word
-        let starts_h = (self >> 1) & !BitBoard::rightmost_col();
-        let ends_h = (self << 1) & !BitBoard::leftmost_col();
+        let starts_h = (self >> 1) & !Self::RIGHT_COL;
+        let ends_h = (self << 1) & !Self::LEFT_COL;
 
         self & (starts_h ^ ends_h)
     }
     /// Calculates the set of tiles with no tile to the immediate left.
     pub fn word_starts_h(self) -> BitBoard {
-        self & (!(self << 1) | Self::leftmost_col())
+        self & (!(self << 1) | Self::LEFT_COL)
     }
     /// Calculates the set of tiles with no tile to the immediate right.
     pub fn word_ends_h(self) -> BitBoard {
-        self & (!(self >> 1) | Self::rightmost_col())
+        self & (!(self >> 1) | Self::RIGHT_COL)
     }
+
     /// Gets a bitboard containing the set of squares that
     /// are directly above.
     pub fn north(self) -> BitBoard {
@@ -155,16 +194,17 @@ impl BitBoard {
     /// are directly to the left.
     pub fn west(mut self) -> BitBoard {
         // discard the leftmost column to prevent overflow
-        self &= !Self::leftmost_col();
+        self &= !Self::LEFT_COL;
         self >> 1
     }
     /// Gets a bitboard containing the set of squares that
     /// are directly to the right.
     pub fn east(mut self) -> BitBoard {
         // discard the rightmost column to prevent overflow
-        self &= !Self::rightmost_col();
+        self &= !Self::RIGHT_COL;
         self << 1
     }
+
     /// Gets a bitboard containing the set of squares that
     /// are adjacent in one of the 4 orthagonal directions,
     /// to the bits in `self`.
@@ -176,57 +216,7 @@ impl BitBoard {
     pub fn above_or_below(self) -> BitBoard {
         (self.north() | self.south()) & !self
     }
-    /// A bitboard with all bits set to 0.
-    pub const fn zero() -> Self {
-        Self { boards: [0; 4] }
-    }
-    /// A bitboard with all bits set to 1.
-    pub const fn full() -> Self {
-        Self {
-            boards: [u64::MAX, u64::MAX, u64::MAX, FINAL_WORD_MASK],
-        }
-    }
-    /// A bitboard where the top row is set to 1.
-    pub const fn top_row() -> Self {
-        Self {
-            boards: [32767, 0, 0, 0],
-        }
-    }
-    /// A bitboard where the bottom row is set to 1.
-    pub const fn bottom_row() -> Self {
-        Self {
-            boards: [0, 0, 0, 8589672448],
-        }
-    }
-    /// A bitboard where the leftmost row is set to 1.
-    pub const fn leftmost_col() -> Self {
-        Self {
-            boards: [
-                1152956690052710401,
-                72059793128294400,
-                4503737070518400,
-                262152,
-            ],
-        }
-    }
-    /// A bitboard where the leftmost row is set to 1.
-    pub const fn rightmost_col() -> Self {
-        Self {
-            boards: [
-                576478345026355200,
-                36029896564147200,
-                2251868535259200,
-                4295098372,
-            ],
-        }
-    }
 
-    /// Checks whether the bit at `pos` is set.
-    pub fn is_set(&self, pos: impl Into<Pos>) -> bool {
-        let idx = usize::from(pos.into());
-
-        (self.boards[idx / WORD_SIZE] & (1 << (idx % WORD_SIZE))) != 0
-    }
     /// Sets the bit at `pos` to 1.
     pub fn set<T: Into<Pos>>(&mut self, pos: T) {
         let idx = usize::from(pos.into());
@@ -273,7 +263,6 @@ impl IntoIterator for BitBoard {
         Bits::from(self)
     }
 }
-
 impl Shl<usize> for BitBoard {
     type Output = Self;
 
@@ -320,7 +309,6 @@ impl ShlAssign<usize> for BitBoard {
         self.boards[3] &= FINAL_WORD_MASK;
     }
 }
-
 impl Shr<usize> for BitBoard {
     type Output = Self;
 
@@ -359,7 +347,6 @@ impl ShrAssign<usize> for BitBoard {
         self.boards[(words - n)..].fill(0);
     }
 }
-
 impl BitOr<Self> for BitBoard {
     type Output = Self;
 
@@ -376,7 +363,6 @@ impl BitOrAssign<Self> for BitBoard {
             .for_each(|(a, b)| *a |= b);
     }
 }
-
 impl BitAnd<Self> for BitBoard {
     type Output = Self;
 
@@ -393,7 +379,6 @@ impl BitAndAssign<Self> for BitBoard {
             .for_each(|(a, b)| *a &= b);
     }
 }
-
 impl BitXor<Self> for BitBoard {
     type Output = Self;
 
@@ -410,7 +395,6 @@ impl BitXorAssign<Self> for BitBoard {
             .for_each(|(a, b)| *a ^= b);
     }
 }
-
 impl Not for BitBoard {
     type Output = Self;
 
@@ -427,6 +411,7 @@ impl Not for BitBoard {
         self
     }
 }
+
 impl From<[u64; 4]> for BitBoard {
     fn from(mut boards: [u64; 4]) -> Self {
         boards[3] &= FINAL_WORD_MASK;
@@ -447,7 +432,7 @@ impl FromIterator<Pos> for BitBoard {
 
 impl fmt::Display for BitBoard {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write_grid(f, |pos| match self.is_set(pos) {
+        write_grid(f, |pos| match self[pos] {
             true => " x ",
             false => "   ",
         })
@@ -482,8 +467,8 @@ mod tests {
 
     #[test]
     fn shift() {
-        assert_eq!(BitBoard::top_row() << (15 * 14), BitBoard::bottom_row());
-        assert_eq!(BitBoard::leftmost_col() << 14, BitBoard::rightmost_col());
+        assert_eq!(BitBoard::TOP_ROW << (15 * 14), BitBoard::BOTTOM_ROW);
+        assert_eq!(BitBoard::LEFT_COL << 14, BitBoard::RIGHT_COL);
     }
 
     #[test]
@@ -543,7 +528,7 @@ mod tests {
         let mut bb = BitBoard::default();
         for pos in Pos::iter() {
             bb.set(pos);
-            assert!(bb.is_set(pos));
+            assert_eq!(bb[pos], true);
 
             bb.clear(pos);
             assert!(bb.is_zero());
