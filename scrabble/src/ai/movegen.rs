@@ -13,6 +13,7 @@ use crate::{
         self,
         bitboard::BitBoard,
         fsm::{Fsm, StateId},
+        grid::Grid,
         pos::{Direction, Pos},
         tile_counts::TileCounts,
     },
@@ -22,59 +23,16 @@ use crate::{
 pub fn gen<'a>(board: &Board, rack: &Rack, fsm: &'a impl Fsm<'a>) -> Vec<ScoredPlay> {
     let mut plays = vec![];
 
-    gen_horizontal(&mut plays, board, rack, fsm);
-    gen_vertical(&mut plays, board, rack, fsm);
+    MoveGen::new(rack, board.grid_v(), fsm).gen(&mut plays);
+    MoveGen::new(rack, board.grid_h(), fsm).gen(&mut plays);
 
     plays
 }
 
-/// Adds all horizontal moves in a position to the list of plays.
-fn gen_horizontal<'a>(
-    plays: &mut Vec<ScoredPlay>,
-    board: &Board,
-    rack: &Rack,
-    fsm: &'a impl Fsm<'a>,
-) {
-    let get_cell = |pos: Pos| board.get(pos);
-    let map_pos = |pos: Pos| pos;
-    let &occ_h = board.occ_h();
-
-    MoveGen::new(rack, occ_h, fsm, get_cell, map_pos).gen(plays);
-}
-
-/// Adds all vertical moves in a position to the list of plays.
-fn gen_vertical<'a>(
-    plays: &mut Vec<ScoredPlay>,
-    board: &Board,
-    rack: &Rack,
-    fsm: &'a impl Fsm<'a>,
-) {
-    let get_cell = |pos: Pos| board.get(pos.anti_clockwise90());
-    let map_pos = |pos: Pos| pos.clockwise90();
-    let &occ_v = board.occ_v();
-
-    MoveGen::new(rack, occ_v, fsm, get_cell, map_pos).gen(plays);
-}
-
-/// Wrapper type for a generated `Play` and its score.
+/// Wrapper type for generated tile placements and score. To convert to a
+/// play, the positions first have to be rotated.
 #[derive(Debug)]
 pub struct ScoredPlay(pub Play, pub usize);
-impl ScoredPlay {
-    /// Creates a new scored play from tile positions and its score.
-    pub fn new<MapPos>(tiles: &[(Pos, Tile)], score: usize, map_pos: MapPos) -> Self
-    where
-        MapPos: Fn(Pos) -> Pos,
-    {
-        let play = Play::Place(
-            tiles
-                .iter()
-                .map(|&(pos, tile)| (map_pos(pos), tile))
-                .collect(),
-        );
-
-        ScoredPlay(play, score)
-    }
-}
 
 /// A struct that stores recursive state so that it can be
 /// more easily passed to other methods.
@@ -85,49 +43,44 @@ struct WordState {
     connected: bool,
 }
 
-/// Generates either horizontal or vertical moves.
-/// *   `GetCell` gets the actual optional tile on the board from the rotated position
-/// *   `MapPos` performs a counter rotation if neccesary.
+/// Generates moves for a position.
 #[derive(Debug)]
-struct MoveGen<'a, F, GetCell, MapPos> {
+struct MoveGen<'a, 'b, F> {
     fsm: &'a F,
-    get_cell: GetCell,
-    map_pos: MapPos,
+    grid: &'b Grid,
     lookup: Lookup,
 
     occ: BitBoard,
-    above_or_below: BitBoard,
     illegal_ends: BitBoard,
 
     stack: Vec<(Pos, Tile)>,
     counts: TileCounts,
 }
 
-impl<'a, F, GetCell, MapPos> MoveGen<'a, F, GetCell, MapPos>
+impl<'a, 'b, F> MoveGen<'a, 'b, F>
 where
     F: Fsm<'a>,
-    GetCell: Fn(Pos) -> Option<Tile> + Copy,
-    MapPos: Fn(Pos) -> Pos + Copy,
 {
     /// Creates a new [`MoveGen`].
-    pub fn new(rack: &Rack, occ: BitBoard, fsm: &'a F, get_cell: GetCell, map_pos: MapPos) -> Self {
+    pub fn new(rack: &Rack, grid: &'b Grid, fsm: &'a F) -> Self {
+        let &occ = grid.occ();
+        let &counts = rack.tile_counts();
+        let lookup = Lookup::new(fsm, &counts, grid);
+
         Self {
             fsm,
-            get_cell,
-            map_pos,
-            lookup: Lookup::new(fsm, get_cell, rack.tile_counts(), occ),
+            grid,
+            lookup,
 
             occ,
-            above_or_below: occ.above_or_below(),
             illegal_ends: occ.west(),
 
             stack: vec![],
-            counts: *rack.tile_counts(),
+            counts,
         }
     }
-
     /// Adds all moves for a position to the list.
-    pub fn gen(&mut self, plays: &mut Vec<ScoredPlay>) {
+    pub fn gen(mut self, plays: &mut Vec<ScoredPlay>) {
         for start in util::possible_starts_h(self.occ, self.counts.len()) {
             self.gen_recursive(
                 plays,
@@ -141,7 +94,6 @@ where
             );
         }
     }
-
     /// Recursively traverses possible moves and adds them to the list.
     fn gen_recursive(&mut self, plays: &mut Vec<ScoredPlay>, pos: Option<Pos>, ws: WordState) {
         self.check_position(plays, &ws);
@@ -149,7 +101,7 @@ where
         if let Some(pos) = pos {
             let next_pos = pos.dir(Direction::East);
 
-            match (self.get_cell)(pos) {
+            match self.grid[pos] {
                 // Already a tile: see whether traversal can continue (no branching).
                 // Add the tile score to the total score.
                 Some(tile @ Tile::Letter(letter) | tile @ Tile::Blank(Some(letter))) => {
@@ -162,7 +114,6 @@ where
             }
         }
     }
-
     /// Handles the case in `gen_recursive` where the board square is
     /// already occupied.
     fn occupied_square(
@@ -186,7 +137,6 @@ where
             );
         }
     }
-
     /// Handles the case in `gen_recursive` where the board square is
     /// not yet occupied.
     fn empty_square(
@@ -224,10 +174,10 @@ where
             }
         }
     }
-
     /// Checks whether a point in the recursive stack is a valid move,
     /// and if so adds it to the list.
     fn check_position(&self, plays: &mut Vec<ScoredPlay>, ws: &WordState) {
+        // check that the word is connected and is valid.
         if ws.connected && self.fsm.is_terminal(ws.state) {
             // check that the final stack item does not have
             // a disallowed end position & that stack is not empty.
@@ -236,20 +186,29 @@ where
                 if !self.illegal_ends.is_set(pos) {
                     // prevents doubled up moves from horizontal and vertical generation.
                     // if there is only one tile, it must not be adjacent.
-                    if self.stack.len() > 1 || !self.above_or_below.is_set(pos) {
-                        let all_tiles_bonus = match self.stack.len() {
-                            7 => 50,
-                            _ => 0,
-                        };
-
-                        plays.push(ScoredPlay::new(
-                            &self.stack,
-                            ws.score * ws.multiplier + all_tiles_bonus,
-                            self.map_pos,
-                        ));
+                    if self.stack.len() > 1 || !self.lookup.is_above_or_below(pos) {
+                        self.add_play(plays, ws)
                     }
                 }
             }
         }
+    }
+    /// Adds a play to the list.
+    fn add_play(&self, plays: &mut Vec<ScoredPlay>, ws: &WordState) {
+        let all_tiles_bonus = match self.stack.len() {
+            7 => 50,
+            _ => 0,
+        };
+
+        plays.push(ScoredPlay(
+            Play::Place(
+                self.stack
+                    .iter()
+                    // maps the position back to the horizontal coordinate.
+                    .map(|&(pos, tile)| (self.grid.map_pos(pos), tile))
+                    .collect(),
+            ),
+            ws.score * ws.multiplier + all_tiles_bonus,
+        ));
     }
 }

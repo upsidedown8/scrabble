@@ -6,14 +6,15 @@ use crate::{
     util::{
         bitboard::BitBoard,
         fsm::{Fsm, StateId},
+        grid::Grid,
         pos::{Col, Direction, Pos, Row},
         tile_counts::TileCounts,
     },
 };
-use std::{collections::HashMap, iter::successors};
+use std::collections::HashMap;
 
 /// Vertical words can be considered seperately. Since placement
-/// always occurs in a single row, only 1 tile can be placed in each
+/// always occurs in a single row, only one tile can be placed in each
 /// column. `Lookup` produces and stores a hashmap of legal tiles and their
 /// corresponding scores for each position on the board.
 #[derive(Debug)]
@@ -21,28 +22,11 @@ pub struct Lookup {
     above_or_below: BitBoard,
     lookup: Vec<HashMap<Tile, usize>>,
 }
-
 impl Lookup {
-    /// Creates a lookup for the perpendicular direction.
-    /// `counts` are the frequency of each tile on the rack, `get_cell` is
-    /// a function that accesses the board at the (maybe rotated) position.
-    pub fn new<'a, F, GetCell>(
-        fsm: &'a F,
-        get_cell: GetCell,
-        counts: &TileCounts,
-        occ: BitBoard,
-    ) -> Self
-    where
-        F: Fsm<'a>,
-        GetCell: Fn(Pos) -> Option<Tile>,
-    {
-        LookupBuilder {
-            fsm,
-            get_cell,
-            counts,
-            occ,
-        }
-        .build()
+    /// Creates a lookup for the perpendicular direction (to the `grid`).
+    /// `counts` are the frequencies of each tile on the rack.
+    pub fn new<'a, F: Fsm<'a>>(fsm: &'a F, counts: &TileCounts, grid: &Grid) -> Self {
+        LookupBuilder { fsm, counts, grid }.build()
     }
     /// Finds the score when a tile is placed on a square. If the word is invalid,
     /// returns `None`, if the word has only one letter returns `Some(0)`, otherwise
@@ -59,21 +43,16 @@ impl Lookup {
     }
 }
 
-struct LookupBuilder<'a, 'b, F, GetCell> {
+/// Struct used for recursively constructing a [`Lookup`].
+struct LookupBuilder<'a, 'b, F> {
     fsm: &'a F,
-    get_cell: GetCell,
     counts: &'b TileCounts,
-    occ: BitBoard,
+    grid: &'b Grid,
 }
-
-impl<'a, 'b, F, GetCell> LookupBuilder<'a, 'b, F, GetCell>
-where
-    F: Fsm<'a>,
-    GetCell: Fn(Pos) -> Option<Tile>,
-{
+impl<'a, 'b, F: Fsm<'a>> LookupBuilder<'a, 'b, F> {
     /// Constructs a `Lookup` from the builder.
     pub fn build(mut self) -> Lookup {
-        let above_or_below = self.occ.above_or_below();
+        let above_or_below = self.grid.occ().above_or_below();
         let mut lookup = (0..CELLS).map(|_| HashMap::default()).collect::<Vec<_>>();
 
         // Each column can be considered seperately. Considering
@@ -85,7 +64,7 @@ where
 
             // Go down the rows for the current column
             for pos in Row::iter().map(|row| Pos::from((row, col))) {
-                match (self.get_cell)(pos) {
+                match self.grid[pos] {
                     // already a tile at this position, update score and state.
                     Some(tile @ Tile::Letter(letter) | tile @ Tile::Blank(Some(letter))) => {
                         // since the tile has already been placed, the path should be in the fsm.
@@ -103,7 +82,7 @@ where
                                 for tile in [Tile::Letter(letter), Tile::Blank(Some(letter))] {
                                     if self.counts.any(tile) {
                                         if let Some((tile, score)) =
-                                            self.score_v(tile, score, pos, next_state)
+                                            self.score(tile, score, pos, next_state)
                                         {
                                             lookup[usize::from(pos)].insert(tile, score);
                                         }
@@ -125,8 +104,9 @@ where
             lookup,
         }
     }
+
     /// Finds the scores for a vertical word from a position.
-    fn score_v(
+    fn score(
         &mut self,
         tile: Tile,
         score: usize,
@@ -141,8 +121,8 @@ where
         //  - an empty square is encountered, or
         //  - the end of the board is encountered
         // skip `pos` as it was previously validated and scored.
-        for pos in successors(pos.dir(Direction::South), |p| p.dir(Direction::South)) {
-            match (self.get_cell)(pos) {
+        for pos in pos.project(Direction::South).skip(1) {
+            match self.grid[pos] {
                 Some(tile @ Tile::Letter(letter) | tile @ Tile::Blank(Some(letter))) => {
                     // these tiles are already placed so premium does not apply
                     score += tile.score();
