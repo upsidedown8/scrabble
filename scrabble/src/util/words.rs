@@ -146,17 +146,17 @@ impl<'a> Iterator for Word<'a> {
     }
 }
 
-// Provides implementations of the `words` and `intersecting` methods
-// for any iterator over [`WordBoundary`]s.
+/// Provides implementations of the `words` and `intersecting` methods
+/// for any iterator over [`WordBoundary`]s.
 pub trait WordsExt: Sized {
     /// Gets an iterator over the [`Word`]s referred to by each
     /// [`WordBoundary`].
-    fn words<'a>(self, grid: &'a Grid) -> Words<'a, Self>;
+    fn words(self, grid: &'_ Grid) -> Words<'_, Self>;
     /// Gets the word boundaries that intersect the `new` bitboard.
     fn intersecting(self, occ: BitBoard) -> Intersecting<Self>;
 }
 impl<I: Iterator<Item = WordBoundary>> WordsExt for I {
-    fn words<'a>(self, grid: &'a Grid) -> Words<'a, I> {
+    fn words(self, grid: &'_ Grid) -> Words<'_, I> {
         Words {
             word_boundaries: self,
             grid,
