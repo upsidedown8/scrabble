@@ -118,7 +118,7 @@ impl Jwt {
     }
     /// Encodes the JWT, using the secret and expiry time offset
     /// from the `.env` file.
-    pub fn to_auth(mut self) -> Result<Auth> {
+    pub fn auth(mut self) -> Result<Auth> {
         // get current time, and add `JWT_EXPIRY_SECONDS` to get final time
         let exp_time = Utc::now() + *JWT_EXPIRY_DURATION;
         self.0.exp = exp_time.timestamp() as usize;
