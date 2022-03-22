@@ -81,24 +81,12 @@ impl fmt::Debug for Pos {
     }
 }
 impl Pos {
-    /// Rotates a `pos` 90 degrees anticlockwise about the center square.
-    pub fn anti_clockwise90(&self) -> Pos {
-        let (r, c) = self.row_col();
+    /// Swaps the row and column of a [`Pos`].
+    pub fn swap_rc(&self) -> Pos {
+        let row = Row::from(usize::from(self.col()));
+        let col = Col::from(usize::from(self.row()));
 
-        let r_prime = Row::from(14 - usize::from(c));
-        let c_prime = Col::from(usize::from(r));
-
-        Pos::from((r_prime, c_prime))
-    }
-    /// Rotates a `pos` 90 degrees clockwise about the center square. Inverse
-    /// functon of `rotate_90_anti_clockwise`.
-    pub fn clockwise90(&self) -> Pos {
-        let (r, c) = self.row_col();
-
-        let r_prime = Row::from(usize::from(c));
-        let c_prime = Col::from(14 - usize::from(r));
-
-        Pos::from((r_prime, c_prime))
+        Pos::from((row, col))
     }
     /// Gets the `Pos` for the start square.
     pub fn start() -> Self {
