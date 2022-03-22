@@ -12,6 +12,7 @@ use std::fmt;
 
 pub mod bitboard;
 pub mod fsm;
+pub mod grid;
 pub mod pos;
 pub mod scoring;
 pub mod tile_counts;
@@ -70,7 +71,7 @@ pub fn validate_occ_h(occ_h: BitBoard, mut new_h: BitBoard) -> GameResult<()> {
     let occ = occ_h | new_h;
 
     // there must be a tile on the start square.
-    if !occ.is_set(Pos::start()) {
+    if !occ[Pos::start()] {
         return Err(GameError::MustIntersectStart);
     }
 
@@ -148,5 +149,5 @@ pub fn possible_starts_h(occ_h: BitBoard, rack_len: usize) -> BitBoard {
     // without any squares that have a neighbour to the left (as these
     // squares cannot start a word), minus the rightmost column as no word
     // can start there.
-    (stems | starts) & !occ_h.east() & !BitBoard::rightmost_col()
+    (stems | starts) & !occ_h.east() & !BitBoard::RIGHT_COL
 }
