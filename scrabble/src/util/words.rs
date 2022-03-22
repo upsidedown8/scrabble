@@ -1,5 +1,7 @@
 //! Structures for iterating over the words in a bitboard.
 
+use std::fmt;
+
 use crate::{
     game::tile::Tile,
     util::{
@@ -70,7 +72,7 @@ impl WordBoundaries {
     /// Creates a new [`WordBoundaries`] iterator from a bitboard.
     pub fn new(occ: BitBoard) -> Self {
         WordBoundaries {
-            word_boundaries: Bits::from(occ),
+            word_boundaries: Bits::from(occ.words_h()),
         }
     }
 }
@@ -132,7 +134,6 @@ impl<'a, I: Iterator<Item = WordBoundary>> Iterator for Words<'a, I> {
 }
 
 /// An iterator over the ([`Pos`], [`Tile`]) tuples in a word.
-#[derive(Debug)]
 pub struct Word<'a> {
     grid: &'a Grid,
     boundary: WordBoundaryIter,
@@ -143,6 +144,13 @@ impl<'a> Iterator for Word<'a> {
     fn next(&mut self) -> Option<Self::Item> {
         let pos: Pos = self.boundary.next()?;
         Some((pos, self.grid[pos]?))
+    }
+}
+impl<'a> fmt::Debug for Word<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Word")
+            .field("boundary", &self.boundary)
+            .finish()
     }
 }
 
