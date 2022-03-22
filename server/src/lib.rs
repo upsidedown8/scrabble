@@ -10,6 +10,7 @@ use warp::{http::Method, Filter};
 
 mod auth;
 mod error;
+mod live_games;
 mod models;
 mod routes;
 
@@ -54,7 +55,7 @@ async fn connect_db() -> sqlx::Result<SqlitePool> {
 async fn load_fsm_from_wordlist<'a, F: Fsm<'a>>() -> tokio::io::Result<F> {
     let word_file = env::var("WORD_LIST").expect("`WORD_LIST` env variable");
 
-    log::info!("building fsm from file: {}", word_file);
+    log::info!("building fsm from file: {word_file}");
 
     let mut fsm_builder = FsmBuilder::default();
     let file = File::open(word_file)
