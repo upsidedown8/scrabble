@@ -29,13 +29,13 @@ impl Index<Pos> for Grid {
 }
 impl Grid {
     /// Sets the tile at `pos` on the grid.
-    pub fn set(&mut self, pos: impl Into<Pos>, tile: impl Into<Option<Tile>>) {
+    pub fn set(&mut self, pos: Pos, tile: impl Into<Option<Tile>>) {
         let tile = tile.into();
         match tile {
             Some(_) => self.occ.set(pos),
             None => self.occ.clear(pos),
         };
-        self.tiles[usize::from(pos.into())] = tile;
+        self.tiles[usize::from(pos)] = tile;
     }
     /// Gets a bitboard storing the occupancy for the grid,
     pub fn occ(&self) -> &BitBoard {
