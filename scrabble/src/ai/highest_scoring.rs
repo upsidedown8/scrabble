@@ -25,7 +25,8 @@ impl Ai for HighestScoring {
         rack: &Rack,
         _: Self::Difficulty,
     ) -> Play {
-        let plays = movegen::gen(board, rack, fsm);
+        let mut plays = Vec::new();
+        movegen::gen(board, rack, fsm, &mut plays);
 
         plays
             .into_iter()

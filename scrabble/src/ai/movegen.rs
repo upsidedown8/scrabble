@@ -19,14 +19,11 @@ use crate::{
     },
 };
 
-/// Gets a list containing all moves for the board position.
-pub fn gen<'a>(board: &Board, rack: &Rack, fsm: &'a impl Fsm<'a>) -> Vec<ScoredPlay> {
-    let mut plays = vec![];
-
-    MoveGen::new(rack, board.grid_v(), fsm).gen(&mut plays);
-    MoveGen::new(rack, board.grid_h(), fsm).gen(&mut plays);
-
-    plays
+/// Adds all moves for the board position to `plays`. (Clears `plays` first).
+pub fn gen<'a>(board: &Board, rack: &Rack, fsm: &'a impl Fsm<'a>, plays: &mut Vec<ScoredPlay>) {
+    plays.clear();
+    MoveGen::new(rack, board.grid_v(), fsm).gen(plays);
+    MoveGen::new(rack, board.grid_h(), fsm).gen(plays);
 }
 
 /// Wrapper type for generated tile placements and score. To convert to a
