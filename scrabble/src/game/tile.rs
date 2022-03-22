@@ -1,5 +1,6 @@
 //! Module modelling the scrabble tile.
 
+use crate::error::{GameError, GameResult};
 use serde::{Deserialize, Serialize};
 use std::fmt::{self, Display, Formatter};
 
@@ -114,11 +115,12 @@ impl Tile {
     pub fn blank() -> Tile {
         Tile::Blank(None)
     }
-    /// Gets the optional letter that the tile represents.
-    pub fn letter(&self) -> Option<Letter> {
+    /// Gets the optional letter that the tile represents. If the letter
+    /// is not present (not specified for a blank), returns an error.
+    pub fn letter(&self) -> GameResult<Letter> {
         match self {
-            Tile::Letter(l) => Some(*l),
-            Tile::Blank(opt) => *opt,
+            Tile::Letter(l) => Ok(*l),
+            Tile::Blank(opt) => opt.ok_or(GameError::MissingLetter),
         }
     }
     /// Returns an iterator over all 27 tiles.
