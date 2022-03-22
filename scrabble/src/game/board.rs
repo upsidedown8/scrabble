@@ -59,10 +59,7 @@ impl Default for Board {
 }
 impl fmt::Display for Board {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        util::write_grid(f, |pos| match self[pos] {
-            Some(tile) => format!("{}", tile),
-            None => " . ".to_string(),
-        })
+        writeln!(f, "{}", self.grid_h)
     }
 }
 impl<T: Into<Pos>> Index<T> for Board {
@@ -89,7 +86,8 @@ impl Board {
         let words_h = occ_h
             .word_boundaries()
             .intersecting(new_h)
-            .words(&self.grid_h);
+            .words(&self.grid_h)
+            .inspect(|w| println!("{w}"));
         for word in words_h {
             score += scoring::score(word, &new_h, fsm)?;
         }
@@ -115,7 +113,7 @@ impl Board {
         let tile = tile.into();
 
         self.grid_h.set(pos, tile);
-        self.grid_v.set(pos.anti_clockwise90(), tile);
+        self.grid_v.set(pos.swap_rc(), tile);
     }
     /// Gets the board occupancy.
     pub fn grid_h(&self) -> &Grid {
@@ -167,7 +165,7 @@ impl Board {
             same_col &= col == pos_h.col();
 
             new_h.set(pos_h);
-            new_v.set(pos_h.anti_clockwise90());
+            new_v.set(pos_h.swap_rc());
         }
 
         if !same_row && !same_col {

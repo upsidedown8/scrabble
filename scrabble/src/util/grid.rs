@@ -3,9 +3,9 @@
 
 use crate::{
     game::{board::CELLS, tile::Tile},
-    util::{bitboard::BitBoard, pos::Direction, pos::Pos, words::WordBoundaries},
+    util::{self, bitboard::BitBoard, pos::Direction, pos::Pos, words::WordBoundaries},
 };
-use std::ops::Index;
+use std::{fmt, ops::Index};
 
 /// A structure to store the positions of tiles on the board, either
 /// horizontally or vertically. Implements the [`Index`] trait, so elements
@@ -21,6 +21,14 @@ impl Index<Pos> for Grid {
 
     fn index(&self, index: Pos) -> &Self::Output {
         &self.tiles[usize::from(index)]
+    }
+}
+impl fmt::Display for Grid {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        util::write_grid(f, |pos| match self[pos] {
+            Some(tile) => format!("{}", tile),
+            None => " . ".to_string(),
+        })
     }
 }
 impl Grid {
@@ -54,7 +62,7 @@ impl Grid {
     pub fn map_pos(&self, pos: Pos) -> Pos {
         match self.dir {
             Direction::East => pos,
-            Direction::South => pos.clockwise90(),
+            Direction::South => pos.swap_rc(),
             _ => unreachable!(),
         }
     }
