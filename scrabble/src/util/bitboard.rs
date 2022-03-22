@@ -5,8 +5,8 @@ use super::{pos::Pos, words::WordBoundaries, write_grid};
 use std::{
     fmt,
     ops::{
-        BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Index, Not, Shl, ShlAssign,
-        Shr, ShrAssign,
+        BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Not, Shl, ShlAssign, Shr,
+        ShrAssign,
     },
 };
 
@@ -107,29 +107,24 @@ pub struct BitBoard {
     /// be used, but a [`u64`] uses the fewest words so is most efficient.
     boards: [u64; 4],
 }
-impl<T: Into<Pos>> Index<T> for BitBoard {
-    type Output = bool;
-
-    fn index(&self, index: T) -> &Self::Output {
-        let idx = usize::from(index.into());
-        let is_set = (self.boards[idx / WORD_SIZE] & (1 << (idx % WORD_SIZE))) != 0;
-
-        &is_set
-    }
-}
 impl BitBoard {
+    /// An empty bitboard.
     pub const ZERO: BitBoard = BitBoard {
         boards: [0, 0, 0, 0],
     };
+    /// A full bitboard.
     pub const FULL: BitBoard = BitBoard {
         boards: [u64::MAX, u64::MAX, u64::MAX, FINAL_WORD_MASK],
     };
+    /// Only the top row.
     pub const TOP_ROW: BitBoard = BitBoard {
         boards: [0x7FFF, 0, 0, 0],
     };
+    /// Only the bottom row.
     pub const BOTTOM_ROW: BitBoard = BitBoard {
         boards: [0, 0, 0, 0x1FFFC0000],
     };
+    /// Only the left column.
     pub const LEFT_COL: BitBoard = BitBoard {
         boards: [
             0x1000200040008001,
@@ -138,6 +133,7 @@ impl BitBoard {
             0x40008,
         ],
     };
+    /// Only the right column.
     pub const RIGHT_COL: BitBoard = BitBoard {
         boards: [
             0x800100020004000,
@@ -217,14 +213,19 @@ impl BitBoard {
         (self.north() | self.south()) & !self
     }
 
+    /// Gets the bit at `pos`. `true` if the bit is set.
+    pub fn is_set(&self, pos: impl Into<Pos>) -> bool {
+        let idx = usize::from(pos.into());
+        (self.boards[idx / WORD_SIZE] & (1 << (idx % WORD_SIZE))) != 0
+    }
     /// Sets the bit at `pos` to 1.
-    pub fn set<T: Into<Pos>>(&mut self, pos: T) {
+    pub fn set(&mut self, pos: impl Into<Pos>) {
         let idx = usize::from(pos.into());
 
         self.boards[idx / WORD_SIZE] |= 1 << (idx % WORD_SIZE);
     }
     /// Sets the bit at `pos` to 0.
-    pub fn clear<T: Into<Pos>>(&mut self, pos: T) {
+    pub fn clear(&mut self, pos: impl Into<Pos>) {
         let idx = usize::from(pos.into());
 
         self.boards[idx / WORD_SIZE] &= !(1 << (idx % WORD_SIZE));
@@ -432,7 +433,7 @@ impl FromIterator<Pos> for BitBoard {
 
 impl fmt::Display for BitBoard {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write_grid(f, |pos| match self[pos] {
+        write_grid(f, |pos| match self.is_set(pos) {
             true => " x ",
             false => "   ",
         })
@@ -528,7 +529,7 @@ mod tests {
         let mut bb = BitBoard::default();
         for pos in Pos::iter() {
             bb.set(pos);
-            assert_eq!(bb[pos], true);
+            assert!(bb.is_set(pos));
 
             bb.clear(pos);
             assert!(bb.is_zero());
