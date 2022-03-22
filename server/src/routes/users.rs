@@ -56,7 +56,7 @@ async fn login(db: Db, login: Login) -> Result<impl Reply, Rejection> {
     let jwt = Jwt::new(user.id_user()?, user.role());
 
     Ok(warp::reply::json(&LoginResponse {
-        auth: jwt.to_auth()?,
+        auth: jwt.auth()?,
         user_details: user.into_user_details(),
     }))
 }
@@ -79,7 +79,7 @@ async fn sign_up(db: Db, sign_up: SignUp) -> Result<impl Reply, Rejection> {
     user.insert(&db).await?;
 
     Ok(warp::reply::json(&SignUpResponse {
-        auth: jwt.to_auth()?,
+        auth: jwt.auth()?,
         user_details: user.into_user_details(),
     }))
 }
@@ -89,7 +89,7 @@ async fn profile(db: Db, jwt: Jwt) -> Result<impl Reply, Rejection> {
     let user = User::find_by_id(&db, jwt.id_user()).await?;
 
     Ok(warp::reply::json(&ProfileResponse {
-        auth: jwt.to_auth()?,
+        auth: jwt.auth()?,
         user_details: user.into_user_details(),
     }))
 }
@@ -116,7 +116,7 @@ async fn update(db: Db, jwt: Jwt, update: UpdateAccount) -> Result<impl Reply, R
     updated_user.update(&db).await?;
 
     Ok(warp::reply::json(&UpdateAccountResponse {
-        auth: jwt.to_auth()?,
+        auth: jwt.auth()?,
     }))
 }
 
