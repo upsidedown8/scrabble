@@ -10,7 +10,7 @@ use crate::game::{
 use std::{fmt, ops::Sub};
 
 /// Additional bonus for certain positions on the board.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Premium {
     /// The square doubles the value of the tile placed on it
     DoubleLetter,
@@ -24,7 +24,6 @@ pub enum Premium {
     /// must intersect this square.
     Start,
 }
-
 impl Premium {
     /// Gets the multiplier for a word placed on a square with
     /// this bonus.
@@ -54,7 +53,6 @@ impl Premium {
 #[repr(transparent)]
 #[derive(Default, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Serialize, Deserialize)]
 pub struct Pos(usize);
-
 impl From<usize> for Pos {
     fn from(pos: usize) -> Self {
         Self(pos % (ROWS * COLS))
@@ -201,7 +199,6 @@ impl Sub<Pos> for Pos {
 #[repr(transparent)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Row(usize);
-
 impl From<usize> for Row {
     fn from(row: usize) -> Self {
         Row(row % ROWS)
@@ -223,13 +220,13 @@ impl fmt::Display for Row {
     }
 }
 impl Row {
-    /// The first row
+    /// The first row.
     pub fn first() -> Self {
-        Self::from(0)
+        Row(0)
     }
-    /// The last row
+    /// The last row.
     pub fn last() -> Self {
-        Self::from(ROWS - 1)
+        Row(ROWS - 1)
     }
     /// Returns an iterator over all columns
     pub fn iter() -> impl Iterator<Item = Self> {
@@ -241,7 +238,6 @@ impl Row {
 #[repr(transparent)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Col(usize);
-
 impl From<usize> for Col {
     fn from(col: usize) -> Self {
         Col(col % COLS)
@@ -265,11 +261,11 @@ impl fmt::Display for Col {
 impl Col {
     /// The first column
     pub fn first() -> Self {
-        Self::from(0)
+        Col(0)
     }
     /// The last column
     pub fn last() -> Self {
-        Self::from(COLS - 1)
+        Col(COLS - 1)
     }
     /// Returns an iterator over all columns
     pub fn iter() -> impl Iterator<Item = Self> {
