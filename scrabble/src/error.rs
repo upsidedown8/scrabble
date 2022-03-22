@@ -32,6 +32,8 @@ pub enum GameError {
     NotConnected,
     /// Placed tiles must share a common row or column.
     NoCommonLine,
+    /// A blank tile placed on the board did not specify a letter.
+    MissingLetter,
 }
 
 impl Error for GameError {}
@@ -54,6 +56,8 @@ impl fmt::Display for GameError {
                 GameError::WordsNeedTwoLetters => "Words need at least 2 letters",
                 GameError::NotConnected => "Not connected",
                 GameError::NoCommonLine => "Placed tiles must share a common row or column",
+                GameError::MissingLetter =>
+                    "A blank tile placed on the board did not specify a letter",
             }
         )
     }
