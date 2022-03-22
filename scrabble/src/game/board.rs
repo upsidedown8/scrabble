@@ -3,7 +3,15 @@
 use crate::{
     error::{GameError, GameResult},
     game::{play::PlaceBuilder, tile::Tile},
-    util::{self, bitboard::BitBoard, fsm::Fsm, grid::Grid, pos::Pos, scoring, words::WordsExt},
+    util::{
+        self,
+        bitboard::BitBoard,
+        fsm::Fsm,
+        grid::Grid,
+        pos::{Direction, Pos},
+        scoring,
+        words::WordsExt,
+    },
 };
 use std::{fmt, ops::Index};
 
@@ -36,10 +44,18 @@ impl BoardBuilder {
 /// Represents the 15 x 15 scrabble board, storing the location of
 /// tiles, and allowing [`Play`](super::play::Play)s to be made
 /// and validated.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct Board {
     grid_h: Grid,
     grid_v: Grid,
+}
+impl Default for Board {
+    fn default() -> Self {
+        Self {
+            grid_h: Grid::new(Direction::East),
+            grid_v: Grid::new(Direction::South),
+        }
+    }
 }
 impl fmt::Display for Board {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -96,6 +112,8 @@ impl Board {
     }
     /// Sets the tile at `pos`.
     fn set(&mut self, pos: Pos, tile: impl Into<Option<Tile>>) {
+        let tile = tile.into();
+
         self.grid_h.set(pos, tile);
         self.grid_v.set(pos.anti_clockwise90(), tile);
     }
@@ -140,7 +158,7 @@ impl Board {
         for &(pos_h, _) in tile_positions {
             // if the bit has already been set then `tile_positions` contains
             // a duplicate tile.
-            if new_h[pos_h] {
+            if new_h.is_set(pos_h) {
                 return Err(GameError::DuplicatePosition);
             }
 

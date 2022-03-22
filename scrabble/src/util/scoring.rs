@@ -20,7 +20,7 @@ pub fn score<'a>(word: Word<'_>, new: &BitBoard, fsm: &impl Fsm<'a>) -> GameResu
 
         // the position premium only applies if a new tile was
         // placed on the square.
-        let (tile_m, word_m) = match new[pos] {
+        let (tile_m, word_m) = match new.is_set(pos) {
             true => pos.premium_multipliers(),
             false => (1, 1),
         };

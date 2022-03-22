@@ -71,7 +71,7 @@ pub fn validate_occ_h(occ_h: BitBoard, mut new_h: BitBoard) -> GameResult<()> {
     let occ = occ_h | new_h;
 
     // there must be a tile on the start square.
-    if !occ[Pos::start()] {
+    if !occ.is_set(Pos::start()) {
         return Err(GameError::MustIntersectStart);
     }
 
