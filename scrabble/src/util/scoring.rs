@@ -12,12 +12,14 @@ pub fn score<'a>(word: Word<'_>, new: &BitBoard, fsm: &impl Fsm<'a>) -> GameResu
     let mut curr_state = fsm.initial_state();
 
     for (pos, tile) in word {
-        let letter = tile.letter().ok_or(GameError::MissingLetter)?;
+        let letter = tile.letter()?;
 
         curr_state = fsm
             .traverse_from(curr_state, letter)
             .ok_or(GameError::InvalidWord)?;
 
+        // the position premium only applies if a new tile was
+        // placed on the square.
         let (tile_m, word_m) = match new[pos] {
             true => pos.premium_multipliers(),
             false => (1, 1),

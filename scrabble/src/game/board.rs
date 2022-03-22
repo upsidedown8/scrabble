@@ -66,20 +66,26 @@ impl Board {
         new_v: BitBoard,
         fsm: &impl Fsm<'a>,
     ) -> GameResult<usize> {
-        let words_h = self
-            .grid_h
+        let mut score = 0;
+
+        // find and score the horizontal words.
+        let occ_h = self.grid_h.occ();
+        let words_h = occ_h
             .word_boundaries()
             .intersecting(new_h)
             .words(&self.grid_h);
-        let words_v = self
-            .grid_v
+        for word in words_h {
+            score += scoring::score(word, &new_h, fsm)?;
+        }
+
+        // find and score the vertical words.
+        let occ_v = self.grid_v.occ();
+        let words_v = occ_v
             .word_boundaries()
             .intersecting(new_v)
             .words(&self.grid_v);
-
-        let mut score = 0;
-        for word in words_h.chain(words_v) {
-            score += scoring::score(word, &new_h, fsm)?;
+        for word in words_v {
+            score += scoring::score(word, &new_v, fsm)?;
         }
 
         // If the bitcount for `new_h` is 7, add a 50 point bonus.
@@ -88,6 +94,11 @@ impl Board {
             _ => Ok(score),
         }
     }
+    /// Sets the tile at `pos`.
+    fn set(&mut self, pos: Pos, tile: impl Into<Option<Tile>>) {
+        self.grid_h.set(pos, tile);
+        self.grid_v.set(pos.anti_clockwise90(), tile);
+    }
     /// Gets the board occupancy.
     pub fn grid_h(&self) -> &Grid {
         &self.grid_h
@@ -95,10 +106,6 @@ impl Board {
     /// Gets the rotated board occupancy.
     pub fn grid_v(&self) -> &Grid {
         &self.grid_v
-    }
-    /// Sets the tile at `pos`.
-    fn set(&mut self, pos: impl Into<Pos>, tile: impl Into<Option<Tile>>) {
-        self.grid_h.set(pos, tile);
     }
     /// Removes all tiles in `tile_positions` from the board.
     pub fn undo_placement(&mut self, tile_positions: &[(Pos, Tile)]) {
@@ -150,7 +157,8 @@ impl Board {
         }
 
         // perform tile placement validation
-        util::validate_occ_h(*self.grid_h().occ(), new_h)?;
+        let &occ_h = self.grid_h.occ();
+        util::validate_occ_h(occ_h, new_h)?;
 
         // Tiles positions have now been validated: place the tiles on the board.
         // Word validation requires that these tiles are present. If an invalid
