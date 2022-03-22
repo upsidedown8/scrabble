@@ -1,13 +1,12 @@
 //! Module containing newtypes representing checked board [`Pos`]itions,
 //! [`Row`]s, [`Col`]umns and orthagonal directions.
 
-use serde::{Deserialize, Serialize};
-
 use crate::game::{
     board::{CELLS, COLS, ROWS},
     tile::Letter,
 };
-use std::{fmt, ops::Sub};
+use serde::{Deserialize, Serialize};
+use std::fmt;
 
 /// Additional bonus for certain positions on the board.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -160,14 +159,14 @@ impl Pos {
     }
     /// Finds the pos in the grid, offset by `count` in direction `dir`
     pub fn offset(&self, dir: Direction, count: usize) -> Option<Self> {
-        let vector = dir.vector(count as i32);
+        let (drow, dcol) = dir.vector(count);
 
         // current coordinates
         let (row, col) = self.row_col();
 
         // calculate new coordinates
-        let row = i32::from(row) + vector.0;
-        let col = i32::from(col) + vector.1;
+        let row = usize::from(row) as i32 + drow;
+        let col = usize::from(col) as i32 + dcol;
 
         // if the new row,col are on the grid, return the `Pos`
         if (0..COLS as i32).contains(&col) && (0..ROWS as i32).contains(&row) {
@@ -186,12 +185,10 @@ impl Pos {
 
         Pos((val + 1) % CELLS)
     }
-}
-impl Sub<Pos> for Pos {
-    type Output = Pos;
-
-    fn sub(self, rhs: Pos) -> Self::Output {
-        Self(self.0 - rhs.0)
+    /// Gets an iterator containing all positions from the current one
+    /// in the given direction.
+    pub fn project(self, dir: Direction) -> impl Iterator<Item = Pos> {
+        std::iter::successors(Some(self), move |pos| pos.dir(dir))
     }
 }
 
@@ -204,12 +201,8 @@ impl From<usize> for Row {
         Row(row % ROWS)
     }
 }
-impl From<Row> for i32 {
-    fn from(row: Row) -> Self {
-        row.0 as i32
-    }
-}
 impl From<Row> for usize {
+    #[inline]
     fn from(row: Row) -> Self {
         row.0
     }
@@ -243,12 +236,8 @@ impl From<usize> for Col {
         Col(col % COLS)
     }
 }
-impl From<Col> for i32 {
-    fn from(col: Col) -> Self {
-        col.0 as i32
-    }
-}
 impl From<Col> for usize {
+    #[inline]
     fn from(col: Col) -> Self {
         col.0
     }
@@ -286,18 +275,14 @@ pub enum Direction {
     West,
 }
 impl Direction {
-    /// Gets a unit vector in the `Direction` represented by `self`
-    pub fn unit_vector(&self) -> (i32, i32) {
-        self.vector(1)
-    }
-    /// Gets a `scale`d vector in the `Direction` represented by `self`
-    pub fn vector(&self, scale: i32) -> (i32, i32) {
-        use Direction::*;
+    /// Gets a `scale`d vector in the `Direction` represented by `self`.
+    pub fn vector(&self, scale: usize) -> (i32, i32) {
+        let scale = scale as i32;
         match self {
-            North => (-scale, 0),
-            South => (scale, 0),
-            West => (0, -scale),
-            East => (0, scale),
+            Direction::North => (-scale, 0),
+            Direction::South => (scale, 0),
+            Direction::West => (0, -scale),
+            Direction::East => (0, scale),
         }
     }
     /// Gets the opposite direction.
@@ -314,7 +299,6 @@ impl Direction {
         match self {
             Direction::East => Direction::South,
             Direction::South => Direction::East,
-
             Direction::North => Direction::West,
             Direction::West => Direction::North,
         }
