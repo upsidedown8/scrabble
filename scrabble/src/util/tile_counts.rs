@@ -27,7 +27,7 @@ impl TileCounts {
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
-        
+
     /// Gets the count for a specific tile.
     pub fn count(&self, tile: impl Into<Tile>) -> usize {
         self.counts[usize::from(tile.into())]
@@ -63,7 +63,7 @@ impl TileCounts {
             .enumerate()
             .map(|(idx, _)| Tile::from(idx))
     }
-        
+
     /// Checks whether the `tiles` are contained within the counts.
     pub fn contains(&self, tiles: impl IntoIterator<Item = Tile>) -> bool {
         Self::counts(tiles)
@@ -93,7 +93,7 @@ impl TileCounts {
         });
         self.len = self.counts.iter().sum();
     }
-    
+
     /// Helper method to get an array of counts for each tile in
     /// the iterator.
     fn counts(tiles: impl IntoIterator<Item = Tile>) -> [usize; 27] {
