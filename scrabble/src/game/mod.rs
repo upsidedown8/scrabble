@@ -81,7 +81,7 @@ impl GameOver {
         //     (current running total) - (sum of tiles on rack)
         for (idx, player) in players.iter().enumerate() {
             let rack_sum = player.rack.tile_sum();
-            scores[idx] = player.score - rack_sum;
+            scores[idx] = player.score.saturating_sub(rack_sum);
             overall_rack_sum += rack_sum;
         }
 
