@@ -64,22 +64,23 @@ fn NavbarStart<'a, G: Html>(ctx: ScopeRef<'a>, logged_in: &'a ReadSignal<bool>) 
 /// The end (right part) of the menu.
 #[component]
 fn NavbarEnd<'a, G: Html>(ctx: ScopeRef<'a>, logged_in: &'a ReadSignal<bool>) -> View<G> {
-    let onlogout = |_| ctx.use_auth_context().set(None);
+    let auth_ctx = ctx.use_auth_context();
 
     view! { ctx,
         div(class="navbar-end") {
             div(class="navbar-item") {
                 div(class="buttons") {
-                    (match *logged_in.get() {
-                        true => view! { ctx,
+                    (if *logged_in.get() {
+                        view! { ctx,
                             a(class="button is-light", href="/account") {
                                 "Account"
                             }
-                            a(class="button is-primary", on:click=onlogout, href="/") {
+                            a(class="button is-primary", on:click=|_| auth_ctx.set(None), href="/") {
                                 "Log out"
                             }
-                        },
-                        false => view! { ctx,
+                        }
+                    } else {
+                        view! { ctx,
                             a(class="button is-primary", href="/signup") {
                                 strong {
                                     "Sign up"

@@ -6,7 +6,7 @@ use crate::{
     services::users::sign_up,
 };
 use api::users::SignUp;
-use sycamore::{futures::ScopeSpawnFuture, prelude::*};
+use sycamore::{futures::ScopeSpawnLocal, prelude::*};
 use sycamore_router::navigate;
 
 /// Page for creating an account.
@@ -27,7 +27,7 @@ pub fn SignUpPage<G: Html>(ctx: ScopeRef) -> View<G> {
     let onsignup = |_| {
         loading.set(true);
 
-        ctx.spawn_future(async {
+        ctx.spawn_local(async {
             match sign_up(auth_ctx, sign_up_req.get().as_ref()).await {
                 Ok(sign_up_response) => {
                     auth_ctx.set(Some(AuthCtx {

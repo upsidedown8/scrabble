@@ -17,9 +17,9 @@ fn premium_class(pos: Pos) -> &'static str {
 }
 
 #[derive(Prop)]
-pub struct SquareProps<'a> {
+pub struct SquareProps {
     pub pos: Pos,
-    pub tile: &'a Signal<Option<tile::Tile>>,
+    pub tile: Option<tile::Tile>,
 }
 
 /// One of 225 squares that make up the board. Each square
@@ -27,13 +27,10 @@ pub struct SquareProps<'a> {
 /// can render the bonus (if any), along with the (optional)
 /// tile which is placed in the square.
 #[component]
-pub fn Square<'a, G: Html>(
-    ctx: ScopeRef<'a>,
-    SquareProps { pos, tile }: SquareProps<'a>,
-) -> View<G> {
+pub fn Square<G: Html>(ctx: ScopeRef, SquareProps { pos, tile }: SquareProps) -> View<G> {
     view! { ctx,
         div(class=format!("square {}", premium_class(pos))) {
-            (match *tile.get() {
+            (match tile {
                 Some(tile) => view! { ctx,
                     (tile)
                 },

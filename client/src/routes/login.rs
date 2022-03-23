@@ -6,7 +6,7 @@ use crate::{
     services::users::login,
 };
 use api::users::Login;
-use sycamore::{futures::ScopeSpawnFuture, prelude::*};
+use sycamore::{futures::ScopeSpawnLocal, prelude::*};
 use sycamore_router::navigate;
 
 /// Page for signing in to an account.
@@ -25,7 +25,7 @@ pub fn LoginPage<G: Html>(ctx: ScopeRef) -> View<G> {
     let onsignin = |_| {
         loading.set(true);
 
-        ctx.spawn_future(async {
+        ctx.spawn_local(async {
             match login(auth_ctx, login_req.get().as_ref()).await {
                 Ok(login_response) => {
                     auth_ctx.set(Some(AuthCtx {

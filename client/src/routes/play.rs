@@ -3,8 +3,8 @@
 use crate::components::Board;
 use futures::{channel::mpsc, SinkExt, StreamExt};
 use reqwasm::websocket::{futures::WebSocket, Message};
-use scrabble::game::{board::Board, play::Play, Game};
-use sycamore::{futures::ScopeSpawnFuture, prelude::*};
+use scrabble::util::pos::Pos;
+use sycamore::{futures::ScopeSpawnLocal, prelude::*};
 
 /// Page for playing live games.
 #[component]
@@ -18,7 +18,7 @@ pub fn PlayPage<G: Html>(ctx: ScopeRef) -> View<G> {
     let (tx, mut rx) = mpsc::unbounded();
     let tx = ctx.create_signal(tx);
 
-    ctx.spawn_future(async move {
+    ctx.spawn_local(async move {
         while let Some(msg) = read.next().await {
             match msg {
                 Ok(Message::Text(data)) => {
@@ -31,7 +31,7 @@ pub fn PlayPage<G: Html>(ctx: ScopeRef) -> View<G> {
         }
         log::info!("websocket closed");
     });
-    ctx.spawn_future(async move {
+    ctx.spawn_local(async move {
         while let Some(msg) = rx.next().await {
             log::debug!("send: {msg:?}");
             write.send(Message::Text(msg)).await.unwrap();
@@ -39,7 +39,7 @@ pub fn PlayPage<G: Html>(ctx: ScopeRef) -> View<G> {
     });
 
     let onsend = |_| {
-        ctx.spawn_future(async {
+        ctx.spawn_local(async {
             let mut tx = (*tx.get()).clone();
             let msg = String::clone(&msg.get());
 
@@ -47,11 +47,7 @@ pub fn PlayPage<G: Html>(ctx: ScopeRef) -> View<G> {
         });
     };
 
-    let cells = ctx.create_signal(
-        (0..225)
-            .map(|_| ctx.create_signal(None))
-            .collect::<Vec<_>>(),
-    );
+    let cells = ctx.create_signal((0..225).map(|n| (Pos::from(n), None)).collect::<Vec<_>>());
 
     view! { ctx,
         div(class="play-route is-centered is-vcentered is-flex columns") {
@@ -67,7 +63,7 @@ pub fn PlayPage<G: Html>(ctx: ScopeRef) -> View<G> {
                 }
 
                 Board {
-                    cells: cells.get().as_ref().clone(),
+                    cells: cells,
                 }
 
                 button(class="button is-primary is-light",on:click=onsend) {
