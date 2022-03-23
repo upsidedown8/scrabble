@@ -4,5 +4,5 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-# serialize / deserialize api types
 serde = { version = "1.0.132", features = ["derive"] }
+scrabble = { path = "../scrabble" }
