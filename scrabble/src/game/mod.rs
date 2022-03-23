@@ -38,6 +38,16 @@ pub struct Player {
     score: usize,
     pass_count: usize,
 }
+impl Player {
+    /// Gets the player's rack.
+    pub fn rack(&self) -> &Rack {
+        &self.rack
+    }
+    /// Gets the player's score.
+    pub fn score(&self) -> usize {
+        self.score
+    }
+}
 
 /// The current state of the game.
 #[derive(Clone, Debug)]
@@ -97,12 +107,12 @@ impl GameOver {
     }
     /// Gets an iterator over the numbers of the winning players.
     pub fn winners(&self) -> impl Iterator<Item = PlayerNum> + '_ {
-        self.iter()
+        self.final_scores()
             .filter(|&(_, score)| score == self.max_score)
             .map(|(player_num, _)| player_num)
     }
-    /// Gets an iterator over the (playernumber, score) tuples.
-    pub fn iter(&self) -> impl Iterator<Item = (PlayerNum, usize)> + '_ {
+    /// Gets an iterator over (player number, score) tuples.
+    pub fn final_scores(&self) -> impl Iterator<Item = (PlayerNum, usize)> + '_ {
         PlayerNum::iter(self.scores.len()).zip(self.scores.iter().copied())
     }
 }
@@ -166,6 +176,10 @@ impl Game {
             players,
         }
     }
+    /// Gets the game state for a player.
+    pub fn player(&self, player_num: PlayerNum) -> &Player {
+        &self.players[usize::from(player_num)]
+    }
     /// The current status of the game.
     pub fn status(&self) -> &GameStatus {
         &self.status
@@ -193,15 +207,15 @@ impl Game {
         }
 
         // update current player & status
-        self.status = self.next_status();
         self.to_play = self.to_play.next(self.player_count());
+        self.status = self.next_status();
 
         Ok(())
     }
 
     /// Makes a [`Play::Redraw`] play.
     fn redraw(&mut self, tiles: &[Tile]) -> GameResult<()> {
-        let player = &mut self.players[0];
+        let player = &mut self.players[usize::from(self.to_play)];
 
         // attempt to swap out tiles
         player.rack.exchange_tiles(tiles, &mut self.letter_bag)?;
