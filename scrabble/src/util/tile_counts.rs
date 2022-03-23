@@ -192,12 +192,4 @@ mod tests {
 
         assert_eq!(tc.len(), 2);
     }
-
-    #[test]
-    #[should_panic]
-    fn remove_zero_tile() {
-        let mut tc = TileCounts::default();
-
-        tc.remove([tile(0)]);
-    }
 }
