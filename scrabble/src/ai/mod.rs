@@ -6,6 +6,7 @@ use crate::{
 };
 
 pub mod highest_scoring;
+pub mod longest_word;
 pub mod lookup;
 pub mod movegen;
 

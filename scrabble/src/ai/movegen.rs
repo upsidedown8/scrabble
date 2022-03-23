@@ -148,7 +148,7 @@ where
             for tile in [Tile::Letter(letter), Tile::Blank(Some(letter))] {
                 if let Some(perpendicular_score) = self.lookup.score_tile(pos, tile) {
                     if self.counts.any(tile) {
-                        self.counts.remove_one(letter);
+                        self.counts.remove_one(tile);
                         self.stack.push((pos, tile));
 
                         let (tile_m, word_m) = pos.premium_multipliers();
@@ -165,7 +165,7 @@ where
                         );
 
                         self.stack.pop();
-                        self.counts.insert_one(letter);
+                        self.counts.insert_one(tile);
                     }
                 }
             }
