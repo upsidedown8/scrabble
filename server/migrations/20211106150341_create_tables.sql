@@ -15,25 +15,24 @@ CREATE TABLE IF NOT EXISTS tbl_player(
 CREATE TABLE IF NOT EXISTS tbl_game(
   id_game INTEGER PRIMARY KEY NOT NULL,
   start TIMESTAMP,
-end TIMESTAMP,
-is_over BOOLEAN DEFAULT FALSE
+  end TIMESTAMP,
+  is_over BOOLEAN DEFAULT FALSE
 );
 CREATE TABLE IF NOT EXISTS tbl_tile(
   id_tile INTEGER PRIMARY KEY NOT NULL,
-  id_move INTEGER REFERENCES tbl_move(id_move) NOT NULL,
+  id_play INTEGER REFERENCES tbl_play(id_play) NOT NULL,
   letter CHAR NOT NULL,
-  pos_x INTEGER NOT NULL,
-  pos_y INTEGER NOT NULL,
-  is_blank BOOLEAN NOT NULL
+  is_blank BOOLEAN NOT NULL,
+  pos INTEGER NOT NULL
 );
 CREATE TABLE IF NOT EXISTS tbl_word(
   id_word INTEGER PRIMARY KEY NOT NULL,
-  id_move INTEGER REFERENCES tbl_move(id_move),
-  score INTEGER,
-  content TEXT
+  id_play INTEGER REFERENCES tbl_play(id_play) NOT NULL,
+  score INTEGER NOT NULL,
+  letters TEXT NOT NULL
 );
-CREATE TABLE IF NOT EXISTS tbl_move(
-  id_move INTEGER PRIMARY KEY NOT NULL,
+CREATE TABLE IF NOT EXISTS tbl_play(
+  id_play INTEGER PRIMARY KEY NOT NULL,
   id_player INTEGER REFERENCES tbl_player(id_player) NOT NULL,
   letters_added TEXT NOT NULL
 );
