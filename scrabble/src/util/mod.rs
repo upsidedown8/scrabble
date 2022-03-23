@@ -134,6 +134,8 @@ pub fn is_connected(mut connected: BitBoard, mut new: BitBoard) -> bool {
 pub fn possible_starts_h(occ_h: BitBoard, rack_len: usize) -> BitBoard {
     // find all word stems. that is: all tiles shifted up, down and left.
     let mut stems = occ_h.north() | occ_h.south() | occ_h.west();
+    // the start position is also a valid stem.
+    stems.set(Pos::start());
     // shift and add `stems` to the left (rack_len - 1) times, as one shift
     // was already performed above.
     for _ in 0..rack_len - 1 {
