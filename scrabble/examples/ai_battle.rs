@@ -10,7 +10,7 @@ fn main() {
     let rdr = BufReader::new(file);
     let fsm: FastFsm = bincode::deserialize_from(rdr).unwrap();
     let ai = HighestScoring::default();
-    let mut game = Game::with_players(2);
+    let mut game = Game::with_players(4);
 
     while let GameStatus::ToPlay(player_num) = game.status() {
         let board = game.board();
@@ -27,7 +27,7 @@ fn main() {
     println!("{:#?}", game.status());
 
     if let GameStatus::Over(game_over) = game.status() {
-        for (winner, score) in game_over.final_scores() {
+        for (winner, score) in game_over.winners() {
             println!("winner: {winner:?}; score: {score}");
         }
     }
