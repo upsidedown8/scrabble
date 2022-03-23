@@ -31,9 +31,7 @@ impl Ai for LongestWord {
         plays
             .into_iter()
             .max_by_key(|ScoredPlay(play, score)| match play {
-                Play::Place(tile_positions) => {
-                    1000 * tile_positions.len() + *score
-                },
+                Play::Place(tile_positions) => 1000 * tile_positions.len() + *score,
                 _ => unreachable!(),
             })
             .map(|ScoredPlay(play, _)| play)
