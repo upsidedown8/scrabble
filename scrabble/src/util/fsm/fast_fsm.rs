@@ -153,7 +153,7 @@ impl<'a> Fsm<'a> for FastFsm {
     }
 
     fn initial_state(&self) -> StateId {
-        // when sorting states, the initial state is always at the beginning.
+        // states are sorted with the initial state at the beginning.
 
         StateId(0)
     }
