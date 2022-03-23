@@ -9,6 +9,7 @@ use api::users::{
 use uuid::Uuid;
 use warp::{Filter, Rejection, Reply};
 
+/// Filters for the users routes.
 pub fn all(db: Db) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone {
     let login_route = warp::path("login")
         .and(warp::post())
