@@ -70,16 +70,21 @@ pub fn App<G: Html>(ctx: ScopeRef) -> View<G> {
         local_storage.set_item(AUTH_KEY, &serialized).unwrap();
     });
 
+    // stores the active state for the navbar.
+    let active = ctx.create_signal(false);
+
     view! { ctx,
         // routes to different "pages" of the single page app
         // depending on the browser url. (Uses browser history api).
         Router {
             integration: HistoryIntegration::new(),
-            view: |ctx, route: &ReadSignal<AppRoutes>| view! { ctx,
+            view: move |ctx, route: &ReadSignal<AppRoutes>| view! { ctx,
                 div(id="app") {
-                    Navbar {}
+                    Navbar(active)
 
                     ({let logged_in = *ctx.use_logged_in().get();
+                    // when the user navigates to a page, hide the navbar on mobile.
+                    active.set(false);
                     // match the route if
                     //   - the user is logged in, or
                     //   - the route doesn't require auth

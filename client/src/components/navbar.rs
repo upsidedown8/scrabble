@@ -3,8 +3,7 @@ use sycamore::prelude::*;
 
 /// Appears at the top of every page.
 #[component]
-pub fn Navbar<G: Html>(ctx: ScopeRef) -> View<G> {
-    let active = ctx.create_signal(false);
+pub fn Navbar<'a, G: Html>(ctx: ScopeRef<'a>, active: &'a Signal<bool>) -> View<G> {
     let logged_in = ctx.use_logged_in();
 
     let menu_class = ctx.create_memo(|| match *active.get() {
