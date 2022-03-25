@@ -42,6 +42,10 @@ impl LetterBag {
     pub fn len(&self) -> usize {
         self.counts.len()
     }
+    /// Gets the underlying tile counts.
+    pub fn counts(self) -> TileCounts {
+        self.counts
+    }
     /// Gets the initial count for `tile` in the official version
     /// of scrabble.
     pub fn initial_count(tile: Tile) -> usize {
