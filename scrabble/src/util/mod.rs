@@ -18,6 +18,14 @@ pub mod scoring;
 pub mod tile_counts;
 pub mod words;
 
+/// Calculates the absolute difference between two unsigned integers.
+pub fn abs_diff(a: usize, b: usize) -> usize {
+    match a > b {
+        true => a - b,
+        false => b - a,
+    }
+}
+
 /// Utility function for displaying a grid, which prints row
 /// and column headers. `at_pos` should return a string of length
 /// 3 which represents the cell at the provided position.
