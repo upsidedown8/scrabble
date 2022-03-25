@@ -175,6 +175,10 @@ impl Game {
             players,
         }
     }
+    /// Gets the number of tiles left in the letter bag.
+    pub fn letter_bag_len(&self) -> usize {
+        self.letter_bag.len()
+    }
     /// Gets the game state for a player.
     pub fn player(&self, player_num: PlayerNum) -> &Player {
         &self.players[usize::from(player_num)]
