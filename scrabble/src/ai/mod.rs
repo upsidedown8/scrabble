@@ -2,8 +2,8 @@
 
 use crate::{
     ai::movegen::GeneratedPlay,
-    game::{board::Board, letter_bag::LetterBag, play::Play, rack::Rack, Game, GameStatus},
-    util::{self, fsm::Fsm, tile_counts::TileCounts},
+    game::{board::Board, play::Play, rack::Rack, Game, GameStatus},
+    util::{self, fsm::Fsm},
 };
 use rand::Rng;
 use std::ops::RangeInclusive;
@@ -18,7 +18,7 @@ const LEN_WEIGHT: f32 = 0.2;
 /// The weighting of the proportional tile count difference in the score.
 const TILES_WEIGHT: f32 = 0.2;
 /// The weighting of the score in the final score calculation.
-const SCORE_WEIGHT: f32 = 0.6;
+const SCORE_WEIGHT: f32 = 10.0;
 /// If there are no plays, tiles with fewer than
 const REDRAW_LIMIT: usize = 8;
 
@@ -30,9 +30,6 @@ pub struct Ai {
     /// The `random_factor` can be thought of as an uncertainty for the final
     /// score.
     random_factor: f32,
-    /// Enables the look ahead feature, which will look at the next
-    /// move to evaluate a play.
-    look_ahead: bool,
     /// If set, makes words of this length more likely to be chosen.
     preferred_len: Option<usize>,
     /// If set, makes plays containing this number of tiles more likely to be chosen.
@@ -51,7 +48,6 @@ impl Default for Ai {
     fn default() -> Self {
         Self {
             random_factor: 0.0,
-            look_ahead: false,
             preferred_len: None,
             preferred_tiles: None,
             preferred_score: usize::MAX,
@@ -65,21 +61,19 @@ impl Ai {
     /// A preset easy difficulty.
     pub fn easy() -> Self {
         Self {
-            random_factor: 0.35,
-            look_ahead: false,
+            random_factor: 0.2,
             preferred_len: Some(6),
             preferred_tiles: Some(5),
-            preferred_score: 30,
+            preferred_score: 25,
             cross_word_range: 0..=1,
-            tile_range: 1..=5,
-            len_range: 2..=7,
+            tile_range: 1..=6,
+            len_range: 3..=15,
         }
     }
     /// A preset medium difficulty.
     pub fn medium() -> Self {
         Self {
             random_factor: 0.15,
-            look_ahead: false,
             preferred_len: Some(7),
             preferred_tiles: None,
             preferred_score: 40,
@@ -92,7 +86,6 @@ impl Ai {
     pub fn hard() -> Self {
         Self {
             random_factor: 0.05,
-            look_ahead: true,
             preferred_len: None,
             preferred_tiles: None,
             preferred_score: 100,
@@ -122,12 +115,7 @@ impl Ai {
         letter_bag_len: usize,
     ) -> Play {
         // Find an initial list of scored plays.
-        let mut scored = self.initial_scored_plays(board, rack, fsm);
-
-        // If look ahead is enabled, recalculate the scores.
-        if self.look_ahead {
-            self.recompute_scores(&mut scored, board.clone(), rack, fsm);
-        }
+        let scored = self.initial_scored_plays(board, rack, fsm);
 
         // Find the play with highest score.
         let best_play = scored
@@ -199,15 +187,17 @@ impl Ai {
     /// and the score of the word to calculate a new score.
     fn score(&self, gen_play: &GeneratedPlay) -> f32 {
         // find the difference between the word length and preferred length
-        let len_diff = self
+        let len_score = self
             .preferred_len
             .map(|pl| util::abs_diff(pl, gen_play.len))
-            .unwrap_or(0) as f32;
+            .map(|diff| LEN_WEIGHT / (diff as f32 + 1.0))
+            .unwrap_or(0.0);
         // find the difference between the tile count and preferred count
-        let tiles_diff = self
+        let tiles_score = self
             .preferred_tiles
             .map(|pt| util::abs_diff(pt, gen_play.tile_positions.len()))
-            .unwrap_or(0) as f32;
+            .map(|diff| TILES_WEIGHT / (diff as f32 + 1.0))
+            .unwrap_or(0.0);
         // find the difference between the actual score and the preferred score.
         let score_diff = util::abs_diff(self.preferred_score, gen_play.score) as f32;
 
@@ -215,9 +205,7 @@ impl Ai {
         // combine them by taking the reciprocal of each. (1.0 is added to each
         // to avoid a zero division error). Each reciprocal is multiplied by a
         // constant weight factor to fine tune the evaulation function.
-        let combined_score = (LEN_WEIGHT / (len_diff + 1.0))
-            + (TILES_WEIGHT / (tiles_diff + 1.0))
-            + (SCORE_WEIGHT / (score_diff + 1.0));
+        let combined_score = len_score + tiles_score + (SCORE_WEIGHT / (score_diff + 1.0));
 
         // apply a final random factor to the score.
         let multiplier = rand::thread_rng().gen_range(-1.0..1.0);
@@ -253,42 +241,5 @@ impl Ai {
         scored.truncate(LOOK_AHEAD_LIMIT);
 
         scored
-    }
-    /// Counts tiles on the board and in the ai player's rack to
-    /// estimate which tiles the remaining players have.
-    fn remaining_tiles(board: &Board, rack: &Rack) -> TileCounts {
-        let mut letter_bag_counts = LetterBag::default().counts();
-
-        // remove all tiles on the board and rack.
-        for tile in board.iter().map(|(_, tile)| tile).chain(rack.iter()) {
-            letter_bag_counts.remove_one(tile);
-        }
-
-        letter_bag_counts
-    }
-    /// For each scored play, recompute the score by looking at possible
-    /// future moves.
-    fn recompute_scores<'a, F: Fsm<'a>>(
-        &self,
-        scored: &mut Vec<(f32, GeneratedPlay)>,
-        mut board: Board,
-        rack: &Rack,
-        fsm: &'a F,
-    ) {
-        let remaining_tiles = Self::remaining_tiles(&board, rack);
-        let mut plays = vec![];
-
-        for (score, gen_play) in scored.iter_mut() {
-            let mut additional_score = 0.0;
-
-            // make and then undo the placement so that the next position can be evaluated.
-            board.make_placement(&gen_play.tile_positions, fsm).unwrap();
-
-            movegen::gen(&board, rack, fsm, &mut plays);
-
-            board.undo_placement(&gen_play.tile_positions);
-
-            *score += additional_score;
-        }
     }
 }
