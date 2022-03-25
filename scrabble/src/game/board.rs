@@ -5,7 +5,7 @@ use crate::{
     game::{play::PlaceBuilder, tile::Tile},
     util::{
         self,
-        bitboard::BitBoard,
+        bitboard::{BitBoard, Bits},
         fsm::Fsm,
         grid::Grid,
         pos::{Direction, Pos},
@@ -38,6 +38,25 @@ impl BoardBuilder {
     /// Constructs the [`Board`].
     pub fn build(self) -> Board {
         self.board
+    }
+}
+
+/// Used to iterate over board tiles.
+pub struct BoardIter<'a> {
+    grid_h: &'a Grid,
+    occ: Bits,
+}
+impl<'a> Iterator for BoardIter<'a> {
+    type Item = (Pos, Tile);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            let pos = self.occ.next()?;
+
+            if let Some(tile) = self.grid_h[pos] {
+                return Some((pos, tile));
+            }
+        }
     }
 }
 
@@ -121,6 +140,13 @@ impl Board {
     /// Gets the rotated board occupancy.
     pub fn grid_v(&self) -> &Grid {
         &self.grid_v
+    }
+    /// Gets an iterator over the board tiles.
+    pub fn iter(&self) -> BoardIter<'_> {
+        BoardIter {
+            grid_h: &self.grid_h,
+            occ: Bits::from(*self.grid_h.occ()),
+        }
     }
     /// Removes all tiles in `tile_positions` from the board.
     pub fn undo_placement(&mut self, tile_positions: &[(Pos, Tile)]) {
