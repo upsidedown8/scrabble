@@ -20,22 +20,44 @@ use crate::{
 };
 
 /// Adds all moves for the board position to `plays`. (Clears `plays` first).
-pub fn gen<'a>(board: &Board, rack: &Rack, fsm: &'a impl Fsm<'a>, plays: &mut Vec<ScoredPlay>) {
+pub fn gen<'a>(board: &Board, rack: &Rack, fsm: &'a impl Fsm<'a>, plays: &mut Vec<GeneratedPlay>) {
     plays.clear();
     MoveGen::new(rack, board.grid_v(), fsm).gen(plays);
     MoveGen::new(rack, board.grid_h(), fsm).gen(plays);
 }
 
-/// Wrapper type for generated tile placements and score. To convert to a
-/// play, the positions first have to be rotated.
+/// Stores a generated play and details that can be used to
+/// score the play.
 #[derive(Debug)]
-pub struct ScoredPlay(pub Play, pub usize);
+pub struct GeneratedPlay {
+    /// The play (tile positions).
+    pub tile_positions: Vec<(Pos, Tile)>,
+    /// The total score of the play.
+    pub score: usize,
+    /// The number of perpendicular words formed.
+    pub cross_count: usize,
+    /// The length of the primary word.
+    pub len: usize,
+}
+impl From<GeneratedPlay> for Play {
+    fn from(gen_play: GeneratedPlay) -> Self {
+        Play::Place(gen_play.tile_positions)
+    }
+}
+impl GeneratedPlay {
+    /// Converts to a [`Play`].
+    pub fn play(self) -> Play {
+        Play::from(self)
+    }
+}
 
 /// A struct that stores recursive state so that it can be
 /// more easily passed to other methods.
 struct WordState {
     state: StateId,
     score: usize,
+    cross_count: usize,
+    len: usize,
     multiplier: usize,
     connected: bool,
 }
@@ -77,7 +99,7 @@ where
         }
     }
     /// Adds all moves for a position to the list.
-    pub fn gen(mut self, plays: &mut Vec<ScoredPlay>) {
+    pub fn gen(mut self, plays: &mut Vec<GeneratedPlay>) {
         for start in util::possible_starts_h(self.occ, self.counts.len()) {
             self.gen_recursive(
                 plays,
@@ -85,6 +107,8 @@ where
                 WordState {
                     state: self.fsm.initial_state(),
                     score: 0,
+                    cross_count: 0,
+                    len: 0,
                     multiplier: 1,
                     connected: false,
                 },
@@ -92,7 +116,7 @@ where
         }
     }
     /// Recursively traverses possible moves and adds them to the list.
-    fn gen_recursive(&mut self, plays: &mut Vec<ScoredPlay>, pos: Option<Pos>, ws: WordState) {
+    fn gen_recursive(&mut self, plays: &mut Vec<GeneratedPlay>, pos: Option<Pos>, ws: WordState) {
         self.check_position(plays, &ws);
 
         if let Some(pos) = pos {
@@ -115,7 +139,7 @@ where
     /// already occupied.
     fn occupied_square(
         &mut self,
-        plays: &mut Vec<ScoredPlay>,
+        plays: &mut Vec<GeneratedPlay>,
         ws: WordState,
         next_pos: Option<Pos>,
         tile: Tile,
@@ -128,6 +152,8 @@ where
                 WordState {
                     state: next_state,
                     score: ws.score + tile.score(),
+                    len: ws.len + 1,
+                    cross_count: ws.cross_count,
                     multiplier: ws.multiplier,
                     connected: true,
                 },
@@ -138,7 +164,7 @@ where
     /// not yet occupied.
     fn empty_square(
         &mut self,
-        plays: &mut Vec<ScoredPlay>,
+        plays: &mut Vec<GeneratedPlay>,
         ws: WordState,
         next_pos: Option<Pos>,
         pos: Pos,
@@ -159,6 +185,11 @@ where
                             WordState {
                                 state: next_state,
                                 score: ws.score + tile_m * tile.score() + perpendicular_score,
+                                // increment the cross count if a perpendicular
+                                // word with a non zero score is placed.
+                                cross_count: ws.cross_count
+                                    + if perpendicular_score > 0 { 1 } else { 0 },
+                                len: ws.len + 1,
                                 multiplier: ws.multiplier * word_m,
                                 connected: ws.connected || self.lookup.is_above_or_below(pos),
                             },
@@ -173,7 +204,7 @@ where
     }
     /// Checks whether a point in the recursive stack is a valid move,
     /// and if so adds it to the list.
-    fn check_position(&self, plays: &mut Vec<ScoredPlay>, ws: &WordState) {
+    fn check_position(&self, plays: &mut Vec<GeneratedPlay>, ws: &WordState) {
         // check that the word is connected and is valid.
         if ws.connected && self.fsm.is_terminal(ws.state) {
             // check that the final stack item does not have
@@ -191,21 +222,22 @@ where
         }
     }
     /// Adds a play to the list.
-    fn add_play(&self, plays: &mut Vec<ScoredPlay>, ws: &WordState) {
+    fn add_play(&self, plays: &mut Vec<GeneratedPlay>, ws: &WordState) {
         let all_tiles_bonus = match self.stack.len() {
             7 => 50,
             _ => 0,
         };
 
-        plays.push(ScoredPlay(
-            Play::Place(
-                self.stack
-                    .iter()
-                    // maps the position back to the horizontal coordinate.
-                    .map(|&(pos, tile)| (self.grid.map_pos(pos), tile))
-                    .collect(),
-            ),
-            ws.score * ws.multiplier + all_tiles_bonus,
-        ));
+        plays.push(GeneratedPlay {
+            tile_positions: self
+                .stack
+                .iter()
+                // maps the position back to the horizontal coordinate.
+                .map(|&(pos, tile)| (self.grid.map_pos(pos), tile))
+                .collect(),
+            score: ws.score * ws.multiplier + all_tiles_bonus,
+            cross_count: 0,
+            len: ws.len,
+        });
     }
 }
