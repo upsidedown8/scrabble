@@ -52,13 +52,7 @@ struct LookupBuilder<'a, 'b, F> {
 impl<'a, 'b, F: Fsm<'a>> LookupBuilder<'a, 'b, F> {
     /// Constructs a `Lookup` from the builder.
     pub fn build(mut self) -> Lookup {
-        let mut above_or_below = self.grid.occ().above_or_below();
-
-        // if the board is empty, set the start bit.
-        if self.grid.occ().is_zero() {
-            above_or_below.set(Pos::start());
-        }
-
+        let above_or_below = self.grid.occ().above_or_below();
         let mut lookup = (0..CELLS).map(|_| HashMap::default()).collect::<Vec<_>>();
 
         // Each column can be considered seperately. Considering

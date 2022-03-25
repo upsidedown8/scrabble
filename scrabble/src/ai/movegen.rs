@@ -71,6 +71,7 @@ struct MoveGen<'a, 'b, F> {
 
     occ: BitBoard,
     illegal_ends: BitBoard,
+    neighbours: BitBoard,
 
     stack: Vec<(Pos, Tile)>,
     counts: TileCounts,
@@ -86,6 +87,9 @@ where
         let &counts = rack.tile_counts();
         let lookup = Lookup::new(fsm, &counts, grid);
 
+        let mut neighbours = occ.neighbours();
+        neighbours.set(Pos::start());
+
         Self {
             fsm,
             grid,
@@ -93,6 +97,7 @@ where
 
             occ,
             illegal_ends: occ.west(),
+            neighbours,
 
             stack: vec![],
             counts,
@@ -179,6 +184,10 @@ where
 
                         let (tile_m, word_m) = pos.premium_multipliers();
 
+                        if pos == Pos::start() {
+                            println!("{}", ws.connected || self.lookup.is_above_or_below(pos));
+                        }
+
                         self.gen_recursive(
                             plays,
                             next_pos,
@@ -191,7 +200,7 @@ where
                                     + if perpendicular_score > 0 { 1 } else { 0 },
                                 len: ws.len + 1,
                                 multiplier: ws.multiplier * word_m,
-                                connected: ws.connected || self.lookup.is_above_or_below(pos),
+                                connected: ws.connected || self.neighbours.is_set(pos),
                             },
                         );
 
