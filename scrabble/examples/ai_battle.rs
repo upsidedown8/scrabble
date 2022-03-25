@@ -6,10 +6,10 @@ use scrabble::{
 use std::{fs::File, io::BufReader};
 
 fn main() {
-    let file = File::open("../server/data/fast_fsm.bin").unwrap();
+    let file = File::open("fast_fsm.bin").unwrap();
     let rdr = BufReader::new(file);
     let fsm: FastFsm = bincode::deserialize_from(rdr).unwrap();
-    let ai = Ai::highest_scoring();
+    let ai = Ai::easy();
     let mut game = Game::with_players(4);
 
     while let GameStatus::ToPlay(_) = game.status() {
