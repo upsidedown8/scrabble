@@ -184,10 +184,6 @@ where
 
                         let (tile_m, word_m) = pos.premium_multipliers();
 
-                        if pos == Pos::start() {
-                            println!("{}", ws.connected || self.lookup.is_above_or_below(pos));
-                        }
-
                         self.gen_recursive(
                             plays,
                             next_pos,
