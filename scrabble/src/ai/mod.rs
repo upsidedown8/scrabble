@@ -233,13 +233,9 @@ impl Ai {
         let mut plays = vec![];
         movegen::gen(board, rack, fsm, &mut plays);
 
-        println!("there are {} plays", plays.len());
-
         // Immediately remove all plays that do not fit the
         // difficulty conditions.
         plays.retain(|gen_play| self.matches_filter(gen_play));
-
-        println!("there are {} plays", plays.len());
 
         // Compute weighted scores for each play. This also applies a random
         // factor to each score.
