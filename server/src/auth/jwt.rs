@@ -97,12 +97,12 @@ impl Jwt {
         })
     }
     /// Validates and decodes the JWT.
-    pub fn from_auth_token(token: &str, role: Role) -> Result<Self> {
+    pub fn from_auth_token(token: &str, required_role: Role) -> Result<Self> {
         // the decode function also checks that the expiry is valid.
         let jwt = decode::<Claims>(token, &DECODING_KEY, &VALIDATION)
             .map(|token_data| Jwt(token_data.claims))
             .map_err(Error::JwtDecoding)?;
-        let has_role = match role {
+        let has_role = match required_role {
             Role::Admin => jwt.0.role == Role::Admin,
             Role::User => true,
         };
