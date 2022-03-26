@@ -30,18 +30,29 @@ pub fn validate_username(username: &str) -> Result<()> {
 /// Allowed characters: any
 /// Length: at least 8 characters and no more than 50.
 /// Required characters:
-///     * 1 or more of: []{}'#@~<>,.|\/?-=_+)(*&^%$£
+///     * 1 or more of: {any symbol}
 ///     * 1 or more of: 0-9
 ///     * 1 or more of: a-z
 ///     * 1 or more of: A-Z
 pub fn validate_password_complexity(password: &str) -> Result<()> {
-    lazy_static::lazy_static! {
-        static ref PASSWORD_RGX: Regex = Regex::new(r#"^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9-_=+\[\]\{\}@#~'"$%^&*;:?]).{8,50}$"#).unwrap();
-    };
+    let mut upper = 0;
+    let mut lower = 0;
+    let mut numbers = 0;
+    let mut symbols = 0;
 
-    match PASSWORD_RGX.is_match(password) {
-        true => Ok(()),
-        false => Err(Error::InvalidPassword),
+    for ch in password.chars() {
+        match ch {
+            'a'..='z' => lower += 1,
+            'A'..='Z' => upper += 1,
+            '0'..='9' => numbers += 1,
+            _ => symbols += 1,
+        }
+    }
+
+    if upper == 0 || lower == 0 || numbers == 0 || symbols == 0 {
+        Err(Error::InvalidPassword)
+    } else {
+        Ok(())
     }
 }
 
