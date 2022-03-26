@@ -30,4 +30,7 @@ pub enum Error {
     IncorrectPassword,
     JwtEncoding(jsonwebtoken::errors::Error),
     JwtDecoding(jsonwebtoken::errors::Error),
+    InvalidUsername,
+    InvalidPassword,
+    InvalidEmail,
 }
