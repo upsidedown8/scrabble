@@ -64,8 +64,9 @@ async fn login(db: Db, login: Login) -> Result<impl Reply, Rejection> {
 
 /// POST /api/users
 async fn sign_up(db: Db, sign_up: SignUp) -> Result<impl Reply, Rejection> {
-    User::check_username_free(&db, &sign_up.username).await?;
+    auth::check_username_valid(&sign_up.username)?;
     auth::check_password_strength(&sign_up.password)?;
+    User::check_username_free(&db, &sign_up.username).await?;
 
     let id_user = Uuid::new_v4();
     let user = User {
