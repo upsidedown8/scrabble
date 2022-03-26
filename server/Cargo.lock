@@ -28,6 +28,7 @@ version = "0.1.0"
 dependencies = [
  "scrabble",
  "serde",
+ "uuid",
 ]
 
 [[package]]
@@ -167,6 +168,7 @@ dependencies = [
  "libc",
  "num-integer",
  "num-traits",
+ "serde",
  "time 0.1.44",
  "winapi",
 ]
@@ -1177,11 +1179,13 @@ dependencies = [
  "lazy_static",
  "log",
  "rand",
+ "regex",
  "rust-argon2",
  "scrabble",
  "serde",
  "sqlx",
  "tokio",
+ "tokio-stream",
  "uuid",
  "warp",
 ]
