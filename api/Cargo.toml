@@ -6,3 +6,4 @@ edition = "2021"
 [dependencies]
 serde = { version = "1.0.132", features = ["derive"] }
 scrabble = { path = "../scrabble" }
+uuid = { version = "0.8.2", features = ["serde", "v4"] }
