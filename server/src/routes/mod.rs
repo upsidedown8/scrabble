@@ -17,6 +17,7 @@ pub fn all(db: Db) -> impl Filter<Extract = (impl Reply,), Error = Infallible> +
 /// Handles rejections (errors where all filters fail)
 async fn handle_rejection(rejection: Rejection) -> Result<impl Reply, Infallible> {
     let (status, msg) = if let Some(error) = rejection.find::<Error>() {
+        log::error!("rejection: {error:?}");
         match error {
             Error::InsufficientRole => (StatusCode::UNAUTHORIZED, "Unauthorized"),
             Error::InvalidAuthHeader => (StatusCode::BAD_REQUEST, "Invalid auth header"),
