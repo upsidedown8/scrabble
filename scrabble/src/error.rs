@@ -1,12 +1,13 @@
 //! The error and result types for the library.
 
+use serde::{Deserialize, Serialize};
 use std::{error::Error, fmt};
 
 /// The [`Result`] type for the [`game`](super::game) module.
 pub type GameResult<T> = std::result::Result<T, GameError>;
 
 /// The error type for the game module.
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum GameError {
     /// The letter bag does not contain enough letters to redraw the requested tiles.
     NotEnoughLetters,

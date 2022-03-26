@@ -12,6 +12,7 @@ use crate::{
     game::{board::Board, letter_bag::LetterBag, play::Play, rack::Rack, tile::Tile},
     util::{fsm::Fsm, pos::Pos},
 };
+use serde::{Deserialize, Serialize};
 
 pub mod board;
 pub mod letter_bag;
@@ -129,7 +130,7 @@ pub enum GameOverReason {
 /// the implementation is decoupled from any actual data,
 /// the server/client has to handle how assigned [`PlayerNum`]
 /// values relate to the actual players.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 #[repr(transparent)]
 pub struct PlayerNum(usize);
 impl PlayerNum {
