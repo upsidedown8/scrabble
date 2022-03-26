@@ -1,5 +1,5 @@
 #[derive(Debug)]
-pub struct Tile {
+pub struct TileModel {
     id_tile: usize,
     id_move: usize,
     letter: char,

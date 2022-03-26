@@ -1,5 +1,5 @@
 #[derive(Debug)]
-pub struct Word {
+pub struct WordModel {
     id_word: usize,
     id_move: usize,
     score: usize,

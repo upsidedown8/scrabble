@@ -9,7 +9,7 @@ use super::Db;
 
 /// In-memory representation of the database user model.
 #[derive(Debug, Clone)]
-pub struct User {
+pub struct UserModel {
     /// Uuid as a string
     pub id_user: String,
     pub username: String,
@@ -18,7 +18,7 @@ pub struct User {
     pub role: String,
 }
 
-impl User {
+impl UserModel {
     /// Parses the role column.
     pub fn role(&self) -> Role {
         Role::parse(&self.role)

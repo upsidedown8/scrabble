@@ -1,5 +1,5 @@
 #[derive(Debug)]
-pub struct Player {
+pub struct PlayerModel {
     id_player: usize,
     id_game: usize,
     id_user: String,
