@@ -48,16 +48,24 @@ impl UserModel {
     /// Finds a user from the user table by id.
     pub async fn find_by_id(db: &Db, id_user: &Uuid) -> Result<Self> {
         let id_user = id_user.to_string();
-        let user = sqlx::query_as!(User, "SELECT * FROM tbl_user WHERE id_user = ?", id_user)
-            .fetch_one(db)
-            .await?;
+        let user = sqlx::query_as!(
+            UserModel,
+            "SELECT * FROM tbl_user WHERE id_user = ?",
+            id_user
+        )
+        .fetch_one(db)
+        .await?;
         Ok(user)
     }
     /// Finds a user from the user table by username.
     pub async fn find_by_username(db: &Db, username: &str) -> Result<Self> {
-        let user = sqlx::query_as!(User, "SELECT * FROM tbl_user WHERE username = ?", username)
-            .fetch_one(db)
-            .await?;
+        let user = sqlx::query_as!(
+            UserModel,
+            "SELECT * FROM tbl_user WHERE username = ?",
+            username
+        )
+        .fetch_one(db)
+        .await?;
         Ok(user)
     }
     /// Inserts the record into the database.
