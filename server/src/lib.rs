@@ -1,12 +1,11 @@
 use scrabble::util::fsm::FastFsm;
 use sqlx::{sqlite::SqlitePoolOptions, SqlitePool};
-use std::env;
 use std::net::SocketAddr;
+use std::{env, sync::Arc};
 use warp::{http::Method, Filter};
 
 mod auth;
 mod error;
-mod live_games;
 mod models;
 mod routes;
 
@@ -15,9 +14,16 @@ pub async fn serve(addr: impl Into<SocketAddr>) {
     let cert_path = env::var("CERT_PATH").expect("`CERT_PATH` env variable to be set");
     let key_path = env::var("KEY_PATH").expect("`KEY_PATH` env variable to be set");
 
-    // let fsm = load_fast_fsm().expect("load `FastFsm` from binary file");
+    // load the finite state machine and store in an atomic reference counter.
+    let fsm = load_fast_fsm().expect("load `FastFsm` from binary file");
+    let fsm = Arc::new(fsm);
+
+    // connect to the database.
     let db = connect_db().await.expect("database connection");
-    let routes = routes::all(db);
+
+    // the api endpoints.
+    let routes = routes::all(&db, &fsm);
+    // CORS settings, which set allowed origins, headers and methods.
     let cors = warp::cors()
         .allow_any_origin()
         .allow_methods(&[
@@ -29,6 +35,7 @@ pub async fn serve(addr: impl Into<SocketAddr>) {
         ])
         .allow_headers(vec!["authorization", "content-type"]);
 
+    // serve on `addr`.
     warp::serve(routes.with(cors))
         .tls()
         .cert_path(cert_path)

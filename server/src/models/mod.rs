@@ -11,6 +11,7 @@ pub mod word;
 pub type Db = sqlx::SqlitePool;
 
 /// Provides each request handler with access to the database connection pool.
-pub fn with_db(db: Db) -> impl Filter<Extract = (Db,), Error = Infallible> + Clone {
+pub fn with_db(db: &Db) -> impl Filter<Extract = (Db,), Error = Infallible> + Clone {
+    let db = db.clone();
     warp::any().map(move || db.clone())
 }
