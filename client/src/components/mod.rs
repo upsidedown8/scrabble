@@ -8,7 +8,7 @@ mod navbar;
 mod progress_bar;
 mod rack;
 mod separator;
-mod square;
+mod tile;
 
 pub use board::Board;
 pub use error_msg::ErrorMsg;
@@ -17,4 +17,4 @@ pub use footer::Footer;
 pub use navbar::Navbar;
 pub use progress_bar::ProgressBar;
 pub use separator::Separator;
-pub use square::Square;
+pub use tile::Tile;
