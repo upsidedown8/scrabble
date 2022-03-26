@@ -5,7 +5,7 @@ use crate::game::{
     board::{CELLS, COLS, ROWS},
     tile::Letter,
 };
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::fmt;
 
 /// Additional bonus for certain positions on the board.
@@ -51,7 +51,21 @@ impl Premium {
 /// A position on the board. Ranges from `0..`[`CELLS`].
 #[repr(transparent)]
 #[derive(Default, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Serialize, Deserialize)]
-pub struct Pos(usize);
+pub struct Pos(#[serde(deserialize_with = "deserialize_pos")] usize);
+
+/// Custom deserializer that ensures that deserialized letter values
+/// are valid.
+fn deserialize_pos<'de, D>(deserializer: D) -> Result<usize, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    match usize::deserialize(deserializer)? {
+        // a position must be between 0 and CELLS (exclusive).
+        pos @ 0..=224 => Ok(pos),
+        _ => Err(serde::de::Error::custom("Position out of range")),
+    }
+}
+
 impl From<usize> for Pos {
     fn from(pos: usize) -> Self {
         Self(pos % (ROWS * COLS))

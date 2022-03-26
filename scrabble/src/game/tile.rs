@@ -1,14 +1,27 @@
 //! Module modelling the scrabble tile.
 
 use crate::error::{GameError, GameResult};
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::fmt::{self, Display, Formatter};
 
 /// A letter `A..=Z`. Represented as a newtype containing an unsigned
 /// integer from `0..=25` to make game operations easier.
 #[derive(Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[repr(transparent)]
-pub struct Letter(u8);
+pub struct Letter(#[serde(deserialize_with = "deserialize_letter")] u8);
+
+/// Custom deserializer that ensures that deserialized letter values
+/// are valid.
+fn deserialize_letter<'de, D>(deserializer: D) -> Result<u8, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    match u8::deserialize(deserializer)? {
+        // letters are only valid for (0..=25).
+        byte @ 0..=25 => Ok(byte),
+        _ => Err(serde::de::Error::custom("Byte out of letter range")),
+    }
+}
 
 impl Letter {
     /// Creates a new letter from a `char`, returns [`None`] if the
