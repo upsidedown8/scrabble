@@ -24,28 +24,3 @@ pub fn verify(encoded_hash: &str, pwd: &str) -> Result<()> {
         false => Err(Error::IncorrectPassword),
     }
 }
-
-// pub struct PasswordStrength;
-
-/// Determines the strength of a password by estimating the
-/// number of bits of entropy.
-pub fn strength(pwd: &[u8]) -> PasswordStrength {
-    let mut lowercase = 0;
-    let mut uppercase = 0;
-    let mut numbers = 0;
-    let mut symbols = 0;
-
-    for byte in pwd {
-        match byte {
-            b'a'..=b'z' => lowercase += 1,
-            b'A'..=b'Z' => uppercase += 1,
-            b'0'..=b'9' => numbers += 1,
-            _ => symbols += 1,
-        }
-    }
-}
-
-/// Checks that the password has sufficient strength.
-pub fn check_password_strength(_pwd: &str) -> Result<()> {
-    Ok(())
-}
