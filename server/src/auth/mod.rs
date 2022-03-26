@@ -4,9 +4,11 @@ use warp::{hyper::HeaderMap, Filter, Rejection};
 mod hex;
 mod jwt;
 mod password;
+mod username;
 
 pub use jwt::{Jwt, Role};
 pub use password::{check_password_strength, hash, verify};
+pub use username::check_username_valid;
 
 const AUTHORIZATION: &str = "Authorization";
 const BEARER: &str = "Bearer ";
@@ -46,6 +48,8 @@ async fn validate((role, header_map): (Role, HeaderMap)) -> Result<Jwt, Rejectio
 
     let token = auth_header.trim_start_matches(BEARER).trim_end();
     let jwt = Jwt::from_auth_token(token, role)?;
+
+    log::info!("authenticated: {}", jwt.id_user());
 
     Ok(jwt)
 }
