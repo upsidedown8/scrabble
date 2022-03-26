@@ -1,7 +1,7 @@
 #[derive(Debug)]
 pub struct WordModel {
-    id_word: usize,
-    id_move: usize,
-    score: usize,
-    letters: String,
+    pub id_word: usize,
+    pub id_move: usize,
+    pub score: usize,
+    pub letters: String,
 }

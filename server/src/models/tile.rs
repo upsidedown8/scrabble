@@ -1,8 +1,8 @@
 #[derive(Debug)]
 pub struct TileModel {
-    id_tile: usize,
-    id_move: usize,
-    letter: char,
-    is_blank: bool,
-    pos: usize,
+    pub id_tile: usize,
+    pub id_move: usize,
+    pub letter: char,
+    pub is_blank: bool,
+    pub pos: usize,
 }
