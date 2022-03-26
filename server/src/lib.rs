@@ -1,11 +1,7 @@
-use scrabble::util::fsm::{Fsm, FsmBuilder};
+use scrabble::util::fsm::FastFsm;
 use sqlx::{sqlite::SqlitePoolOptions, SqlitePool};
 use std::env;
 use std::net::SocketAddr;
-use tokio::{
-    fs::File,
-    io::{AsyncBufReadExt, BufReader},
-};
 use warp::{http::Method, Filter};
 
 mod auth;
@@ -19,7 +15,8 @@ pub async fn serve(addr: impl Into<SocketAddr>) {
     let cert_path = env::var("CERT_PATH").expect("`CERT_PATH` env variable to be set");
     let key_path = env::var("KEY_PATH").expect("`KEY_PATH` env variable to be set");
 
-    let db = connect_db().await.unwrap();
+    // let fsm = load_fast_fsm().expect("load `FastFsm` from binary file");
+    let db = connect_db().await.expect("database connection");
     let routes = routes::all(db);
     let cors = warp::cors()
         .allow_any_origin()
@@ -44,28 +41,21 @@ pub async fn serve(addr: impl Into<SocketAddr>) {
 async fn connect_db() -> sqlx::Result<SqlitePool> {
     let db_url = env::var("DATABASE_URL").expect("`DATABASE_URL` env variable");
 
-    log::info!("connecting to database: {}", db_url);
+    log::info!("connecting to database: {db_url}");
     SqlitePoolOptions::new()
         .max_connections(5)
         .connect(&db_url)
         .await
 }
 
-/// Loads the fsm from the $WORD_LIST directory.
-async fn load_fsm_from_wordlist<'a, F: Fsm<'a>>() -> tokio::io::Result<F> {
-    let word_file = env::var("WORD_LIST").expect("`WORD_LIST` env variable");
+/// Loads the `FastFsm` from the binary file.
+fn load_fast_fsm() -> Result<FastFsm, Box<dyn std::error::Error>> {
+    let fsm_path = env::var("FAST_FSM_BIN").expect("`FAST_FSM_BIN` env variable");
 
-    log::info!("building fsm from file: {word_file}");
+    log::info!("loading fast fsm: {fsm_path}");
+    let file = std::fs::File::open(&fsm_path)?;
+    let rdr = std::io::BufReader::new(file);
+    let fast_fsm: FastFsm = bincode::deserialize_from(rdr)?;
 
-    let mut fsm_builder = FsmBuilder::default();
-    let file = File::open(word_file)
-        .await
-        .expect("word file should exist at `WORD_LIST` dir");
-    let mut lines = BufReader::new(file).lines();
-
-    while let Some(line) = lines.next_line().await? {
-        fsm_builder.insert(line.trim());
-    }
-
-    Ok(fsm_builder.build())
+    Ok(fast_fsm)
 }
