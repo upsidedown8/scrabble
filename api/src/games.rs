@@ -25,7 +25,7 @@ pub enum GameMessage {
     /// A validated play was made (sent to all players).
     Play(Play),
     /// Send a chat message.
-    SendChatMessage(ChatMessage),
+    RequestChatMessage(ChatMessage),
     /// A message sent in live chat (sent to all players).
     Chat(Uuid, ChatMessage),
 }
