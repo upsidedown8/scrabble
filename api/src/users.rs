@@ -25,6 +25,31 @@ pub struct UserProfile {
 }
 
 //--------------------------------------------
+//           Reset password route
+//--------------------------------------------
+/// Request sent to reset a password. If it succeeds, a message
+/// is sent to the user's email address.
+#[derive(Debug, Serialize, Deserialize)]
+pub enum ResetPassword {
+    /// The user's email address.
+    Email(String),
+    /// The user's username.
+    Username(String),
+}
+
+/// Request sent to update a password after the secret
+/// has been recieved by email.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ResetPasswordWithSecret {
+    /// Random hexadecimal secret.
+    pub secret_hex: String,
+    /// The new password for the account.
+    pub new_password: String,
+    /// The username for the account.
+    pub username: String,
+}
+
+//--------------------------------------------
 //               Login route
 //--------------------------------------------
 /// Request sent to the login endpoint.

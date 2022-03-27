@@ -1,4 +1,6 @@
-use crate::{error::Error, models::Db};
+//! Module containing the API endpoints.
+
+use crate::{error::Error, Db, Mailer};
 use api::error::ErrorResponse;
 use scrabble::util::fsm::FastFsm;
 use std::{convert::Infallible, sync::Arc};
@@ -11,9 +13,10 @@ mod users;
 /// Gets a filter for all routes
 pub fn all(
     db: &Db,
+    mailer: &Mailer,
     fsm: Arc<FastFsm>,
 ) -> impl Filter<Extract = (impl Reply,), Error = Infallible> + Clone {
-    let routes = users::all(db).or(live_games::all(db, fsm));
+    let routes = users::all(db, mailer).or(live_games::all(db, fsm));
 
     warp::path("api").and(routes).recover(handle_rejection)
 }
@@ -23,19 +26,29 @@ async fn handle_rejection(rejection: Rejection) -> Result<impl Reply, Infallible
     let (status, msg) = if let Some(error) = rejection.find::<Error>() {
         log::error!("rejection: {error:?}");
         match error {
-            Error::InsufficientRole => (StatusCode::UNAUTHORIZED, "Unauthorized"),
             Error::InvalidAuthHeader => (StatusCode::BAD_REQUEST, "Invalid auth header"),
             Error::MissingAuthHeader => (StatusCode::NOT_FOUND, "Missing auth header"),
-            Error::JwtDecoding(_) => (StatusCode::UNAUTHORIZED, "Unauthorized"),
-            Error::JwtEncoding(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error"),
-            Error::Sqlx(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error"),
-            Error::Uuid(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error"),
-            Error::Argon2(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error"),
-            Error::IncorrectPassword => (StatusCode::UNAUTHORIZED, "Unauthorized"),
             Error::UsernameExists => (StatusCode::FORBIDDEN, "Username exists"),
             Error::InvalidUsername => (StatusCode::FORBIDDEN, "Username is invalid"),
             Error::InvalidPassword => (StatusCode::FORBIDDEN, "Password is too weak"),
             Error::InvalidEmail => (StatusCode::FORBIDDEN, "Email is invalid"),
+            Error::ResetTimeout => (
+                StatusCode::FORBIDDEN,
+                "A recent request was made to reset the password",
+            ),
+            Error::JwtDecoding(_)
+            | Error::IncorrectResetSecret
+            | Error::IncorrectPassword
+            | Error::InsufficientRole => (StatusCode::UNAUTHORIZED, "Unauthorized"),
+            Error::Lettre(_)
+            | Error::Address(_)
+            | Error::JwtEncoding(_)
+            | Error::Bincode(_)
+            | Error::Io(_)
+            | Error::Smtp(_)
+            | Error::Sqlx(_)
+            | Error::Uuid(_)
+            | Error::Argon2(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error"),
         }
     } else if rejection.is_not_found() {
         log::info!("not found");
