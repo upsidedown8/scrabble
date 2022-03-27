@@ -1,3 +1,5 @@
+//! Types relating to authentication.
+
 use serde::{Deserialize, Serialize};
 
 /// Auth token (JWT)
