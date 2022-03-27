@@ -1,6 +1,6 @@
 //! Implementation of a multiplayer scrabble game and AI.
 
-// show a compiler warning when public api types are not documented.
+// Produce a compiler warning for missing documentation.
 #![warn(missing_docs)]
 
 pub mod ai;
