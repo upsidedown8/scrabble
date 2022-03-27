@@ -27,12 +27,11 @@ CREATE TABLE IF NOT EXISTS tbl_friend_request (
   FOREIGN KEY (to_id_user) REFERENCES tbl_user (id_user)
 );
 CREATE TABLE IF NOT EXISTS tbl_player(
-  id_player INTEGER NOT NULL AUTO_INCREMENT,
+  id_player INTEGER PRIMARY KEY AUTOINCREMENT,
   id_game INTEGER REFERENCES tbl_game(id_game) NOT NULL,
   id_user TEXT REFERENCES tbl_user(id_user),
   ai_difficulty TEXT,
   initial_rack TEXT NOT NULL,
-  PRIMARY KEY (id_player),
   CONSTRAINT ai_xor_human CHECK (
     (
       id_user IS NULL
@@ -64,39 +63,35 @@ CREATE TABLE IF NOT EXISTS tbl_tile(
   )
 );
 CREATE TABLE IF NOT EXISTS tbl_word(
-  id_word INTEGER NOT NULL AUTO_INCREMENT,
+  id_word INTEGER PRIMARY KEY AUTOINCREMENT,
   id_play INTEGER NOT NULL,
   score INTEGER NOT NULL,
   letters TEXT NOT NULL,
   new_count INTEGER NOT NULL,
-  PRIMARY KEY (id_word),
   FOREIGN KEY (id_play) REFERENCES tbl_play (id_play),
   CONSTRAINT valid_new_count CHECK(
     new_count > 0
-    AND new_count <= LEN(letters)
+    AND new_count <= LENGTH(letters)
     AND new_count <= 7
   ),
-  CONSTRAINT valid_letter_count CHECK(LEN(letters) <= 15)
+  CONSTRAINT valid_letter_count CHECK(LENGTH(letters) <= 15)
 );
 CREATE TABLE IF NOT EXISTS tbl_play(
-  id_play INTEGER NOT NULL AUTO_INCREMENT,
+  id_play INTEGER PRIMARY KEY AUTOINCREMENT,
   id_player INTEGER NOT NULL,
   letters_added TEXT NOT NULL,
-  PRIMARY KEY (id_play),
   FOREIGN KEY (id_player) REFERENCES tbl_player (id_player),
-  CONSTRAINT valid_added_count CHECK(LEN(letters_added) <= 7)
+  CONSTRAINT valid_added_count CHECK(LENGTH(letters_added) <= 7)
 );
 CREATE TABLE IF NOT EXISTS tbl_outcome(
-  id_player INTEGER NOT NULL,
+  id_player INTEGER PRIMARY KEY NOT NULL,
   final_score INTEGER NOT NULL,
   is_winner BOOLEAN NOT NULL,
-  PRIMARY KEY (id_player),
   FOREIGN KEY (id_player) REFERENCES tbl_player (id_player)
 );
 CREATE TABLE IF NOT EXISTS tbl_password_reset(
-  id_user TEXT NOT NULL,
+  id_user TEXT PRIMARY KEY NOT NULL,
   secret_hex TEXT NOT NULL,
   valid_until TIMESTAMP NOT NULL,
-  PRIMARY KEY (id_user),
   FOREIGN KEY (id_user) REFERENCES tbl_user (id_user)
 );
