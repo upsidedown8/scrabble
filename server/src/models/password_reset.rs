@@ -24,9 +24,9 @@ impl PasswordReset {
     pub async fn find_by_id_user(db: &Db, id_user: &Uuid) -> Result<Self> {
         let id_user = id_user.to_string();
 
-        Ok(sqlx::query_as!(
+        Ok(sqlx::query_file_as!(
             PasswordReset,
-            "SELECT * FROM tbl_password_reset WHERE id_user = ?",
+            "sql/password_reset/find_by_id_user.sql",
             id_user
         )
         .fetch_one(db)
@@ -34,11 +34,9 @@ impl PasswordReset {
     }
     /// Finds a `PasswordReset` record by username.
     pub async fn find_by_username(db: &Db, username: &str) -> Result<Self> {
-        Ok(sqlx::query_as!(
+        Ok(sqlx::query_file_as!(
             PasswordReset,
-            "SELECT tbl_password_reset.*
-             FROM tbl_password_reset, tbl_user
-             WHERE tbl_user.username = ? AND tbl_user.id_user = tbl_password_reset.id_user",
+            "sql/password_reset/find_by_username.sql",
             username
         )
         .fetch_one(db)
@@ -46,8 +44,8 @@ impl PasswordReset {
     }
     /// Inserts the record into the database.
     pub async fn insert(&self, db: &Db) -> Result<()> {
-        sqlx::query!(
-            "INSERT INTO tbl_password_reset VALUES (?, ?, ?)",
+        sqlx::query_file!(
+            "sql/password_reset/insert.sql",
             self.id_user,
             self.secret_hex,
             self.valid_until,
