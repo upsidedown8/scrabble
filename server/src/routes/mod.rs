@@ -11,9 +11,9 @@ mod users;
 /// Gets a filter for all routes
 pub fn all(
     db: &Db,
-    fsm: &Arc<FastFsm>,
+    fsm: Arc<FastFsm>,
 ) -> impl Filter<Extract = (impl Reply,), Error = Infallible> + Clone {
-    let routes = users::all(db).or(live_games::all(db));
+    let routes = users::all(db).or(live_games::all(db, fsm));
 
     warp::path("api").and(routes).recover(handle_rejection)
 }

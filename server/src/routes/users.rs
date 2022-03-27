@@ -1,6 +1,6 @@
 use crate::{
     auth::{self, authenticated_user, validation, Jwt, Role},
-    models::{user::UserModel, with_db, Db},
+    models::{self, with_db, Db},
 };
 use api::users::{
     DeleteAccount, Login, LoginResponse, ProfileResponse, SignUp, SignUpResponse, UpdateAccount,
@@ -50,7 +50,7 @@ pub fn all(db: &Db) -> impl Filter<Extract = (impl Reply,), Error = Rejection> +
 
 /// POST /api/users/login
 async fn login(db: Db, login: Login) -> Result<impl Reply, Rejection> {
-    let user = UserModel::find_by_username(&db, login.username.trim()).await?;
+    let user = models::User::find_by_username(&db, login.username.trim()).await?;
 
     auth::verify(&user.hashed_pass, &login.password)?;
 
@@ -67,15 +67,16 @@ async fn sign_up(db: Db, sign_up: SignUp) -> Result<impl Reply, Rejection> {
     validation::validate_password_complexity(&sign_up.password)?;
     validation::validate_username(&sign_up.username)?;
     validation::validate_email(&sign_up.email)?;
-    UserModel::check_username_free(&db, &sign_up.username).await?;
+    models::User::check_username_free(&db, &sign_up.username).await?;
 
     let id_user = Uuid::new_v4();
-    let user = UserModel {
+    let user = models::User {
         id_user: id_user.to_string(),
         username: sign_up.username,
         email: sign_up.email,
         hashed_pass: auth::hash(&sign_up.password),
         role: Role::User.to_string(),
+        is_private: sign_up.is_private,
     };
     let jwt = Jwt::new(id_user, Role::User);
 
@@ -89,7 +90,7 @@ async fn sign_up(db: Db, sign_up: SignUp) -> Result<impl Reply, Rejection> {
 
 /// GET /api/users [+Auth]
 async fn profile(db: Db, jwt: Jwt) -> Result<impl Reply, Rejection> {
-    let user = UserModel::find_by_id(&db, jwt.id_user()).await?;
+    let user = models::User::find_by_id(&db, jwt.id_user()).await?;
 
     Ok(warp::reply::json(&ProfileResponse {
         auth: jwt.auth()?,
@@ -99,7 +100,7 @@ async fn profile(db: Db, jwt: Jwt) -> Result<impl Reply, Rejection> {
 
 /// PUT /api/users [+Auth]
 async fn update(db: Db, jwt: Jwt, update: UpdateAccount) -> Result<impl Reply, Rejection> {
-    let user = UserModel::find_by_id(&db, jwt.id_user()).await?;
+    let user = models::User::find_by_id(&db, jwt.id_user()).await?;
     auth::verify(&user.hashed_pass, &update.old_password)?;
 
     let hashed_pass = if let Some(password) = &update.password {
@@ -111,16 +112,17 @@ async fn update(db: Db, jwt: Jwt, update: UpdateAccount) -> Result<impl Reply, R
         user.hashed_pass.clone()
     };
 
-    let updated_user = UserModel {
+    let updated_user = models::User {
         username: update.username.unwrap_or_else(|| user.username.clone()),
         email: update.email.unwrap_or_else(|| user.email.clone()),
         hashed_pass,
+        is_private: update.is_private.unwrap_or(user.is_private),
         ..user.clone()
     };
 
     // ensure that the new username and email are still valid.
     validation::validate_username(&updated_user.username)?;
-    validation::validate_email(&updated_user.email);
+    validation::validate_email(&updated_user.email)?;
 
     updated_user.update(&db).await?;
 
@@ -131,7 +133,7 @@ async fn update(db: Db, jwt: Jwt, update: UpdateAccount) -> Result<impl Reply, R
 
 /// DELETE /api/users [+Auth]
 async fn delete(db: Db, jwt: Jwt, delete: DeleteAccount) -> Result<impl Reply, Rejection> {
-    let user = UserModel::find_by_id(&db, jwt.id_user()).await?;
+    let user = models::User::find_by_id(&db, jwt.id_user()).await?;
     auth::verify(&user.hashed_pass, &delete.password)?;
     user.delete(&db).await?;
 
