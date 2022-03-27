@@ -1,24 +1,29 @@
 use crate::{
     auth::Role,
     error::{Error, Result},
+    models::Db,
 };
 use api::users::UserDetails;
 use uuid::Uuid;
 
-use super::Db;
-
-/// In-memory representation of the database user model.
+/// A record in `tbl_user`.
 #[derive(Debug, Clone)]
-pub struct UserModel {
-    /// Uuid as a string
+pub struct User {
+    /// Uuid of the user as a string.
     pub id_user: String,
+    /// The username.
     pub username: String,
+    /// The email address.
     pub email: String,
+    /// The argon2 salted hash of the password.
     pub hashed_pass: String,
+    /// The role of the user (User or Admin).
     pub role: String,
+    /// Whether the user stats are private.
+    pub is_private: bool,
 }
 
-impl UserModel {
+impl User {
     /// Parses the role column.
     pub fn role(&self) -> Role {
         Role::parse(&self.role)
@@ -32,6 +37,7 @@ impl UserModel {
         UserDetails {
             username: self.username,
             email: self.email,
+            is_private: self.is_private,
         }
     }
     /// Returns Ok(()) if `username` is not taken.
@@ -48,24 +54,16 @@ impl UserModel {
     /// Finds a user from the user table by id.
     pub async fn find_by_id(db: &Db, id_user: &Uuid) -> Result<Self> {
         let id_user = id_user.to_string();
-        let user = sqlx::query_as!(
-            UserModel,
-            "SELECT * FROM tbl_user WHERE id_user = ?",
-            id_user
-        )
-        .fetch_one(db)
-        .await?;
+        let user = sqlx::query_as!(User, "SELECT * FROM tbl_user WHERE id_user = ?", id_user)
+            .fetch_one(db)
+            .await?;
         Ok(user)
     }
     /// Finds a user from the user table by username.
     pub async fn find_by_username(db: &Db, username: &str) -> Result<Self> {
-        let user = sqlx::query_as!(
-            UserModel,
-            "SELECT * FROM tbl_user WHERE username = ?",
-            username
-        )
-        .fetch_one(db)
-        .await?;
+        let user = sqlx::query_as!(User, "SELECT * FROM tbl_user WHERE username = ?", username)
+            .fetch_one(db)
+            .await?;
         Ok(user)
     }
     /// Inserts the record into the database.

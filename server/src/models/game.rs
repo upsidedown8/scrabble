@@ -1,16 +1,14 @@
 use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 
-/// Models a record of `tbl_game`.
-#[derive(Debug, Serialize, Deserialize)]
-pub struct GameModel {
-    /// The id for the record.
-    pub id_game: Uuid,
+/// A record in `tbl_game`.
+#[derive(Debug)]
+pub struct Game {
+    /// Uuid as a string for the game.
+    pub id_game: String,
     /// The start time of the game.
-    pub start: DateTime<Utc>,
+    pub start_time: Option<DateTime<Utc>>,
     /// The end time of the game.
-    pub end: DateTime<Utc>,
+    pub end_time: Option<DateTime<Utc>>,
     /// Whether the game is over.
     pub is_over: bool,
 }

@@ -10,11 +10,13 @@ Table tbl_user {
 Table tbl_friend {
   first_id_user Uuid [pk, ref: > tbl_user.id_user]
   second_id_user Uuid [pk, ref: > tbl_user.id_user]
+  date_added timestamp
 }
 
 Table tbl_friend_request {
   from_id_user Uuid [pk, ref: > tbl_user.id_user]
   to_id_user Uuid [pk, ref: > tbl_user.id_user]
+  date_sent timestamp
 }
 
 Table tbl_player {
@@ -55,7 +57,7 @@ Table tbl_word {
 }
 
 Table tbl_password_reset {
-  id_user Uuid [ref: > tbl_user.id_user]
+  id_user Uuid [pk, ref: > tbl_user.id_user]
   secret_hex TEXT
   valid_until timestamp
 }
