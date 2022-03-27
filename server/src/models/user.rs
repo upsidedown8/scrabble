@@ -1,9 +1,10 @@
 use crate::{
     auth::Role,
     error::{Error, Result},
-    models::Db,
+    Db,
 };
 use api::users::UserDetails;
+use chrono::NaiveDateTime;
 use uuid::Uuid;
 
 /// A record in `tbl_user`.
@@ -21,6 +22,10 @@ pub struct User {
     pub role: String,
     /// Whether the user stats are private.
     pub is_private: bool,
+    /// The date that the user created their account.
+    pub date_joined: NaiveDateTime,
+    /// The most recent update to the user's account.
+    pub date_updated: NaiveDateTime,
 }
 
 impl User {
@@ -54,27 +59,41 @@ impl User {
     /// Finds a user from the user table by id.
     pub async fn find_by_id(db: &Db, id_user: &Uuid) -> Result<Self> {
         let id_user = id_user.to_string();
-        let user = sqlx::query_as!(User, "SELECT * FROM tbl_user WHERE id_user = ?", id_user)
-            .fetch_one(db)
-            .await?;
-        Ok(user)
+
+        Ok(
+            sqlx::query_as!(User, "SELECT * FROM tbl_user WHERE id_user = ?", id_user)
+                .fetch_one(db)
+                .await?,
+        )
     }
     /// Finds a user from the user table by username.
     pub async fn find_by_username(db: &Db, username: &str) -> Result<Self> {
-        let user = sqlx::query_as!(User, "SELECT * FROM tbl_user WHERE username = ?", username)
-            .fetch_one(db)
-            .await?;
-        Ok(user)
+        Ok(
+            sqlx::query_as!(User, "SELECT * FROM tbl_user WHERE username = ?", username)
+                .fetch_one(db)
+                .await?,
+        )
+    }
+    /// Finds a user by email.
+    pub async fn find_by_email(db: &Db, email: &str) -> Result<Self> {
+        Ok(
+            sqlx::query_as!(User, "SELECT * FROM tbl_user WHERE email = ?", email)
+                .fetch_one(db)
+                .await?,
+        )
     }
     /// Inserts the record into the database.
     pub async fn insert(&self, db: &Db) -> Result<()> {
         sqlx::query!(
-            "INSERT INTO tbl_user VALUES (?, ?, ?, ?, ?)",
+            "INSERT INTO tbl_user VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
             self.id_user,
             self.username,
             self.email,
             self.hashed_pass,
-            self.role
+            self.role,
+            self.is_private,
+            self.date_joined,
+            self.date_updated
         )
         .execute(db)
         .await?;
