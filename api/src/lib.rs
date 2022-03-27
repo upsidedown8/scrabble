@@ -7,4 +7,6 @@
 pub mod auth;
 pub mod error;
 pub mod games;
+pub mod leaderboard;
+pub mod live_games;
 pub mod users;

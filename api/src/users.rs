@@ -3,9 +3,6 @@
 use crate::auth::Auth;
 use serde::{Deserialize, Serialize};
 
-//--------------------------------------------
-//               Utils
-//--------------------------------------------
 /// Struct storing common user information.
 #[derive(Default, Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct UserDetails {
@@ -24,9 +21,6 @@ pub struct UserProfile {
     pub username: String,
 }
 
-//--------------------------------------------
-//           Reset password route
-//--------------------------------------------
 /// Request sent to reset a password. If it succeeds, a message
 /// is sent to the user's email address.
 #[derive(Debug, Serialize, Deserialize)]
@@ -49,9 +43,6 @@ pub struct ResetPasswordWithSecret {
     pub username: String,
 }
 
-//--------------------------------------------
-//               Login route
-//--------------------------------------------
 /// Request sent to the login endpoint.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Login {
@@ -70,9 +61,6 @@ pub struct LoginResponse {
     pub user_details: UserDetails,
 }
 
-//--------------------------------------------
-//               Create user route
-//--------------------------------------------
 /// Request sent to the signup endpoint. All fields are validated
 /// on the server side.
 #[derive(Debug, Serialize, Deserialize)]
@@ -96,9 +84,6 @@ pub struct SignUpResponse {
     pub user_details: UserDetails,
 }
 
-//--------------------------------------------
-//               Get user details route
-//--------------------------------------------
 /// Response (200 OK) sent from the profile endpoint.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ProfileResponse {
@@ -108,9 +93,6 @@ pub struct ProfileResponse {
     pub user_details: UserDetails,
 }
 
-//--------------------------------------------
-//               Update user info route
-//--------------------------------------------
 /// A request to update a user account.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UpdateAccount {
@@ -133,9 +115,6 @@ pub struct UpdateAccountResponse {
     pub auth: Auth,
 }
 
-//--------------------------------------------
-//               Delete user route
-//--------------------------------------------
 /// Request to delete an account.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DeleteAccount {
