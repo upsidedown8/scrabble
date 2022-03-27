@@ -130,7 +130,7 @@ pub enum GameOverReason {
 /// the implementation is decoupled from any actual data,
 /// the server/client has to handle how assigned [`PlayerNum`]
 /// values relate to the actual players.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
 pub struct PlayerNum(usize);
 impl PlayerNum {
@@ -174,6 +174,13 @@ impl Game {
             board: Board::default(),
             status: GameStatus::ToPlay(PlayerNum::first()),
             players,
+        }
+    }
+    /// Gets the next player number.
+    pub fn to_play(&self) -> Option<PlayerNum> {
+        match self.status() {
+            GameStatus::Over(_) => None,
+            GameStatus::ToPlay(to_play) => Some(*to_play),
         }
     }
     /// Gets the number of tiles left in the letter bag.
