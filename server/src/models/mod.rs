@@ -1,5 +1,4 @@
-use std::convert::Infallible;
-use warp::Filter;
+//! Module that models database records.
 
 mod friend;
 mod friend_request;
@@ -20,11 +19,3 @@ pub use player::Player;
 pub use tile::Tile;
 pub use user::User;
 pub use word::Word;
-
-pub type Db = sqlx::SqlitePool;
-
-/// Provides each request handler with access to the database connection pool.
-pub fn with_db(db: &Db) -> impl Filter<Extract = (Db,), Error = Infallible> + Clone {
-    let db = db.clone();
-    warp::any().map(move || db.clone())
-}
