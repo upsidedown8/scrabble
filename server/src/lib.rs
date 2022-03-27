@@ -1,3 +1,10 @@
+//! The server library: provides the REST API and live game
+//! protocol over WebSockets to manage state for the app. Data
+//! is stored in an sqlite database.
+
+// Produce a compiler warning for missing documentation.
+#![warn(missing_docs)]
+
 use scrabble::util::fsm::FastFsm;
 use sqlx::{sqlite::SqlitePoolOptions, SqlitePool};
 use std::net::SocketAddr;
@@ -22,7 +29,7 @@ pub async fn serve(addr: impl Into<SocketAddr>) {
     let db = connect_db().await.expect("database connection");
 
     // the api endpoints.
-    let routes = routes::all(&db, &fsm);
+    let routes = routes::all(&db, fsm);
     // CORS settings, which set allowed origins, headers and methods.
     let cors = warp::cors()
         .allow_any_origin()
