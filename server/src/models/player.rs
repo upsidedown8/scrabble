@@ -12,4 +12,8 @@ pub struct Player {
     pub ai_difficulty: Option<String>,
     /// The initial letters on the player's rack.
     pub initial_rack: String,
+    /// The final score of the player (may be null).
+    pub final_score: Option<usize>,
+    /// Whether the player won the game (may be null).
+    pub is_winner: Option<bool>,
 }

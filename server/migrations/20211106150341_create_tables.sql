@@ -32,6 +32,8 @@ CREATE TABLE IF NOT EXISTS tbl_player(
   id_user TEXT REFERENCES tbl_user(id_user),
   ai_difficulty TEXT,
   initial_rack TEXT NOT NULL,
+  final_score INTEGER,
+  is_winner BOOLEAN,
   CONSTRAINT ai_xor_human CHECK (
     (
       id_user IS NULL
@@ -82,12 +84,6 @@ CREATE TABLE IF NOT EXISTS tbl_play(
   letters_added TEXT NOT NULL,
   FOREIGN KEY (id_player) REFERENCES tbl_player (id_player),
   CONSTRAINT valid_added_count CHECK(LENGTH(letters_added) <= 7)
-);
-CREATE TABLE IF NOT EXISTS tbl_outcome(
-  id_player INTEGER PRIMARY KEY NOT NULL,
-  final_score INTEGER NOT NULL,
-  is_winner BOOLEAN NOT NULL,
-  FOREIGN KEY (id_player) REFERENCES tbl_player (id_player)
 );
 CREATE TABLE IF NOT EXISTS tbl_password_reset(
   id_user TEXT PRIMARY KEY NOT NULL,

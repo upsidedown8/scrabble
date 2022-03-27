@@ -25,6 +25,8 @@ Table tbl_player {
   id_user Uuid [ref: > tbl_user.id_user]
   initial_rack text
   ai_difficulty text
+  final_score int
+  is_winner bool
 }
 
 Table tbl_game {
@@ -60,10 +62,4 @@ Table tbl_password_reset {
   id_user Uuid [pk, ref: > tbl_user.id_user]
   secret_hex TEXT
   valid_until timestamp
-}
-
-Table tbl_outcome {
-  id_player int [pk, ref:> tbl_player.id_player]
-  final_score int
-  is_winner bool
 }
