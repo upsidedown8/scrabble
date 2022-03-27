@@ -1,10 +1,10 @@
 use crate::{
     auth::{Jwt, Role},
-    models::{with_db, Db},
+    with_db, Db,
 };
 use api::{
     auth::Auth,
-    games::{ChatMessage, GameMessage},
+    live_games::{ChatMessage, GameMessage},
 };
 use futures::{SinkExt, StreamExt};
 use scrabble::{
