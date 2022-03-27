@@ -4,7 +4,7 @@ use crate::{
     Db,
 };
 use api::users::UserDetails;
-use chrono::NaiveDateTime;
+use chrono::{NaiveDateTime, Utc};
 use uuid::Uuid;
 
 /// A record in `tbl_user`.
@@ -47,8 +47,7 @@ impl User {
     }
     /// Returns Ok(()) if `username` is not taken.
     pub async fn check_username_free(db: &Db, username: &str) -> Result<()> {
-        let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM tbl_user WHERE username = $1")
-            .bind(username)
+        let count: i32 = sqlx::query_file_scalar!("sql/users/count_username.sql", username)
             .fetch_one(db)
             .await?;
         match count == 0 {
@@ -61,7 +60,7 @@ impl User {
         let id_user = id_user.to_string();
 
         Ok(
-            sqlx::query_as!(User, "SELECT * FROM tbl_user WHERE id_user = ?", id_user)
+            sqlx::query_file_as!(User, "sql/users/find_by_id.sql", id_user)
                 .fetch_one(db)
                 .await?,
         )
@@ -69,7 +68,7 @@ impl User {
     /// Finds a user from the user table by username.
     pub async fn find_by_username(db: &Db, username: &str) -> Result<Self> {
         Ok(
-            sqlx::query_as!(User, "SELECT * FROM tbl_user WHERE username = ?", username)
+            sqlx::query_file_as!(User, "sql/users/find_by_username.sql", username)
                 .fetch_one(db)
                 .await?,
         )
@@ -77,15 +76,15 @@ impl User {
     /// Finds a user by email.
     pub async fn find_by_email(db: &Db, email: &str) -> Result<Self> {
         Ok(
-            sqlx::query_as!(User, "SELECT * FROM tbl_user WHERE email = ?", email)
+            sqlx::query_file_as!(User, "sql/users/find_by_email.sql", email)
                 .fetch_one(db)
                 .await?,
         )
     }
     /// Inserts the record into the database.
     pub async fn insert(&self, db: &Db) -> Result<()> {
-        sqlx::query!(
-            "INSERT INTO tbl_user VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        sqlx::query_file!(
+            "sql/users/insert.sql",
             self.id_user,
             self.username,
             self.email,
@@ -102,28 +101,25 @@ impl User {
     }
     /// Deletes the record by id.
     pub async fn delete(&self, db: &Db) -> Result<()> {
-        sqlx::query!("DELETE FROM tbl_user WHERE id_user = ?", self.id_user,)
+        sqlx::query_file!("sql/users/delete.sql", self.id_user,)
             .execute(db)
             .await?;
 
         Ok(())
     }
-    /// Updates the (email, hashed_pass, username) fields
+    /// Updates the (email, hashed_pass, username, date_updated, is_private) fields
     /// of the user record (keeping the same id).
     pub async fn update(&self, db: &Db) -> Result<()> {
-        sqlx::query!(
-            "
-            UPDATE tbl_user
-            SET username = ?,
-                email = ?,
-                hashed_pass = ?
-            WHERE
-                id_user = ?
-            ",
+        let date_updated = Utc::now().naive_utc();
+
+        sqlx::query_file!(
+            "sql/users/update.sql",
             self.username,
             self.email,
             self.hashed_pass,
-            self.id_user
+            self.is_private,
+            date_updated,
+            self.id_user,
         )
         .execute(db)
         .await?;
