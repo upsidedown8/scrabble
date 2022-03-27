@@ -1,10 +1,13 @@
+//! Module for performing authorization.
+
 use crate::error::Error;
 use warp::{hyper::HeaderMap, Filter, Rejection};
 
-mod hex;
+pub mod hex;
+pub mod validation;
+
 mod jwt;
 mod password;
-pub mod validation;
 
 pub use jwt::{Jwt, Role};
 pub use password::{hash, verify};

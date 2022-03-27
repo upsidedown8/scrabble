@@ -1,5 +1,6 @@
+//! Module for encoding and decoding hex.
+
 /// Encodes a hex string (lowercase).
-#[cfg(test)]
 pub fn encode(bytes: &[u8]) -> String {
     let mut hex = String::with_capacity(bytes.len());
 
