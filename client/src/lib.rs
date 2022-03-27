@@ -1,5 +1,6 @@
 //! SPA web client for the Scrabble game.
 
+// Produce a compiler warning for missing documentation.
 #![warn(missing_docs)]
 
 use crate::contexts::ScopeExt;
