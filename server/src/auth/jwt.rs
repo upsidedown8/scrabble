@@ -10,14 +10,6 @@ use std::{env, fmt};
 use uuid::Uuid;
 
 lazy_static::lazy_static! {
-    /// Duration for which each token is valid
-    static ref JWT_EXPIRY_DURATION: Duration = {
-        let jwt_expiry = env::var("JWT_EXPIRY_SECONDS")
-            .expect("`JWT_EXPIRY_SECONDS` env variable to be set");
-        let seconds: i64 = jwt_expiry.parse().expect("`JWT_EXPIRY_SECONDS` to be a valid integer");
-
-        Duration::seconds(seconds)
-    };
     /// Secret used to sign tokens
     static ref JWT_SECRET: Vec<u8> = {
         let jwt_secret = env::var("JWT_SECRET")
@@ -30,6 +22,8 @@ lazy_static::lazy_static! {
 
         jwt_secret
     };
+    /// Duration for which each token is valid
+    static ref JWT_EXPIRY_DURATION: Duration = Duration::seconds(1800);
     static ref ENCODING_KEY: EncodingKey = EncodingKey::from_secret(&JWT_SECRET);
     static ref DECODING_KEY: DecodingKey = DecodingKey::from_secret(&JWT_SECRET);
     static ref VALIDATION: Validation = Validation::default();
@@ -39,7 +33,9 @@ lazy_static::lazy_static! {
 /// User or admin account.
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
 pub enum Role {
+    /// Basic access.
     User,
+    /// Elevated access.
     Admin,
 }
 
