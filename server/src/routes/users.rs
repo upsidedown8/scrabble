@@ -169,6 +169,9 @@ async fn reset_password_with_secret(
     };
     new_user.update(&db).await?;
 
+    // delete the reset password record
+    pwd_reset.delete(&db).await?;
+
     Ok(warp::reply())
 }
 

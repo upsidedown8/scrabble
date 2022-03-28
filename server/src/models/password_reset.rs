@@ -55,6 +55,14 @@ impl PasswordReset {
 
         Ok(())
     }
+    /// Deletes the record.
+    pub async fn delete(&self, db: &Db) -> Result<()> {
+        sqlx::query_file!("sql/password_reset/delete.sql", self.id_user,)
+            .execute(db)
+            .await?;
+
+        Ok(())
+    }
     /// Check that the secret matches another value.
     pub fn secret_matches(&self, hex: &str) -> bool {
         self.secret_hex == hex
