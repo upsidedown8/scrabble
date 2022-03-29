@@ -47,7 +47,6 @@ async fn handle_rejection(rejection: Rejection) -> Result<impl Reply, Infallible
             | Error::Io(_)
             | Error::Smtp(_)
             | Error::Sqlx(_)
-            | Error::Uuid(_)
             | Error::Argon2(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error"),
         }
     } else if rejection.is_not_found() {

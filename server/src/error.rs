@@ -10,11 +10,6 @@ impl From<sqlx::Error> for Error {
         Self::Sqlx(err)
     }
 }
-impl From<uuid::Error> for Error {
-    fn from(err: uuid::Error) -> Self {
-        Self::Uuid(err)
-    }
-}
 impl From<argon2::Error> for Error {
     fn from(err: argon2::Error) -> Self {
         Self::Argon2(err)
@@ -51,8 +46,6 @@ impl From<bincode::Error> for Error {
 pub enum Error {
     /// Error from sqlx.
     Sqlx(sqlx::Error),
-    /// Error from parsing a Uuid.
-    Uuid(uuid::Error),
     /// Error from argon2.
     Argon2(argon2::Error),
     /// Io error.
