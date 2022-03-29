@@ -6,8 +6,7 @@ use api::auth::Auth;
 use chrono::{Duration, Utc};
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
-use std::{env, fmt};
-use uuid::Uuid;
+use std::{convert::Infallible, env, fmt, str::FromStr};
 
 lazy_static::lazy_static! {
     /// Secret used to sign tokens
@@ -39,29 +38,28 @@ pub enum Role {
     Admin,
 }
 
-impl Role {
-    /// Parses a role.
-    pub fn parse(role: &str) -> Role {
-        match role {
-            "Admin" => Role::Admin,
+impl FromStr for Role {
+    type Err = Infallible;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        Ok(match s {
+            "admin" => Role::Admin,
             _ => Role::User,
-        }
+        })
     }
 }
-
 impl fmt::Display for Role {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
             "{}",
             match self {
-                Role::User => "User",
-                Role::Admin => "Admin",
+                Role::User => "user",
+                Role::Admin => "admin",
             }
         )
     }
 }
-
 impl Default for Role {
     fn default() -> Role {
         Role::User
@@ -74,7 +72,7 @@ struct Claims {
     /// Expiry time (after which the token is invalid).
     exp: usize,
     /// Subject (user id).
-    id_user: Uuid,
+    id_user: i32,
     /// User role.
     role: Role,
 }
@@ -84,7 +82,7 @@ pub struct Jwt(Claims);
 
 impl Jwt {
     /// Creates a new json web token from a user id and role.
-    pub fn new(id_user: Uuid, role: Role) -> Self {
+    pub fn new(id_user: i32, role: Role) -> Self {
         // exp is set when `to_auth` is called
         Jwt(Claims {
             exp: 0,
@@ -109,8 +107,8 @@ impl Jwt {
         }
     }
     /// Gets the `id_user` claims field.
-    pub fn id_user(&self) -> &Uuid {
-        &self.0.id_user
+    pub fn id_user(&self) -> i32 {
+        self.0.id_user
     }
     /// Encodes the JWT, using the secret and expiry time offset
     /// from the `.env` file.
