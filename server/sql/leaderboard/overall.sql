@@ -15,17 +15,14 @@ SELECT tbl_user.username,
     SUM(play_summary.score) / SUM(play_summary.tile_count)
   )::REAL AS avg_score_per_tile,
   (
-    COUNT(player_wins.id_player) / COUNT(tbl_game.id_game) * 100
+    SUM(play_summary.win_count) / COUNT(tbl_game.id_game) * 100
   )::REAL AS win_percentage
 FROM tbl_user
   JOIN tbl_player ON tbl_player.id_user = tbl_user.id_user
-  JOIN tbl_game ON tbl_game.id_game = tbl_player.id_game
-  JOIN tbl_player AS player_wins ON (
-    player_wins.id_user = tbl_user.id_user
-    AND player_wins.is_winner = TRUE
-  ),
+  JOIN tbl_game ON tbl_game.id_game = tbl_player.id_game,
   (
-    SELECT tbl_play.id_play AS id_play,
+    SELECT tbl_player.id_player AS id_player,
+      tbl_play.id_play AS id_play,
       COUNT(tbl_tile.pos) AS tile_count,
       COUNT(tbl_word.id_word) AS word_count,
       MAX(LENGTH(tbl_word.letters)) AS longest_word,
@@ -33,14 +30,20 @@ FROM tbl_user
       CASE
         WHEN COUNT(tbl_tile.pos) = 7 THEN 50
         ELSE 0
-      END + SUM(tbl_word.score) AS score
-    FROM tbl_play
+      END + SUM(tbl_word.score) AS score,
+      CASE
+        WHEN tbl_player.is_winner THEN 1
+        ELSE 0
+      END AS win_count,
+      FROM tbl_play
+      JOIN tbl_player ON tbl_play.id_player = tbl_player.id_player
       LEFT JOIN tbl_word ON tbl_word.id_play = tbl_play.id_play
       LEFT JOIN tbl_tile ON tbl_tile.id_play = tbl_play.id_play
     GROUP BY tbl_play.id_play
   ) AS play_summary
 WHERE tbl_game.is_over = TRUE
   AND tbl_user.is_private = FALSE
+  AND play_summary.id_player = tbl_player.id_player
 GROUP BY tbl_user.id_user
 ORDER BY win_percentage ASC
 LIMIT $1 OFFSET $2;
