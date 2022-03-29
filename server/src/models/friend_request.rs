@@ -4,9 +4,9 @@ use chrono::NaiveDateTime;
 #[derive(Debug, Clone)]
 pub struct FriendRequest {
     /// Id of the user making the request.
-    pub from_id_user: usize,
+    pub from_id_user: i32,
     /// Id of the potential friend.
-    pub to_id_user: usize,
+    pub to_id_user: i32,
     /// Date that the friend request was sent.
     pub date_sent: NaiveDateTime,
 }

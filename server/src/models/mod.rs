@@ -1,6 +1,5 @@
 //! Module that models database records.
 
-mod friend;
 mod friend_request;
 mod game;
 mod password_reset;
@@ -10,7 +9,6 @@ mod tile;
 mod user;
 mod word;
 
-pub use friend::Friend;
 pub use friend_request::FriendRequest;
 pub use game::Game;
 pub use password_reset::PasswordReset;

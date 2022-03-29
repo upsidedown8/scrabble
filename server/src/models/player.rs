@@ -4,11 +4,11 @@ use std::{convert::Infallible, str::FromStr};
 #[derive(Debug, Clone)]
 pub struct Player {
     /// Autoincrementing player id.
-    pub id_player: usize,
+    pub id_player: i32,
     /// Id of the game the player is participating in,
-    pub id_game: usize,
+    pub id_game: i32,
     /// Id of the user. (If `None` then the player is an ai).
-    pub id_user: Option<usize>,
+    pub id_user: Option<i32>,
     /// Difficulty setting of the ai (easy | medium | hard). Only set
     /// if `id_user` is not set.
     pub ai_difficulty: Option<AiDifficulty>,

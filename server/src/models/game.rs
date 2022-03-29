@@ -4,7 +4,7 @@ use chrono::NaiveDateTime;
 #[derive(Debug)]
 pub struct Game {
     /// Id for the game.
-    pub id_game: usize,
+    pub id_game: i32,
     /// The start time of the game.
     pub start_time: Option<NaiveDateTime>,
     /// The end time of the game.

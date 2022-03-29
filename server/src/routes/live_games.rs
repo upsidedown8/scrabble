@@ -19,7 +19,6 @@ use tokio::{
     time::sleep,
 };
 use tokio_stream::wrappers::UnboundedReceiverStream;
-use uuid::Uuid;
 use warp::{
     ws::{Message, WebSocket, Ws},
     Filter, Rejection, Reply,
@@ -35,7 +34,7 @@ type LiveGameHandle = Arc<RwLock<LiveGame>>;
 struct LiveGame {
     game: Game,
     players: HashMap<PlayerNum, LivePlayer>,
-    users: HashMap<Uuid, PlayerNum>,
+    users: HashMap<i32, PlayerNum>,
     play_count: usize,
 }
 impl LiveGame {
@@ -44,15 +43,15 @@ impl LiveGame {
         &self.players[&player_num]
     }
     /// Gets an iterator over the user ids of the connected players.
-    pub fn players(&self) -> impl Iterator<Item = &Uuid> + '_ {
-        self.users.keys()
+    pub fn players(&self) -> impl Iterator<Item = i32> + '_ {
+        self.users.keys().copied()
     }
     /// Gets the player number for the user.
-    pub fn player_num(&self, id_user: &Uuid) -> Option<PlayerNum> {
-        self.users.get(id_user).copied()
+    pub fn player_num(&self, id_user: i32) -> Option<PlayerNum> {
+        self.users.get(&id_user).copied()
     }
     /// Gets the player [`Uuid`] from their [`PlayerNum`].
-    pub fn player_uuid(&self, player_num: PlayerNum) -> Option<Uuid> {
+    pub fn player_id(&self, player_num: PlayerNum) -> Option<i32> {
         self.users
             .iter()
             .find(|&(_, v)| v == &player_num)
@@ -80,8 +79,8 @@ impl LiveGame {
         self.play_count
     }
     /// Replaces a player with an Ai opponent.
-    pub fn replace_player(&mut self, id_user: &Uuid, db: Db) {
-        if let Some(player_num) = self.users.remove(id_user) {
+    pub fn replace_player(&mut self, id_user: i32, db: Db) {
+        if let Some(player_num) = self.users.remove(&id_user) {
             if let Some(LivePlayer::User { id_player }) = self.players.remove(&player_num) {
                 self.players.insert(
                     player_num,
@@ -101,9 +100,9 @@ impl LiveGame {
 #[derive(Debug)]
 enum LivePlayer {
     /// A computer player.
-    Ai { id_player: usize, ai: Ai },
+    Ai { id_player: i32, ai: Ai },
     /// A human player.
-    User { id_player: usize },
+    User { id_player: i32 },
 }
 
 /// A thread safe handle to the [`ConnectedUsers`].
@@ -113,21 +112,21 @@ type LiveGamesHandle = Arc<RwLock<LiveGames>>;
 #[derive(Default)]
 struct LiveGames {
     /// Maps (id_user) -> (web socket sender)
-    authenticated: HashMap<Uuid, mpsc::UnboundedSender<Message>>,
+    authenticated: HashMap<i32, mpsc::UnboundedSender<Message>>,
     /// Maps (id_user) -> (id_game)
-    game_lookup: HashMap<Uuid, Uuid>,
+    game_lookup: HashMap<i32, i32>,
     /// Maps (id_game) -> (live game data)
     /// Arc<RwLock<...>> ensures thread safe mutability.
-    games: HashMap<Uuid, LiveGameHandle>,
+    games: HashMap<i32, LiveGameHandle>,
 }
 impl LiveGames {
     /// Inserts the information for an authenticated user.
-    pub fn connect(&mut self, id_user: Uuid, tx: mpsc::UnboundedSender<Message>) {
+    pub fn connect(&mut self, id_user: i32, tx: mpsc::UnboundedSender<Message>) {
         self.authenticated.insert(id_user, tx);
     }
     /// Disconnects a user by id.
-    pub async fn disconnect(&mut self, id_user: &Uuid, db: Db) {
-        self.authenticated.remove(id_user);
+    pub async fn disconnect(&mut self, id_user: i32, db: Db) {
+        self.authenticated.remove(&id_user);
 
         // find the game that the user is part of:
         if let Some(live_game_handle) = self.game_by_user(id_user) {
@@ -137,8 +136,8 @@ impl LiveGames {
             live_game_write.replace_player(id_user, db);
         }
     }
-    pub async fn send_msg(&self, id_user: &Uuid, msg: Message) {
-        if let Some(tx) = self.authenticated.get(id_user) {
+    pub async fn send_msg(&self, id_user: i32, msg: Message) {
+        if let Some(tx) = self.authenticated.get(&id_user) {
             log::info!("sending message: id_user={id_user}, msg={msg:?}");
 
             if let Err(e) = tx.send(msg) {
@@ -147,8 +146,8 @@ impl LiveGames {
         }
     }
     /// Gets a handle to the current game by user id, if it exists.
-    pub fn game_by_user(&self, id_user: &Uuid) -> Option<LiveGameHandle> {
-        let id_game = self.game_lookup.get(id_user)?;
+    pub fn game_by_user(&self, id_user: i32) -> Option<LiveGameHandle> {
+        let id_game = self.game_lookup.get(&id_user)?;
         self.games.get(id_game).cloned()
     }
 }
@@ -217,7 +216,7 @@ async fn on_authenticate(
     fsm: Arc<FastFsm>,
     live_games: &LiveGamesHandle,
 ) {
-    let &id_user = jwt.id_user();
+    let id_user = jwt.id_user();
 
     // split socket into sender and reciever.
     let (mut conn_tx, mut conn_rx) = socket.split();
@@ -239,7 +238,7 @@ async fn on_authenticate(
                     log::error!("error sending msg: {e:?}");
 
                     // disconnect the socket when an error occurs.
-                    on_disconnect(&id_user, db.clone(), &users).await;
+                    on_disconnect(id_user, db.clone(), &users).await;
                 }
             }
         }
@@ -252,14 +251,14 @@ async fn on_authenticate(
     while let Some(result) = conn_rx.next().await {
         match result {
             Ok(msg) => {
-                log::info!("message recieved from user: {id_user}");
+                log::info!("message recieved from user: {}", id_user);
 
                 let bytes = msg.as_bytes();
 
                 // attempt to deserialize the binary message
                 match bincode::deserialize(bytes) {
                     Ok(msg) => {
-                        on_message(&id_user, msg, db.clone(), Arc::clone(&fsm), live_games).await
+                        on_message(id_user, msg, db.clone(), Arc::clone(&fsm), live_games).await
                     }
                     Err(e) => log::error!("deserialization error: {e:?}"),
                 }
@@ -270,7 +269,7 @@ async fn on_authenticate(
 }
 /// Called when a message is recieved.
 async fn on_message(
-    id_user: &Uuid,
+    id_user: i32,
     msg: GameMessage,
     db: Db,
     fsm: Arc<FastFsm>,
@@ -291,7 +290,7 @@ async fn on_message(
 }
 /// Called when a user requests a play.
 async fn on_request_play(
-    id_user: &Uuid,
+    id_user: i32,
     play: Play,
     db: Db,
     fsm: Arc<FastFsm>,
@@ -353,7 +352,7 @@ async fn on_request_play(
 }
 /// Called when a play is made.
 async fn on_make_play(
-    id_user: &Uuid,
+    id_user: i32,
     play: Play,
     db: Db,
     fsm: Arc<FastFsm>,
@@ -362,7 +361,7 @@ async fn on_make_play(
     live_games: &LiveGamesHandle,
 ) {
     let play_count = live_game_write.play_count();
-    let mut current_user = *id_user;
+    let mut current_user = id_user;
     // send the play to all connected users.
     let msg = GameMessage::Play(play);
     let msg = Message::binary(bincode::serialize(&msg).unwrap());
@@ -389,7 +388,7 @@ async fn on_make_play(
             }
         } else {
             current_user = live_game_write
-                .player_uuid(to_play)
+                .player_id(to_play)
                 .expect("A connected user");
             break;
         }
@@ -417,13 +416,13 @@ async fn on_make_play(
             }
 
             // and disconnect the user that timed out.
-            on_disconnect(&current_user, db, live_games).await;
+            on_disconnect(current_user, db, live_games).await;
         }
     }
 }
 /// Called when a user requests a chat message.
 async fn on_request_chat(
-    id_user: &Uuid,
+    id_user: i32,
     db: Db,
     chat_msg: ChatMessage,
     live_games: &LiveGamesHandle,
@@ -448,7 +447,7 @@ async fn on_request_chat(
     }
 }
 /// Called when a user disconnects (or on a websocket error).
-async fn on_disconnect(id_user: &Uuid, db: Db, live_games: &LiveGamesHandle) {
+async fn on_disconnect(id_user: i32, db: Db, live_games: &LiveGamesHandle) {
     log::info!("disconnecting user {id_user}");
 
     live_games.write().await.disconnect(id_user, db).await;

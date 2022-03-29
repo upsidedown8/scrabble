@@ -2,9 +2,9 @@
 #[derive(Debug, Clone)]
 pub struct Tile {
     /// Foreign key to the play in which this tile was placed.
-    pub id_play: usize,
+    pub id_play: i32,
     /// The position on which the tile was placed.
-    pub pos: usize,
+    pub pos: i32,
     /// The letter that was placed.
     pub letter: char,
     /// Whether the tile was blank.
