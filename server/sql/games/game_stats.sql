@@ -1,4 +1,8 @@
-SELECT tbl_user.username,
+SELECT tbl_game.id_game,
+    tbl_game.start_time,
+    tbl_game.end_time,
+    tbl_game.is_over,
+    tbl_user.username,
     AVG(play_summary.score)::REAL AS avg_score_per_play,
     AVG(play_summary.avg_word_length)::REAL AS avg_word_length,
     AVG(play_summary.word_count)::REAL AS avg_words_per_play,
@@ -37,5 +41,6 @@ FROM tbl_user
     ) AS play_summary
 WHERE tbl_game.is_over = TRUE
 GROUP BY tbl_user.id_user,
-    tbl_player.id_player
+    tbl_player.id_player,
+    tbl_game.id_game
 LIMIT 1;
