@@ -3,7 +3,10 @@ use crate::{
     error::Error,
     with_db, Db,
 };
-use api::leaderboard::{LeaderboardResponse, LeaderboardRow};
+use api::{
+    auth::AuthWrapper,
+    routes::leaderboard::{LeaderboardResponse, LeaderboardRow},
+};
 use serde::{Deserialize, Serialize};
 use warp::{Filter, Rejection, Reply};
 
@@ -55,7 +58,10 @@ async fn leaderboard(db: Db, query: LeaderboardQuery) -> Result<impl Reply, Reje
         })
         .collect::<Vec<_>>();
 
-    Ok(warp::reply::json(&LeaderboardResponse { rows }))
+    Ok(warp::reply::json(&AuthWrapper {
+        auth: None,
+        response: LeaderboardResponse { rows },
+    }))
 }
 
 /// GET /api/leaderboard/friends [+Auth]
@@ -80,5 +86,8 @@ async fn friends_leaderboard(db: Db, jwt: Jwt) -> Result<impl Reply, Rejection> 
         .collect::<Vec<_>>();
 
     // get a leaderboard only containing scores of friends.
-    Ok(warp::reply::json(&LeaderboardResponse { rows }))
+    Ok(warp::reply::json(&AuthWrapper {
+        auth: Some(jwt.auth()?),
+        response: LeaderboardResponse { rows },
+    }))
 }

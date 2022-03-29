@@ -3,9 +3,12 @@ use crate::{
     error::Error,
     models, with_db, with_mailer, Db, Mailer,
 };
-use api::users::{
-    DeleteAccount, Login, LoginResponse, ProfileResponse, ResetPassword, ResetPasswordWithSecret,
-    SignUp, SignUpResponse, UpdateAccount, UpdateAccountResponse, UserDetails,
+use api::{
+    auth::AuthWrapper,
+    routes::users::{
+        DeleteAccount, Login, LoginResponse, ProfileResponse, ResetPassword,
+        ResetPasswordWithSecret, SignUp, SignUpResponse, UpdateAccount, UserDetails,
+    },
 };
 use chrono::{Duration, Utc};
 use rand::Rng;
@@ -120,7 +123,7 @@ async fn reset_password(
         You are receiving this email because a request was made to
         reset the password for an account with username: {username}.
 
-        <a href="https://localhost:3000/reset-password&secret={hex}&username={username}">
+        <a href="https://scrabble.thrgd.uk/reset-password&secret={hex}&username={username}">
             Click here to reset your password.
         </a>
     </p>
@@ -133,7 +136,10 @@ async fn reset_password(
         .await?;
 
     // send a 200 OK reply if the operation succeeded.
-    Ok(warp::reply())
+    Ok(warp::reply::json(&AuthWrapper {
+        auth: None,
+        response: (),
+    }))
 }
 
 /// GET /api/users/reset-password
@@ -169,7 +175,13 @@ async fn reset_password_with_secret(
     // delete the reset password record
     pwd_reset.delete(&db).await?;
 
-    Ok(warp::reply())
+    // generate a jwt.
+    let jwt = Jwt::new(new_user.id_user(), new_user.role());
+
+    Ok(warp::reply::json(&AuthWrapper {
+        auth: Some(jwt.auth()?),
+        response: (),
+    }))
 }
 
 /// POST /api/users/login
@@ -179,9 +191,11 @@ async fn login(db: Db, login: Login) -> Result<impl Reply, Rejection> {
 
     auth::verify(&user.hashed_pass, &login.password)?;
 
-    Ok(warp::reply::json(&LoginResponse {
-        auth: jwt.auth()?,
-        user_details: user.into_user_details(),
+    Ok(warp::reply::json(&AuthWrapper {
+        auth: Some(jwt.auth()?),
+        response: LoginResponse {
+            user_details: user.into_user_details(),
+        },
     }))
 }
 
@@ -205,12 +219,14 @@ async fn sign_up(db: Db, sign_up: SignUp) -> Result<impl Reply, Rejection> {
 
     let jwt = Jwt::new(id_user, Role::User);
 
-    Ok(warp::reply::json(&SignUpResponse {
-        auth: jwt.auth()?,
-        user_details: UserDetails {
-            username: sign_up.username,
-            email: sign_up.email,
-            is_private: sign_up.is_private,
+    Ok(warp::reply::json(&AuthWrapper {
+        auth: Some(jwt.auth()?),
+        response: SignUpResponse {
+            user_details: UserDetails {
+                username: sign_up.username,
+                email: sign_up.email,
+                is_private: sign_up.is_private,
+            },
         },
     }))
 }
@@ -219,9 +235,11 @@ async fn sign_up(db: Db, sign_up: SignUp) -> Result<impl Reply, Rejection> {
 async fn profile(db: Db, jwt: Jwt) -> Result<impl Reply, Rejection> {
     let user = models::User::find_by_id(&db, jwt.id_user()).await?;
 
-    Ok(warp::reply::json(&ProfileResponse {
-        auth: jwt.auth()?,
-        user_details: user.into_user_details(),
+    Ok(warp::reply::json(&AuthWrapper {
+        auth: Some(jwt.auth()?),
+        response: ProfileResponse {
+            user_details: user.into_user_details(),
+        },
     }))
 }
 
@@ -252,8 +270,9 @@ async fn update(db: Db, jwt: Jwt, update: UpdateAccount) -> Result<impl Reply, R
 
     updated_user.update(&db).await?;
 
-    Ok(warp::reply::json(&UpdateAccountResponse {
-        auth: jwt.auth()?,
+    Ok(warp::reply::json(&AuthWrapper {
+        auth: Some(jwt.auth()?),
+        response: (),
     }))
 }
 
@@ -263,5 +282,8 @@ async fn delete(db: Db, jwt: Jwt, delete: DeleteAccount) -> Result<impl Reply, R
     auth::verify(&user.hashed_pass, &delete.password)?;
     user.delete(&db).await?;
 
-    Ok(warp::reply())
+    Ok(warp::reply::json(&AuthWrapper {
+        auth: None,
+        response: (),
+    }))
 }
