@@ -22,7 +22,7 @@ CREATE TABLE tbl_game(
   id_game SERIAL,
   start_time TIMESTAMP,
   end_time TIMESTAMP,
-  is_over BOOLEAN DEFAULT FALSE,
+  is_over BOOLEAN DEFAULT FALSE NOT NULL,
   PRIMARY KEY (id_game)
 );
 CREATE TABLE tbl_player(
