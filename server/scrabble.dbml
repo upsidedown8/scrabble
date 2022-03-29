@@ -1,65 +1,59 @@
 Table tbl_user {
-  id_user Uuid [pk]
+  id_user serial [pk]
   username text
   email text
   hashed_pass text
   role text
   is_private bool
-}
-
-Table tbl_friend {
-  first_id_user Uuid [pk, ref: > tbl_user.id_user]
-  second_id_user Uuid [pk, ref: > tbl_user.id_user]
-  date_added timestamp
+  date_joined timestamp
+  date_updated timestamp
 }
 
 Table tbl_friend_request {
-  from_id_user Uuid [pk, ref: > tbl_user.id_user]
-  to_id_user Uuid [pk, ref: > tbl_user.id_user]
+  from_id_user serial [pk, ref: > tbl_user.id_user]
+  to_id_user serial [pk, ref: > tbl_user.id_user]
   date_sent timestamp
 }
 
-Table tbl_player {
-  id_player integer [pk]
-  id_game Uuid [ref: > tbl_game.id_game]
-  id_user Uuid [ref: > tbl_user.id_user]
-  initial_rack text
-  ai_difficulty text
-  final_score int
-  is_winner bool
-}
-
 Table tbl_game {
-  id_game Uuid [pk]
-  start datetime
-  end datetime
+  id_game serial [pk]
+  start timestamp
+  end timestamp
   is_over bool
 }
 
+Table tbl_player {
+  id_player serial [pk]
+  id_game serial[ref: > tbl_game.id_game]
+  id_user serial [ref: > tbl_user.id_user]
+  ai_difficulty text
+  initial_rack text
+  is_winner bool
+}
+
 Table tbl_play {
-  id_play int [pk]
-  id_player int [ref: > tbl_player.id_player]
-  letters_added text
-  score int
+  id_play serial [pk]
+  id_player serial [ref: > tbl_player.id_player]
+  letters_added varchar(7)
 }
 
 Table tbl_tile {
-  id_tile int [pk]
-  id_play int [ref: > tbl_play.id_play]
-  pos int
+  id_play serial [pk, ref: > tbl_play.id_play]
+  pos int [pk]
   letter char
   is_blank bool
 }
 
 Table tbl_word {
-  id_word int [pk]
-  id_play int [ref: > tbl_play.id_play]
+  id_word serial [pk]
+  id_play serial [ref: > tbl_play.id_play]
   score int
   letters text
+  new_count int
 }
 
 Table tbl_password_reset {
-  id_user Uuid [pk, ref: > tbl_user.id_user]
+  id_user serial [pk, ref: > tbl_user.id_user]
   secret_hex TEXT
   valid_until timestamp
 }
