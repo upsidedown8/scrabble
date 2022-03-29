@@ -6,7 +6,6 @@ use scrabble::{
     game::{play::Play, PlayerNum},
 };
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 
 /// Messages sent during a live game.
 #[derive(Debug, Serialize, Deserialize)]
@@ -14,9 +13,9 @@ pub enum GameMessage {
     /// First message sent to the server, authenticates the user.
     Authenticate(Auth),
     /// Player took too long to make a move (sent to all players).
-    Timeout(Uuid),
+    Timeout(i32),
     /// Player joined the game (sent to all players).
-    Joined(Uuid, PlayerNum),
+    Joined(i32, PlayerNum),
     /// Player sends a play to the server.
     RequestPlay(Play),
     /// There was an error making the play (invalid play or not the player's move).
@@ -26,7 +25,7 @@ pub enum GameMessage {
     /// Send a chat message.
     RequestChatMessage(ChatMessage),
     /// A message sent in live chat (sent to all players).
-    Chat(Uuid, ChatMessage),
+    Chat(i32, ChatMessage),
 }
 
 /// Messages sent in live chat.
