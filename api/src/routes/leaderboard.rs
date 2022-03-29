@@ -1,4 +1,4 @@
-//! API types for the leaderboard route.
+//! API types for /leaderboard.
 
 use serde::{Deserialize, Serialize};
 

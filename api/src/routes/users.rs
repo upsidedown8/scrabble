@@ -1,6 +1,5 @@
-//! API types for the `api/users/*` routes.
+//! API types for /users.
 
-use crate::auth::Auth;
 use serde::{Deserialize, Serialize};
 
 /// Struct storing common user information.
@@ -55,8 +54,6 @@ pub struct Login {
 /// Response (200 OK) from the login endpoint.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct LoginResponse {
-    /// A token.
-    pub auth: Auth,
     /// Information about the user account.
     pub user_details: UserDetails,
 }
@@ -78,8 +75,6 @@ pub struct SignUp {
 /// Response (200 OK) sent from the signup endpoint.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SignUpResponse {
-    /// A token.
-    pub auth: Auth,
     /// Information about the user account.
     pub user_details: UserDetails,
 }
@@ -87,8 +82,6 @@ pub struct SignUpResponse {
 /// Response (200 OK) sent from the profile endpoint.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ProfileResponse {
-    /// A token (for the user that sent the request).
-    pub auth: Auth,
     /// Information about the requested user account,
     pub user_details: UserDetails,
 }
@@ -106,13 +99,6 @@ pub struct UpdateAccount {
     pub password: Option<String>,
     /// Optionally specify Whether to make the account private.
     pub is_private: Option<bool>,
-}
-
-/// Response from updating a user account.
-#[derive(Debug, Serialize, Deserialize)]
-pub struct UpdateAccountResponse {
-    /// A token.
-    pub auth: Auth,
 }
 
 /// Request to delete an account.
