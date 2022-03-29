@@ -16,7 +16,9 @@ pub fn all(
     mailer: &Mailer,
     fsm: Arc<FastFsm>,
 ) -> impl Filter<Extract = (impl Reply,), Error = Infallible> + Clone {
-    let routes = users::all(db, mailer).or(live_games::all(db, fsm));
+    let routes = users::all(db, mailer)
+        .or(live_games::all(db, fsm))
+        .or(leaderboard::all(db));
 
     warp::path("api").and(routes).recover(handle_rejection)
 }
