@@ -3,7 +3,7 @@ use crate::{
     error::{Error, Result},
     Db,
 };
-use api::users::UserDetails;
+use api::routes::users::UserDetails;
 use chrono::{NaiveDateTime, Utc};
 
 /// A record in `tbl_user`.
