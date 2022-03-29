@@ -14,7 +14,7 @@ tokio-stream = "0.1.8"
 serde = { version = "1.0", features = ["derive"] }
 lazy_static = "1.4"
 jsonwebtoken = "8.0"
-sqlx = { version = "0.5", features = [ "postgres", "uuid", "runtime-tokio-rustls", "chrono" ] }
+sqlx = { version = "0.5", features = [ "postgres", "runtime-tokio-rustls", "chrono" ] }
 dotenv = "0.15.0"
 chrono = { version = "0.4.19" }
 log = "0.4.14"
