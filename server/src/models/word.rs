@@ -9,6 +9,4 @@ pub struct Word {
     pub score: i32,
     /// The letters of the word.
     pub letters: String,
-    /// The number of letters in the word that were newly placed.
-    pub new_count: i32,
 }

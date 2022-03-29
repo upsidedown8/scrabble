@@ -65,14 +65,8 @@ CREATE TABLE tbl_word(
   id_play SERIAL NOT NULL,
   score INTEGER NOT NULL,
   letters VARCHAR(15) NOT NULL,
-  new_count INTEGER NOT NULL,
   PRIMARY KEY (id_word),
   FOREIGN KEY (id_play) REFERENCES tbl_play (id_play),
-  CONSTRAINT valid_new_count CHECK(
-    new_count > 0
-    AND new_count <= LENGTH(letters)
-    AND new_count <= 7
-  ),
   CONSTRAINT valid_letter_count CHECK(LENGTH(letters) <= 15)
 );
 CREATE TABLE IF NOT EXISTS tbl_password_reset(
