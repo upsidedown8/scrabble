@@ -16,11 +16,23 @@ pub fn all(
     mailer: &Mailer,
     fsm: Arc<FastFsm>,
 ) -> impl Filter<Extract = (impl Reply,), Error = Infallible> + Clone {
-    let routes = users::all(db, mailer)
-        .or(live_games::all(db, fsm))
-        .or(leaderboard::all(db));
+    let api_route = warp::path("api").and(
+        users::all(db, mailer)
+            .or(live_games::all(db, fsm))
+            .or(leaderboard::all(db)),
+    );
+    let static_route = warp::fs::dir("static");
+    let index_route = warp::get()
+        .and(warp::path::end())
+        .and(warp::fs::file("static/index.html"));
 
-    warp::path("api").and(routes).recover(handle_rejection)
+    // /api/{...} -> API routes
+    // /{...}     -> Static files (JS, WASM, CSS and HTML)
+    // /{...}     -> Index page (if no other routes match and request is GET).
+    api_route
+        .or(static_route)
+        .or(index_route)
+        .recover(handle_rejection)
 }
 
 /// Handles rejections (errors where all filters fail)
