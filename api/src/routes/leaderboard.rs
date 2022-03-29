@@ -3,14 +3,14 @@
 use serde::{Deserialize, Serialize};
 
 /// Response from the leaderboard route.
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct LeaderboardResponse {
     /// The rows from the route.
     pub rows: Vec<LeaderboardRow>,
 }
 
 /// One row of the leaderboard.
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct LeaderboardRow {
     /// The username for the entry.
     pub username: String,
