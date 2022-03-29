@@ -11,7 +11,7 @@ use lettre::{
     AsyncTransport, Message, Tokio1Executor,
 };
 use scrabble::util::fsm::FastFsm;
-use sqlx::{sqlite::SqlitePoolOptions, SqlitePool};
+use sqlx::postgres::{PgPool, PgPoolOptions};
 use std::{convert::Infallible, net::SocketAddr};
 use std::{env, sync::Arc};
 use warp::{http::Method, Filter};
@@ -22,7 +22,7 @@ pub mod models;
 pub mod routes;
 
 /// Alias type for the database pool.
-type Db = sqlx::SqlitePool;
+type Db = PgPool;
 
 /// Used to send emails asynchronously.
 #[derive(Clone)]
@@ -62,8 +62,8 @@ pub fn with_mailer(
 
 /// Starts the server on the given address.
 pub async fn serve(addr: impl Into<SocketAddr>) -> Result<()> {
-    let cert_path = env::var("CERT_PATH").expect("`CERT_PATH` env variable to be set");
-    let key_path = env::var("KEY_PATH").expect("`KEY_PATH` env variable to be set");
+    let cert_path = env::var("CERT_PATH").expect("`CERT_PATH` env variable");
+    let key_path = env::var("KEY_PATH").expect("`KEY_PATH` env variable");
 
     // connect to the email server
     let mailer = connect_email()?;
@@ -132,12 +132,12 @@ fn load_fast_fsm() -> Result<FastFsm> {
 }
 
 /// Connects to the database at $DATABASE_URL.
-async fn connect_db() -> Result<SqlitePool> {
+async fn connect_db() -> Result<PgPool> {
     let db_url = env::var("DATABASE_URL").expect("`DATABASE_URL` env variable");
 
     log::info!("connecting to database: {db_url}");
-    Ok(SqlitePoolOptions::new()
-        .max_connections(5)
+    Ok(PgPoolOptions::new()
+        .max_connections(10)
         .connect(&db_url)
         .await?)
 }
