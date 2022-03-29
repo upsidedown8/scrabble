@@ -1,4 +1,2 @@
-DELETE FROM
-  tbl_password_reset
-WHERE
-  id_user = ?;
+DELETE FROM tbl_password_reset
+WHERE id_user = $1

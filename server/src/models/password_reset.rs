@@ -5,7 +5,7 @@ use chrono::{NaiveDateTime, Utc};
 #[derive(Debug)]
 pub struct PasswordReset {
     /// The id of the user who made the request.
-    pub id_user: usize,
+    pub id_user: i32,
     /// A secret which is sent by email to verify the user's
     /// password reset request.
     pub secret_hex: String,
@@ -20,9 +20,7 @@ impl PasswordReset {
         self.valid_until < current_time
     }
     /// Finds a `PasswordReset` record by user id.
-    pub async fn find_by_id_user(db: &Db, id_user: &Uuid) -> Result<Self> {
-        let id_user = id_user.to_string();
-
+    pub async fn find_by_id_user(db: &Db, id_user: i32) -> Result<Self> {
         Ok(sqlx::query_file_as!(
             PasswordReset,
             "sql/password_reset/find_by_id_user.sql",
