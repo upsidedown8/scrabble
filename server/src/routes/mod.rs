@@ -6,6 +6,7 @@ use scrabble::util::fsm::FastFsm;
 use std::{convert::Infallible, sync::Arc};
 use warp::{http::StatusCode, Filter, Rejection, Reply};
 
+mod friends;
 mod leaderboard;
 mod live_games;
 mod users;
@@ -19,7 +20,8 @@ pub fn all(
     let api_route = warp::path("api").and(
         users::all(db, mailer)
             .or(live_games::all(db, fsm))
-            .or(leaderboard::all(db)),
+            .or(leaderboard::all(db))
+            .or(friends::all(db)),
     );
     let static_route = warp::fs::dir("static");
     let index_route = warp::get()
