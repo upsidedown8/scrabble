@@ -34,12 +34,13 @@ FROM tbl_user
       CASE
         WHEN tbl_player.is_winner THEN 1
         ELSE 0
-      END AS win_count,
-      FROM tbl_play
+      END AS win_count
+    FROM tbl_play
       JOIN tbl_player ON tbl_play.id_player = tbl_player.id_player
       LEFT JOIN tbl_word ON tbl_word.id_play = tbl_play.id_play
       LEFT JOIN tbl_tile ON tbl_tile.id_play = tbl_play.id_play
-    GROUP BY tbl_play.id_play
+    GROUP BY tbl_play.id_play,
+      tbl_player.id_player
   ) AS play_summary
 WHERE tbl_game.is_over = TRUE
   AND tbl_user.is_private = FALSE
