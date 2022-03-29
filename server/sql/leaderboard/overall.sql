@@ -1,13 +1,22 @@
-SELECT AVG(play_summary.score) AS avg_score_per_play,
-  AVG(play_summary.avg_word_length) AS avg_word_length,
-  AVG(play_summary.word_count) AS avg_words_per_play,
-  AVG(play_summary.tile_count) AS avg_tiles_per_play,
-  MAX(play_summary.longest_word) AS longest_word,
-  MAX(play_summary.score) AS best_word_score,
-  SUM(play_summary.score) / COUNT(tbl_game.id_game) AS avg_score_per_game,
-  SUM(play_summary.word_count) / COUNT(tbl_game.id_game) AS avg_words_per_game,
-  SUM(play_summary.score) / SUM(play_summary.tile_count) AS avg_score_per_tile,
-  COUNT(player_wins.id_player) / COUNT(tbl_game.id_game) * 100 AS win_percentage
+SELECT tbl_user.username,
+  AVG(play_summary.score)::REAL AS avg_score_per_play,
+  AVG(play_summary.avg_word_length)::REAL AS avg_word_length,
+  AVG(play_summary.word_count)::REAL AS avg_words_per_play,
+  AVG(play_summary.tile_count)::REAL AS avg_tiles_per_play,
+  MAX(play_summary.longest_word)::INTEGER AS longest_word_length,
+  MAX(play_summary.score)::INTEGER AS best_word_score,
+  (
+    SUM(play_summary.score) / COUNT(tbl_game.id_game)
+  )::REAL AS avg_score_per_game,
+  (
+    SUM(play_summary.word_count) / COUNT(tbl_game.id_game)
+  )::REAL AS avg_words_per_game,
+  (
+    SUM(play_summary.score) / SUM(play_summary.tile_count)
+  )::REAL AS avg_score_per_tile,
+  (
+    COUNT(player_wins.id_player) / COUNT(tbl_game.id_game) * 100
+  )::REAL AS win_percentage
 FROM tbl_user
   JOIN tbl_player ON tbl_player.id_user = tbl_user.id_user
   JOIN tbl_game ON tbl_game.id_game = tbl_player.id_game
