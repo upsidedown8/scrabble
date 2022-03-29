@@ -1,15 +1,14 @@
-CREATE TYPE user_role AS ENUM('user', 'admin');
-CREATE TYPE difficulty AS ENUM('easy', 'medium', 'hard');
 CREATE TABLE tbl_user (
   id_user SERIAL,
   username TEXT NOT NULL,
   email TEXT NOT NULL,
   hashed_pass TEXT NOT NULL,
-  role user_role NOT NULL,
+  role TEXT NOT NULL,
   is_private BOOLEAN NOT NULL,
   date_joined TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   date_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (id_user)
+  PRIMARY KEY (id_user),
+  CONSTRAINT valid_role CHECK(role IN ('user', 'admin'))
 );
 CREATE TABLE tbl_friend_request (
   from_id_user SERIAL,
@@ -30,15 +29,16 @@ CREATE TABLE tbl_player(
   id_player SERIAL,
   id_game SERIAL NOT NULL,
   id_user SERIAL,
-  ai_difficulty difficulty,
+  ai_difficulty TEXT,
   initial_rack TEXT NOT NULL,
   is_winner BOOLEAN,
   PRIMARY KEY (id_player),
   FOREIGN KEY (id_game) REFERENCES tbl_game(id_game),
   FOREIGN KEY (id_user) REFERENCES tbl_user(id_user),
   CONSTRAINT ai_xor_human CHECK (
-    (id_user IS NULL) != (ai_difficulty IS NOT NULL)
-  )
+    (id_user IS NULL) != (ai_difficulty IS NULL)
+  ),
+  CONSTRAINT valid_difficulty CHECK(ai_difficulty IN ('easy', 'medium', 'hard'))
 );
 CREATE TABLE tbl_play(
   id_play SERIAL,
