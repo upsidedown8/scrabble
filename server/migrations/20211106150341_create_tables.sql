@@ -14,7 +14,7 @@ CREATE TABLE tbl_user (
 CREATE TABLE tbl_friend_request (
   from_id_user SERIAL,
   to_id_user SERIAL,
-  date_added TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  date_sent TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (from_id_user, to_id_user),
   FOREIGN KEY (from_id_user) REFERENCES tbl_user(id_user),
   FOREIGN KEY (to_id_user) REFERENCES tbl_user(id_user)

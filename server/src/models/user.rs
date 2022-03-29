@@ -5,13 +5,12 @@ use crate::{
 };
 use api::users::UserDetails;
 use chrono::{NaiveDateTime, Utc};
-use uuid::Uuid;
 
 /// A record in `tbl_user`.
 #[derive(Debug, Clone)]
 pub struct User {
-    /// Uuid of the user as a string.
-    pub id_user: String,
+    /// Id of the user as a string.
+    pub id_user: usize,
     /// The username.
     pub username: String,
     /// The email address.
@@ -19,7 +18,7 @@ pub struct User {
     /// The argon2 salted hash of the password.
     pub hashed_pass: String,
     /// The role of the user (User or Admin).
-    pub role: String,
+    pub role: Role,
     /// Whether the user stats are private.
     pub is_private: bool,
     /// The date that the user created their account.
@@ -31,11 +30,11 @@ pub struct User {
 impl User {
     /// Parses the role column.
     pub fn role(&self) -> Role {
-        Role::parse(&self.role)
+        self.role
     }
-    /// Parses the id_user column.
-    pub fn id_user(&self) -> Result<Uuid> {
-        Uuid::parse_str(&self.id_user).map_err(Error::Uuid)
+    /// Gets the user id.
+    pub fn id_user(&self) -> usize {
+        self.id_user
     }
     /// Converts to `api::users::UserDetails`.
     pub fn into_user_details(self) -> UserDetails {

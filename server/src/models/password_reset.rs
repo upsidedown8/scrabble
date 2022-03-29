@@ -1,12 +1,11 @@
 use crate::{error::Result, Db};
 use chrono::{NaiveDateTime, Utc};
-use uuid::Uuid;
 
 /// A record in `tbl_password_reset`.
 #[derive(Debug)]
 pub struct PasswordReset {
     /// The id of the user who made the request.
-    pub id_user: String,
+    pub id_user: usize,
     /// A secret which is sent by email to verify the user's
     /// password reset request.
     pub secret_hex: String,
