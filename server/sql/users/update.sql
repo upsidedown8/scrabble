@@ -1,10 +1,7 @@
-UPDATE
-  tbl_user
-SET
-  username = ?,
-  email = ?,
-  hashed_pass = ?,
-  is_private = ?,
-  date_updated = ?
-WHERE
-  id_user = ?;
+UPDATE tbl_user
+SET username = $1,
+  email = $2,
+  hashed_pass = $3,
+  is_private = $4,
+  date_updated = $5
+WHERE id_user = $6

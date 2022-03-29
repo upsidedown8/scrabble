@@ -1,6 +1,3 @@
-SELECT
-  *
-FROM
-  tbl_user
-WHERE
-  email = ?;
+SELECT *
+FROM tbl_user
+WHERE email = $1

@@ -10,7 +10,7 @@ use chrono::{NaiveDateTime, Utc};
 #[derive(Debug, Clone)]
 pub struct User {
     /// Id of the user as a string.
-    pub id_user: usize,
+    pub id_user: i32,
     /// The username.
     pub username: String,
     /// The email address.
@@ -18,7 +18,7 @@ pub struct User {
     /// The argon2 salted hash of the password.
     pub hashed_pass: String,
     /// The role of the user (User or Admin).
-    pub role: Role,
+    pub role: String,
     /// Whether the user stats are private.
     pub is_private: bool,
     /// The date that the user created their account.
@@ -30,10 +30,10 @@ pub struct User {
 impl User {
     /// Parses the role column.
     pub fn role(&self) -> Role {
-        self.role
+        self.role.parse().unwrap()
     }
     /// Gets the user id.
-    pub fn id_user(&self) -> usize {
+    pub fn id_user(&self) -> i32 {
         self.id_user
     }
     /// Converts to `api::users::UserDetails`.
@@ -46,18 +46,17 @@ impl User {
     }
     /// Returns Ok(()) if `username` is not taken.
     pub async fn check_username_free(db: &Db, username: &str) -> Result<()> {
-        let count: i32 = sqlx::query_file_scalar!("sql/users/count_username.sql", username)
-            .fetch_one(db)
-            .await?;
-        match count == 0 {
+        let count: Option<i64> =
+            sqlx::query_file_scalar!("sql/users/username_exists.sql", username)
+                .fetch_one(db)
+                .await?;
+        match count == Some(0) {
             true => Ok(()),
             false => Err(Error::UsernameExists),
         }
     }
     /// Finds a user from the user table by id.
-    pub async fn find_by_id(db: &Db, id_user: &Uuid) -> Result<Self> {
-        let id_user = id_user.to_string();
-
+    pub async fn find_by_id(db: &Db, id_user: i32) -> Result<Self> {
         Ok(
             sqlx::query_file_as!(User, "sql/users/find_by_id.sql", id_user)
                 .fetch_one(db)
@@ -81,22 +80,28 @@ impl User {
         )
     }
     /// Inserts the record into the database.
-    pub async fn insert(&self, db: &Db) -> Result<()> {
-        sqlx::query_file!(
+    pub async fn insert(
+        db: &Db,
+        username: &str,
+        email: &str,
+        hashed_pass: &str,
+        role: Role,
+        is_private: bool,
+    ) -> Result<i32> {
+        let role = role.to_string();
+
+        let id_user: i32 = sqlx::query_file_scalar!(
             "sql/users/insert.sql",
-            self.id_user,
-            self.username,
-            self.email,
-            self.hashed_pass,
-            self.role,
-            self.is_private,
-            self.date_joined,
-            self.date_updated
+            username,
+            email,
+            hashed_pass,
+            role,
+            is_private,
         )
-        .execute(db)
+        .fetch_one(db)
         .await?;
 
-        Ok(())
+        Ok(id_user)
     }
     /// Deletes the record by id.
     pub async fn delete(&self, db: &Db) -> Result<()> {

@@ -5,11 +5,10 @@ use crate::{
 };
 use api::users::{
     DeleteAccount, Login, LoginResponse, ProfileResponse, ResetPassword, ResetPasswordWithSecret,
-    SignUp, SignUpResponse, UpdateAccount, UpdateAccountResponse,
+    SignUp, SignUpResponse, UpdateAccount, UpdateAccountResponse, UserDetails,
 };
 use chrono::{Duration, Utc};
 use rand::Rng;
-use uuid::Uuid;
 use warp::{Filter, Rejection, Reply};
 
 lazy_static::lazy_static! {
@@ -85,10 +84,9 @@ async fn reset_password(
         ResetPassword::Email(email) => models::User::find_by_email(&db, &email).await,
         ResetPassword::Username(username) => models::User::find_by_username(&db, &username).await,
     }?;
-    let id_user = user.id_user()?;
 
     // check whether there is an existing record in `tbl_password_reset`.
-    if let Ok(pwd_reset) = models::PasswordReset::find_by_id_user(&db, &id_user).await {
+    if let Ok(pwd_reset) = models::PasswordReset::find_by_id_user(&db, user.id_user()).await {
         // if there is already a password reset entry that
         // has not expired, do not send another.
         if !pwd_reset.is_expired() {
@@ -101,7 +99,7 @@ async fn reset_password(
     let secret_hex = hex::encode(&secret);
     // add a password reset record to the database.
     let password_reset = models::PasswordReset {
-        id_user: id_user.to_string(),
+        id_user: user.id_user(),
         secret_hex: secret_hex.clone(),
         valid_until: Utc::now().naive_utc() + *PASSWORD_TIMEOUT,
     };
@@ -161,8 +159,7 @@ async fn reset_password_with_secret(
     let new_hashed_pass = auth::hash(&with_secret.new_password);
 
     // update the user's password.
-    let id_user = Uuid::parse_str(&pwd_reset.id_user).map_err(Error::Uuid)?;
-    let user = models::User::find_by_id(&db, &id_user).await?;
+    let user = models::User::find_by_id(&db, pwd_reset.id_user).await?;
     let new_user = models::User {
         hashed_pass: new_hashed_pass,
         ..user
@@ -178,10 +175,9 @@ async fn reset_password_with_secret(
 /// POST /api/users/login
 async fn login(db: Db, login: Login) -> Result<impl Reply, Rejection> {
     let user = models::User::find_by_username(&db, login.username.trim()).await?;
+    let jwt = Jwt::new(user.id_user(), user.role());
 
     auth::verify(&user.hashed_pass, &login.password)?;
-
-    let jwt = Jwt::new(user.id_user()?, user.role());
 
     Ok(warp::reply::json(&LoginResponse {
         auth: jwt.auth()?,
@@ -196,24 +192,26 @@ async fn sign_up(db: Db, sign_up: SignUp) -> Result<impl Reply, Rejection> {
     validation::validate_email(&sign_up.email)?;
     models::User::check_username_free(&db, &sign_up.username).await?;
 
-    let id_user = Uuid::new_v4();
-    let user = models::User {
-        id_user: id_user.to_string(),
-        username: sign_up.username,
-        email: sign_up.email,
-        hashed_pass: auth::hash(&sign_up.password),
-        role: Role::User.to_string(),
-        is_private: sign_up.is_private,
-        date_joined: Utc::now().naive_utc(),
-        date_updated: Utc::now().naive_utc(),
-    };
-    let jwt = Jwt::new(id_user, Role::User);
+    let hashed_pass = auth::hash(&sign_up.password);
+    let id_user = models::User::insert(
+        &db,
+        &sign_up.username,
+        &sign_up.email,
+        &hashed_pass,
+        Role::User,
+        sign_up.is_private,
+    )
+    .await?;
 
-    user.insert(&db).await?;
+    let jwt = Jwt::new(id_user, Role::User);
 
     Ok(warp::reply::json(&SignUpResponse {
         auth: jwt.auth()?,
-        user_details: user.into_user_details(),
+        user_details: UserDetails {
+            username: sign_up.username,
+            email: sign_up.email,
+            is_private: sign_up.is_private,
+        },
     }))
 }
 
@@ -232,25 +230,23 @@ async fn update(db: Db, jwt: Jwt, update: UpdateAccount) -> Result<impl Reply, R
     let user = models::User::find_by_id(&db, jwt.id_user()).await?;
     auth::verify(&user.hashed_pass, &update.old_password)?;
 
-    let hashed_pass = if let Some(password) = &update.password {
-        // check that the password is complex enough, if so
-        // then update the hash.
-        validation::validate_password_complexity(password)?;
-        auth::hash(password)
-    } else {
-        user.hashed_pass.clone()
-    };
-
     let updated_user = models::User {
         username: update.username.unwrap_or_else(|| user.username.clone()),
         email: update.email.unwrap_or_else(|| user.email.clone()),
-        hashed_pass,
+        hashed_pass: update
+            .password
+            .as_deref()
+            .map(auth::hash)
+            .unwrap_or_else(|| user.hashed_pass.clone()),
         is_private: update.is_private.unwrap_or(user.is_private),
         date_updated: Utc::now().naive_utc(),
         ..user.clone()
     };
 
-    // ensure that the new username and email are still valid.
+    // ensure that the new username, email and password are still valid.
+    if let Some(pwd) = update.password.as_deref() {
+        validation::validate_password_complexity(pwd)?;
+    }
     validation::validate_username(&updated_user.username)?;
     validation::validate_email(&updated_user.email)?;
 
