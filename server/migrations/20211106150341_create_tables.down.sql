@@ -6,5 +6,3 @@ DROP TABLE tbl_player;
 DROP TABLE tbl_game;
 DROP TABLE tbl_friend_request;
 DROP TABLE tbl_user;
-DROP TYPE user_role;
-DROP TYPE difficulty;
