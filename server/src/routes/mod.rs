@@ -7,6 +7,7 @@ use std::{convert::Infallible, sync::Arc};
 use warp::{http::StatusCode, Filter, Rejection, Reply};
 
 mod friends;
+mod games;
 mod leaderboard;
 mod live_games;
 mod users;
@@ -21,7 +22,8 @@ pub fn all(
         users::all(db, mailer)
             .or(live_games::all(db, fsm))
             .or(leaderboard::all(db))
-            .or(friends::all(db)),
+            .or(friends::all(db))
+            .or(games::all(db)),
     );
     let static_route = warp::fs::dir("static");
     let index_route = warp::get()
