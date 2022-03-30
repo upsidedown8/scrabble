@@ -4,7 +4,7 @@ use crate::{
 };
 use api::{
     auth::Auth,
-    live_games::{ChatMessage, GameMessage},
+    routes::live_games::{ChatMessage, GameMessage},
 };
 use futures::{SinkExt, StreamExt};
 use scrabble::{
