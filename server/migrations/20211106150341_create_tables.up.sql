@@ -43,6 +43,7 @@ CREATE TABLE tbl_player(
 CREATE TABLE tbl_play(
   id_play SERIAL,
   id_player SERIAL NOT NULL,
+  letters_removed VARCHAR(7) NOT NULL,
   letters_added VARCHAR(7) NOT NULL,
   PRIMARY KEY (id_play),
   FOREIGN KEY (id_player) REFERENCES tbl_player (id_player),

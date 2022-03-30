@@ -1,9 +1,11 @@
 //! API types for /games.
 
-use chrono::NaiveDateTime;
-use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
-use super::leaderboard::LeaderboardRow;
+use crate::routes::leaderboard::LeaderboardRow;
+use chrono::NaiveDateTime;
+use scrabble::game::play::Play;
+use serde::{Deserialize, Serialize};
 
 /// Response from the list games route.
 #[derive(Debug, Serialize, Deserialize)]
@@ -30,8 +32,10 @@ pub struct GameMetadata {
 pub struct GameResponse {
     /// Metadata about the game,
     pub meta: GameMetadata,
-    /// Ids
-    pub players: Vec<i32>,
+    /// Ids and usernames of the players of the game.
+    pub players: HashMap<i32, String>,
+    /// (playerid, play) tuples.
+    pub plays: Vec<(i32, Play)>,
 }
 
 /// Stats about an individual game.
