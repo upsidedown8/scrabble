@@ -1,6 +1,7 @@
 //! Implementation of the [`PlayPage`].
 
-use crate::components::Board;
+use crate::{components::Board, contexts::ScopeExt};
+use api::games::GameMessage;
 use futures::{channel::mpsc, SinkExt, StreamExt};
 use reqwasm::websocket::{futures::WebSocket, Message};
 use scrabble::util::pos::Pos;
@@ -9,14 +10,18 @@ use sycamore::{futures::ScopeSpawnLocal, prelude::*};
 /// Page for playing live games.
 #[component]
 pub fn PlayPage<G: Html>(ctx: ScopeRef) -> View<G> {
+    let auth_ctx = ctx.use_auth_context();
+
     let msg = ctx.create_signal(String::new());
     let recv = ctx.create_signal(String::new());
-    let ws = WebSocket::open("wss://localhost:8000/api/games/ws_echo").unwrap();
+    let ws = WebSocket::open("wss://localhost:8000/api/games/join").unwrap();
 
     let (mut write, mut read) = ws.split();
-
     let (tx, mut rx) = mpsc::unbounded();
     let tx = ctx.create_signal(tx);
+
+    // let auth_msg = GameMessage::Authenticate();
+    // write.send(Message::Bytes(bincode::serialize(&auth_msg).unwrap()));
 
     ctx.spawn_local(async move {
         while let Some(msg) = read.next().await {

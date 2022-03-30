@@ -20,6 +20,7 @@ pub fn SignUpPage<G: Html>(ctx: ScopeRef) -> View<G> {
         username: (*username.get()).clone(),
         email: (*email.get()).clone(),
         password: (*password.get()).clone(),
+        is_private: false,
     });
     let loading = ctx.create_signal(false);
     let err = ctx.create_signal(None);
