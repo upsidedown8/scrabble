@@ -3,7 +3,7 @@
 use crate::{error::Error, Db, Mailer};
 use api::error::ErrorResponse;
 use scrabble::util::fsm::FastFsm;
-use std::{convert::Infallible, sync::Arc};
+use std::{convert::Infallible, env, sync::Arc};
 use warp::{http::StatusCode, Filter, Rejection, Reply};
 
 mod friends;
@@ -18,24 +18,27 @@ pub fn all(
     mailer: &Mailer,
     fsm: Arc<FastFsm>,
 ) -> impl Filter<Extract = (impl Reply,), Error = Infallible> + Clone {
-    let api_route = warp::path("api").and(
-        users::all(db, mailer)
-            .or(live_games::all(db, fsm))
-            .or(leaderboard::all(db))
-            .or(friends::all(db))
-            .or(games::all(db)),
-    );
+    let api_routes = users::all(db, mailer)
+        .or(live_games::all(db, fsm))
+        .or(leaderboard::all(db))
+        .or(friends::all(db))
+        .or(games::all(db));
     let static_route = warp::fs::dir("static");
-    let index_route = warp::get()
-        .and(warp::path::end())
+    let index_route = warp::path!()
+        .and(warp::get())
         .and(warp::fs::file("static/index.html"));
+
+    // load hostname for server.
+    let hostname = env::var("HOSTNAME").expect("`HOSTNAME` env variable");
 
     // /api/{...} -> API routes
     // /{...}     -> Static files (JS, WASM, CSS and HTML)
     // /{...}     -> Index page (if no other routes match and request is GET).
-    api_route
-        .or(static_route)
-        .or(index_route)
+    let routes = api_routes.or(static_route).or(index_route);
+
+    // Ensure the hostname is as specified in `.env` file.
+    warp::host::exact(&hostname)
+        .and(routes)
         .recover(handle_rejection)
 }
 
