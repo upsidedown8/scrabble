@@ -1,7 +1,9 @@
 use crate::{error::Error, fsm::FsmRef, Db, Mailer};
 use api::error::ErrorResponse;
 use std::convert::Infallible;
-use warp::{filters::BoxedFilter, hyper::StatusCode, Filter, Rejection, Reply};
+use warp::{
+    body::BodyDeserializeError, filters::BoxedFilter, hyper::StatusCode, Filter, Rejection, Reply,
+};
 
 pub mod friends;
 pub mod games;
@@ -42,7 +44,7 @@ pub fn with<T: Clone + Send>(data: &T) -> impl Filter<Extract = (T,), Error = In
 /// Handles rejections (errors where all filters fail).
 async fn handle_rejection(rejection: Rejection) -> Result<impl Reply, Infallible> {
     let (status, msg) = if let Some(error) = rejection.find::<Error>() {
-        log::error!("rejection: {error:?}");
+        log::info!("rejection: {error:?}");
         match error {
             Error::InvalidAuthHeader => (StatusCode::BAD_REQUEST, "Invalid auth header"),
             Error::MissingAuthHeader => (StatusCode::NOT_FOUND, "Missing auth header"),
@@ -54,7 +56,6 @@ async fn handle_rejection(rejection: Rejection) -> Result<impl Reply, Infallible
                 StatusCode::FORBIDDEN,
                 "A recent request was made to reset the password",
             ),
-
             Error::JwtDecoding(_)
             | Error::IncorrectResetSecret
             | Error::IncorrectPassword
@@ -73,6 +74,9 @@ async fn handle_rejection(rejection: Rejection) -> Result<impl Reply, Infallible
     } else if rejection.is_not_found() {
         log::info!("not found");
         (StatusCode::NOT_FOUND, "Not found")
+    } else if let Some(error) = rejection.find::<BodyDeserializeError>() {
+        log::info!("body deserialize error");
+        (StatusCode::BAD_REQUEST, "Invalid request body")
     } else {
         log::error!("unmatched error: {rejection:?}");
         (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error")
