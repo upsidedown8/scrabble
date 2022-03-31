@@ -1,10 +1,9 @@
 //! API types for live games.
 
-use std::collections::HashMap;
-
 use crate::auth::Auth;
 use scrabble::game::{play::Play, PlayerNum};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 /// Info about a player.
 #[derive(Debug, Serialize, Deserialize)]
@@ -17,7 +16,7 @@ pub struct Player {
 
 /// The first message sent, authenticates the user.
 #[derive(Debug, Serialize, Deserialize)]
-pub struct AuthMsg(Auth);
+pub struct AuthMsg(pub Auth);
 
 /// Messages sent from the client.
 #[derive(Debug, Serialize, Deserialize)]

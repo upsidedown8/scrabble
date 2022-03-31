@@ -100,4 +100,6 @@ pub enum Error {
     IncorrectResetSecret,
     /// Request to reset password has expired.
     ResetExpired,
+    /// Missing [`AuthMsg`] for websocket.
+    NoAuthMsg,
 }

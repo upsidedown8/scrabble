@@ -10,28 +10,16 @@ use warp::{filters::BoxedFilter, ws::Ws, Filter, Reply};
 pub fn all(db: &Db, fsm: &FsmRef) -> BoxedFilter<(impl Reply,)> {
     let games = &Games::new(db, fsm);
 
-    join(games).or(create(games)).boxed()
+    connect(games).boxed()
 }
 
-/// Join a game by id.
-fn join(games: &Games) -> BoxedFilter<(impl Reply,)> {
-    warp::path!("api" / "live" / i32)
-        .and(warp::ws())
-        .and(with(games))
-        .map(|id_game: i32, ws: Ws, games: Games| {
-            ws.on_upgrade(move |ws| handlers::live::join(ws, games, id_game));
-            warp::reply()
-        })
-        .boxed()
-}
-
-/// Create a game.
-fn create(games: &Games) -> BoxedFilter<(impl Reply,)> {
-    warp::path!("api" / "live" / "create")
+/// Connect to the server via websocket.
+fn connect(games: &Games) -> BoxedFilter<(impl Reply,)> {
+    warp::path!("api" / "live")
         .and(warp::ws())
         .and(with(games))
         .map(|ws: Ws, games: Games| {
-            ws.on_upgrade(|ws| handlers::live::create(ws, games));
+            ws.on_upgrade(move |ws| handlers::live::connect(ws, games));
             warp::reply()
         })
         .boxed()
