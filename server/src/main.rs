@@ -1,6 +1,6 @@
 //! The server library: provides the REST API and live game
 //! protocol over WebSockets to manage state for the app. Data
-//! is stored in an sqlite database.
+//! is stored in a PostgreSQL database.
 
 // Produce a compiler warning for missing documentation.
 #![warn(missing_docs)]
