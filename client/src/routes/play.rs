@@ -1,7 +1,7 @@
 //! Implementation of the [`PlayPage`].
 
 use crate::{components::Board, contexts::ScopeExt};
-use api::games::GameMessage;
+use api::routes::live::GameMessage;
 use futures::{channel::mpsc, SinkExt, StreamExt};
 use reqwasm::websocket::{futures::WebSocket, Message};
 use scrabble::util::pos::Pos;

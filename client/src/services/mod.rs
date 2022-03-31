@@ -4,7 +4,10 @@ use crate::{
     contexts::{AuthCtx, AuthSignal},
     error::Error,
 };
-use api::auth::Auth;
+use api::{
+    auth::{Auth, AuthWrapper},
+    routes::users::UserDetails,
+};
 use reqwasm::http::{Method, Request};
 use serde::{de::DeserializeOwned, Serialize};
 
@@ -19,7 +22,7 @@ pub async fn make_request<T, U>(
     url: &str,
     data: &T,
     method: Method,
-) -> Result<U, Error>
+) -> Result<(Option<Auth>, U), Error>
 where
     T: Serialize,
     U: DeserializeOwned,
@@ -54,7 +57,16 @@ where
     // an error message or the deserialized content.
     match response.status() {
         // (200 OK) or (201 CREATED)
-        200 | 201 => Ok(response.json().await?),
+        200 | 201 => Ok({
+            // attempt to deserialize as `AuthWrapper<U>`.
+            if let Ok(AuthWrapper { auth, response }) = response.json().await {
+                (auth, response)
+            }
+            // attempt to deserialize as `U`.
+            else {
+                (None, response.json().await?)
+            }
+        }),
         // 400 BAD_REQUEST
         400 => Err(Error::BadRequest),
         // 401 UNAUTHORIZED

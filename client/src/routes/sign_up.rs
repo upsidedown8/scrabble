@@ -5,7 +5,7 @@ use crate::{
     contexts::{AuthCtx, ScopeExt},
     services::users::sign_up,
 };
-use api::users::SignUp;
+use api::routes::users::SignUp;
 use sycamore::{futures::ScopeSpawnLocal, prelude::*};
 use sycamore_router::navigate;
 

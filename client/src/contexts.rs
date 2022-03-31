@@ -1,7 +1,7 @@
 //! Provides context (data available to all components) for global
 //! theming and authorization.
 
-use api::{auth::Auth, users::UserDetails};
+use api::{auth::Auth, routes::users::UserDetails};
 use serde::{Deserialize, Serialize};
 use sycamore::prelude::{ReadSignal, Scope, Signal};
 
