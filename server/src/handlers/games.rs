@@ -62,20 +62,22 @@ pub async fn stats(id_game: i32, db: Db, jwt: Jwt) -> Result<impl Reply, Rejecti
 pub async fn overall_stats(db: Db, jwt: Jwt) -> Result<impl Reply, Rejection> {
     // Just query a single leaderboard row for this user.
     let row = sqlx::query_file!("sql/games/leaderboard_row.sql", jwt.id_user())
-        .fetch_one(&db)
+        .fetch_optional(&db)
         .await
         .map_err(Error::Sqlx)?;
-    let row = LeaderboardRow {
-        username: row.username,
-        avg_score_per_play: row.avg_score_per_play.unwrap_or(0.0),
-        avg_word_length: row.avg_word_length.unwrap_or(0.0),
-        avg_tiles_per_play: row.avg_tiles_per_play.unwrap_or(0.0),
-        longest_word_length: row.longest_word_length.unwrap_or(0) as usize,
-        best_word_score: row.best_word_score.unwrap_or(0) as usize,
-        avg_score_per_game: row.avg_score_per_game.unwrap_or(0.0),
-        avg_score_per_tile: row.avg_score_per_tile.unwrap_or(0.0),
-        win_percentage: row.win_percentage.unwrap_or(0.0),
-    };
+    let row = row
+        .map(|row| LeaderboardRow {
+            username: row.username,
+            avg_score_per_play: row.avg_score_per_play.unwrap_or(0.0),
+            avg_word_length: row.avg_word_length.unwrap_or(0.0),
+            avg_tiles_per_play: row.avg_tiles_per_play.unwrap_or(0.0),
+            longest_word_length: row.longest_word_length.unwrap_or(0) as usize,
+            best_word_score: row.best_word_score.unwrap_or(0) as usize,
+            avg_score_per_game: row.avg_score_per_game.unwrap_or(0.0),
+            avg_score_per_tile: row.avg_score_per_tile.unwrap_or(0.0),
+            win_percentage: row.win_percentage.unwrap_or(0.0),
+        })
+        .unwrap_or_default();
 
     Ok(warp::reply::json(&AuthWrapper {
         auth: Some(jwt.auth()?),
