@@ -40,24 +40,42 @@ impl From<bincode::Error> for Error {
         Self::Bincode(err)
     }
 }
+impl From<std::env::VarError> for Error {
+    fn from(err: std::env::VarError) -> Self {
+        Self::Env(err)
+    }
+}
+impl From<std::net::AddrParseError> for Error {
+    fn from(err: std::net::AddrParseError) -> Self {
+        Self::SocketAddr(err)
+    }
+}
 
 /// The library error type.
 #[derive(Debug)]
 pub enum Error {
+    /// Error loading env variable.
+    Env(std::env::VarError),
     /// Error from sqlx.
     Sqlx(sqlx::Error),
     /// Error from argon2.
     Argon2(argon2::Error),
     /// Io error.
     Io(std::io::Error),
+    /// Error parsing socket address.
+    SocketAddr(std::net::AddrParseError),
     /// Error from lettre.
     Lettre(lettre::error::Error),
     /// Smtp error.
     Smtp(lettre::transport::smtp::Error),
-    /// Error parsing address.
+    /// Error parsing email address.
     Address(lettre::address::AddressError),
     /// Error serializing or deserializing data.
     Bincode(bincode::Error),
+    /// Error encoding the JWT.
+    JwtEncoding(jsonwebtoken::errors::Error),
+    /// Error decoding the JWT.
+    JwtDecoding(jsonwebtoken::errors::Error),
     /// Username already exists.
     UsernameExists,
     /// User has insufficient access.
@@ -68,10 +86,6 @@ pub enum Error {
     InvalidAuthHeader,
     /// The request has an incorrect password.
     IncorrectPassword,
-    /// Error encoding the JWT.
-    JwtEncoding(jsonwebtoken::errors::Error),
-    /// Error decoding the JWT.
-    JwtDecoding(jsonwebtoken::errors::Error),
     /// Invalid username provided.
     InvalidUsername,
     /// Password was too weak.
