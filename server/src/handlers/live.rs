@@ -1,6 +1,31 @@
-use crate::{auth::Jwt, db::Db, error::Error, models};
+use crate::{auth::Jwt, db::Db, error::Error, fsm::FsmRef, models};
 use api::auth::AuthWrapper;
-use warp::{Rejection, Reply};
+use warp::{ws::WebSocket, Rejection, Reply};
+
+#[derive(Clone)]
+pub struct Games {
+    fsm: FsmRef,
+    db: Db,
+}
+impl Games {
+    /// Creates a new `Games`.
+    pub fn new(db: &Db, fsm: &FsmRef) -> Games {
+        Self {
+            fsm: fsm.clone(),
+            db: db.clone(),
+        }
+    }
+}
+
+/// WSS /api/live/join
+pub async fn join(ws: WebSocket, games: Games, id_game: i32) {
+    todo!()
+}
+
+/// WSS /api/live/create
+pub async fn create(ws: WebSocket, games: Games) {
+    todo!()
+}
 
 /*
 

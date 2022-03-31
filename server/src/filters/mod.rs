@@ -8,7 +8,7 @@ use warp::{
 pub mod friends;
 pub mod games;
 pub mod leaderboard;
-// pub mod live;
+pub mod live;
 pub mod users;
 
 /// Gets a filter for all the routes.
@@ -16,7 +16,7 @@ pub fn all(hostname: &str, db: Db, mailer: Mailer, fsm: FsmRef) -> BoxedFilter<(
     let api = friends::all(&db)
         .or(games::all(&db))
         .or(leaderboard::all(&db))
-        // .or(live::all(&db, &fsm))
+        .or(live::all(&db, &fsm))
         .or(users::all(&db, &mailer));
     let app = warp::fs::dir("static");
     let index = warp::path!()
