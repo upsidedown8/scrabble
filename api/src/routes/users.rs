@@ -23,11 +23,8 @@ pub struct UserProfile {
 /// Request sent to reset a password. If it succeeds, a message
 /// is sent to the user's email address.
 #[derive(Debug, Serialize, Deserialize)]
-pub enum ResetPassword {
-    /// The user's email address.
-    Email(String),
-    /// The user's username.
-    Username(String),
+pub struct ResetPassword {
+    pub username: String,
 }
 
 /// Request sent to update a password after the secret

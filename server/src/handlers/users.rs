@@ -36,10 +36,7 @@ pub async fn reset_password(
     reset_password: ResetPassword,
 ) -> Result<impl Reply, Rejection> {
     // Find the user specified in the request.
-    let user = match reset_password {
-        ResetPassword::Email(email) => models::User::find_by_email(&db, &email).await,
-        ResetPassword::Username(username) => models::User::find_by_username(&db, &username).await,
-    }?;
+    let user = models::User::find_by_username(&db, &reset_password.username).await?;
 
     // check whether there is an existing record in `tbl_password_reset`.
     if let Ok(pwd_reset) = models::PasswordReset::find_by_id_user(&db, user.id_user()).await {
