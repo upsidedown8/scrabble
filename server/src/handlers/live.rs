@@ -1,59 +1,91 @@
-use crate::{auth::Jwt, db::Db, error::Error, fsm::FsmRef, models};
-use api::auth::AuthWrapper;
-use warp::{ws::WebSocket, Rejection, Reply};
-
-#[derive(Clone)]
-pub struct Games {
-    fsm: FsmRef,
-    db: Db,
-}
-impl Games {
-    /// Creates a new `Games`.
-    pub fn new(db: &Db, fsm: &FsmRef) -> Games {
-        Self {
-            fsm: fsm.clone(),
-            db: db.clone(),
-        }
-    }
-}
-
-/// WSS /api/live/join
-pub async fn join(ws: WebSocket, games: Games, id_game: i32) {
-    todo!()
-}
-
-/// WSS /api/live/create
-pub async fn create(ws: WebSocket, games: Games) {
-    todo!()
-}
-
-/*
-
 use crate::{
     auth::{Jwt, Role},
-    with_db, Db,
+    error::Error,
+    error::Result,
 };
 use api::{
     auth::Auth,
-    routes::live_games::{ChatMessage, GameMessage},
+    routes::live::{AuthMsg, ClientMsg, ServerMsg},
 };
-use futures::{SinkExt, StreamExt};
-use scrabble::{
-    ai::Ai,
-    error::GameResult,
-    game::{play::Play, Game, GameStatus, PlayerNum},
-    util::fsm::FastFsm,
-};
-use std::{collections::HashMap, sync::Arc, time::Duration};
-use tokio::{
-    sync::{mpsc, RwLock, RwLockReadGuard, RwLockWriteGuard},
-    time::sleep,
-};
-use tokio_stream::wrappers::UnboundedReceiverStream;
-use warp::{
-    ws::{Message, WebSocket, Ws},
-    Filter, Rejection, Reply,
-};
+use futures::StreamExt;
+use std::{collections::HashMap, ops::Deref, sync::Arc};
+use tokio::sync::{mpsc, Mutex, RwLock};
+use warp::ws::{Message, WebSocket};
+
+struct Rooms(Arc<RwLock<HashMap<i32, RoomHandle>>>);
+impl Deref for Rooms {
+    type Target = RwLock<HashMap<i32, RoomHandle>>;
+
+    fn deref(&self) -> &Self::Target {
+        self.0.deref()
+    }
+}
+
+struct RoomHandle(Arc<Mutex<Room>>);
+impl Deref for RoomHandle {
+    type Target = Mutex<Room>;
+
+    fn deref(&self) -> &Self::Target {
+        self.0.deref()
+    }
+}
+
+struct Room {
+    players: HashMap<i32, Player>,
+}
+struct Player {
+    sender: mpsc::UnboundedSender<Message>,
+}
+
+/// WSS /api/live
+pub async fn connect(ws: WebSocket, rooms: Rooms) {
+    // split socket into sender and reciever.
+    let (sender, mut receiver) = ws.split();
+
+    // listen to `receiver` for an `AuthMsg`.
+    if let Some(Ok(msg)) = receiver.next().await {
+        // deserialize the message.
+        let bytes = msg.as_bytes();
+
+        if let Ok(AuthMsg(Auth(token))) = bincode::deserialize(bytes) {
+            if let Ok(jwt) = Jwt::from_auth_token(&token, Role::User) {
+                let ws = sender.reunite(receiver).unwrap();
+
+                on_authenticate(ws, jwt, rooms);
+            }
+
+            log::error!("invalid token: {token}");
+        }
+    }
+
+    log::error!("auth message not received");
+}
+
+/// Called when a user has authenticated.
+async fn on_authenticate(ws: WebSocket, jwt: Jwt, rooms: Rooms) {
+    let (sender, mut receiver) = ws.split();
+
+    while let Some(Ok(msg)) = receiver.next().await {
+        match bincode::deserialize(msg.as_bytes()) {
+            Ok(ClientMsg::Join(id_game)) => on_join()
+            Ok(ClientMsg::Create) => {
+
+            },
+            Ok(msg) => {
+                log::error!("unexpected message: {msg:?}");
+                break;
+            }
+            Err(e) => {
+                log::error!("error deserializing message: {e:?}");
+                break;
+            },
+        };
+    }
+
+    log::info!("disconnecting client");
+}
+
+/*
 
 /// The number of seconds before a player is removed for inactivity.
 const TIMEOUT_SECONDS: u64 = 60;
@@ -487,3 +519,34 @@ async fn on_disconnect(id_user: i32, db: Db, live_games: &LiveGamesHandle) {
 
 
 */
+
+enum ClientAuthMsg {
+    Auth(Auth),
+}
+
+enum ClientJoinMsg {
+    Join(i32),
+    Create,
+}
+
+enum ClientPlayMsg {
+    Chat(String),
+    Play(Play),
+    Leave,
+}
+
+enum ServerMsg {
+    Auth(ServerAuthMsg),
+    Joining(ServerJoinMsg),
+    Playing(ServerPlayMsg),
+}
+
+enum ServerJoinMsg {
+    Joined(),
+    JoinErr(),
+}
+
+enum ServerPlayMsg {
+    Chat(PlayerId, String),
+    
+}
