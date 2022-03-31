@@ -1,48 +1,45 @@
-//! Module containing the API endpoints.
-
-use crate::{error::Error, Db, Mailer};
+use crate::{error::Error, fsm::FsmRef, Db, Mailer};
 use api::error::ErrorResponse;
-use scrabble::util::fsm::FastFsm;
-use std::{convert::Infallible, env, sync::Arc};
-use warp::{http::StatusCode, Filter, Rejection, Reply};
+use std::convert::Infallible;
+use warp::{filters::BoxedFilter, hyper::StatusCode, Filter, Rejection, Reply};
 
-mod friends;
-mod games;
-mod leaderboard;
-mod live_games;
-mod users;
+pub mod friends;
+pub mod games;
+pub mod leaderboard;
+// pub mod live;
+pub mod users;
 
-/// Gets a filter for all routes
-pub fn all(
-    db: &Db,
-    mailer: &Mailer,
-    fsm: Arc<FastFsm>,
-) -> impl Filter<Extract = (impl Reply,), Error = Infallible> + Clone {
-    let api_routes = users::all(db, mailer)
-        .or(live_games::all(db, fsm))
-        .or(leaderboard::all(db))
-        .or(friends::all(db))
-        .or(games::all(db));
-    let static_route = warp::fs::dir("static");
-    let index_route = warp::path!()
+/// Gets a filter for all the routes.
+pub fn all(hostname: &str, db: Db, mailer: Mailer, fsm: FsmRef) -> BoxedFilter<(impl Reply,)> {
+    let api = friends::all(&db)
+        .or(games::all(&db))
+        .or(leaderboard::all(&db))
+        // .or(live::all(&db, &fsm))
+        .or(users::all(&db, &mailer));
+    let app = warp::fs::dir("static");
+    let index = warp::path!()
         .and(warp::get())
         .and(warp::fs::file("static/index.html"));
-
-    // load hostname for server.
-    let hostname = env::var("HOSTNAME").expect("`HOSTNAME` env variable");
 
     // /api/{...} -> API routes
     // /{...}     -> Static files (JS, WASM, CSS and HTML)
     // /{...}     -> Index page (if no other routes match and request is GET).
-    let routes = api_routes.or(static_route).or(index_route);
+    let routes = api.or(app).or(index);
 
     // Ensure the hostname is as specified in `.env` file.
-    warp::host::exact(&hostname)
+    warp::host::exact(hostname)
         .and(routes)
         .recover(handle_rejection)
+        .boxed()
 }
 
-/// Handles rejections (errors where all filters fail)
+/// Gets a filter that extracts `T`.
+pub fn with<T: Clone + Send>(data: &T) -> impl Filter<Extract = (T,), Error = Infallible> + Clone {
+    let data = data.clone();
+    warp::any().map(move || data.clone())
+}
+
+/// Handles rejections (errors where all filters fail).
 async fn handle_rejection(rejection: Rejection) -> Result<impl Reply, Infallible> {
     let (status, msg) = if let Some(error) = rejection.find::<Error>() {
         log::error!("rejection: {error:?}");
@@ -57,6 +54,7 @@ async fn handle_rejection(rejection: Rejection) -> Result<impl Reply, Infallible
                 StatusCode::FORBIDDEN,
                 "A recent request was made to reset the password",
             ),
+
             Error::JwtDecoding(_)
             | Error::IncorrectResetSecret
             | Error::IncorrectPassword
@@ -67,6 +65,8 @@ async fn handle_rejection(rejection: Rejection) -> Result<impl Reply, Infallible
             | Error::Bincode(_)
             | Error::Io(_)
             | Error::Smtp(_)
+            | Error::Env(_)
+            | Error::SocketAddr(_)
             | Error::Sqlx(_)
             | Error::Argon2(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error"),
         }

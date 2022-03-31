@@ -1,7 +1,9 @@
 use crate::{
-    auth::{self, authenticated_user, hex, validation, Jwt, Role},
+    auth::{self, hex, validation, Jwt, Role},
+    db::Db,
     error::Error,
-    models, with_db, with_mailer, Db, Mailer,
+    mailer::Mailer,
+    models,
 };
 use api::{
     auth::AuthWrapper,
@@ -12,70 +14,23 @@ use api::{
 };
 use chrono::{Duration, Utc};
 use rand::Rng;
-use warp::{Filter, Rejection, Reply};
+use std::env;
+use warp::{Rejection, Reply};
 
 lazy_static::lazy_static! {
     /// Duration of the password timeout. A password reset link is only
     /// valid for this time, and before it has elapsed a new link cannot
     /// be generated.
-    static ref PASSWORD_TIMEOUT: Duration = Duration::seconds(60);
-}
+    static ref RESET_PWD_TIMEOUT: Duration = {
+        let pwd_timeout = env::var("RESET_PWD_TIMEOUT").expect("`RESET_PWD_TIMEOUT` env variable");
+        let seconds: usize = pwd_timeout.parse().expect("`RESET_PWD_TIMEOUT` in seconds");
 
-/// Filters for the users routes.
-pub fn all(
-    db: &Db,
-    mailer: &Mailer,
-) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone {
-    let login_route = warp::path!("api" / "users" / "login")
-        .and(warp::post())
-        .and(with_db(db))
-        .and(warp::body::json())
-        .and_then(login);
-    let sign_up_route = warp::path!("api" / "users")
-        .and(warp::post())
-        .and(with_db(db))
-        .and(warp::body::json())
-        .and_then(sign_up);
-    let profile_route = warp::path!("api" / "users")
-        .and(warp::get())
-        .and(with_db(db))
-        .and(authenticated_user())
-        .and_then(profile);
-    let delete_route = warp::path!("api" / "users")
-        .and(warp::delete())
-        .and(with_db(db))
-        .and(authenticated_user())
-        .and(warp::body::json())
-        .and_then(delete);
-    let update_route = warp::path!("api" / "users")
-        .and(warp::put())
-        .and(with_db(db))
-        .and(authenticated_user())
-        .and(warp::body::json())
-        .and_then(update);
-    let reset_password_route = warp::path!("api" / "users" / "reset-password")
-        .and(warp::post())
-        .and(with_db(db))
-        .and(with_mailer(mailer))
-        .and(warp::body::json())
-        .and_then(reset_password);
-    let reset_password_with_secret_route = warp::path!("api" / "users" / "reset-password")
-        .and(warp::get())
-        .and(with_db(db))
-        .and(warp::body::json())
-        .and_then(reset_password_with_secret);
-
-    login_route
-        .or(sign_up_route)
-        .or(profile_route)
-        .or(delete_route)
-        .or(update_route)
-        .or(reset_password_route)
-        .or(reset_password_with_secret_route)
+        Duration::seconds(seconds as i64)
+    };
 }
 
 /// POST /api/users/reset-password
-async fn reset_password(
+pub async fn reset_password(
     db: Db,
     mailer: Mailer,
     reset_password: ResetPassword,
@@ -102,7 +57,7 @@ async fn reset_password(
     let password_reset = models::PasswordReset {
         id_user: user.id_user(),
         secret_hex: secret_hex.clone(),
-        valid_until: Utc::now().naive_utc() + *PASSWORD_TIMEOUT,
+        valid_until: Utc::now().naive_utc() + *RESET_PWD_TIMEOUT,
     };
     password_reset.insert(&db).await?;
 
@@ -141,7 +96,7 @@ async fn reset_password(
 }
 
 /// GET /api/users/reset-password
-async fn reset_password_with_secret(
+pub async fn reset_with_secret(
     db: Db,
     with_secret: ResetPasswordWithSecret,
 ) -> Result<impl Reply, Rejection> {
@@ -183,7 +138,7 @@ async fn reset_password_with_secret(
 }
 
 /// POST /api/users/login
-async fn login(db: Db, login: Login) -> Result<impl Reply, Rejection> {
+pub async fn log_in(db: Db, login: Login) -> Result<impl Reply, Rejection> {
     let user = models::User::find_by_username(&db, login.username.trim()).await?;
     let jwt = Jwt::new(user.id_user(), user.role());
 
@@ -198,7 +153,7 @@ async fn login(db: Db, login: Login) -> Result<impl Reply, Rejection> {
 }
 
 /// POST /api/users
-async fn sign_up(db: Db, sign_up: SignUp) -> Result<impl Reply, Rejection> {
+pub async fn sign_up(db: Db, sign_up: SignUp) -> Result<impl Reply, Rejection> {
     validation::validate_password_complexity(&sign_up.password)?;
     validation::validate_username(&sign_up.username)?;
     validation::validate_email(&sign_up.email)?;
@@ -230,7 +185,7 @@ async fn sign_up(db: Db, sign_up: SignUp) -> Result<impl Reply, Rejection> {
 }
 
 /// GET /api/users [+Auth]
-async fn profile(db: Db, jwt: Jwt) -> Result<impl Reply, Rejection> {
+pub async fn profile(db: Db, jwt: Jwt) -> Result<impl Reply, Rejection> {
     let user = models::User::find_by_id(&db, jwt.id_user()).await?;
 
     Ok(warp::reply::json(&AuthWrapper {
@@ -242,7 +197,7 @@ async fn profile(db: Db, jwt: Jwt) -> Result<impl Reply, Rejection> {
 }
 
 /// PUT /api/users [+Auth]
-async fn update(db: Db, jwt: Jwt, update: UpdateAccount) -> Result<impl Reply, Rejection> {
+pub async fn update(db: Db, jwt: Jwt, update: UpdateAccount) -> Result<impl Reply, Rejection> {
     let user = models::User::find_by_id(&db, jwt.id_user()).await?;
     auth::verify(&user.hashed_pass, &update.old_password)?;
 
@@ -275,7 +230,7 @@ async fn update(db: Db, jwt: Jwt, update: UpdateAccount) -> Result<impl Reply, R
 }
 
 /// DELETE /api/users [+Auth]
-async fn delete(db: Db, jwt: Jwt, delete: DeleteAccount) -> Result<impl Reply, Rejection> {
+pub async fn delete(db: Db, jwt: Jwt, delete: DeleteAccount) -> Result<impl Reply, Rejection> {
     let user = models::User::find_by_id(&db, jwt.id_user()).await?;
     auth::verify(&user.hashed_pass, &delete.password)?;
     user.delete(&db).await?;

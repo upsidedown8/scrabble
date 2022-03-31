@@ -1,3 +1,9 @@
+use crate::{auth::Jwt, db::Db, error::Error, models};
+use api::auth::AuthWrapper;
+use warp::{Rejection, Reply};
+
+/*
+
 use crate::{
     auth::{Jwt, Role},
     with_db, Db,
@@ -452,3 +458,7 @@ async fn on_disconnect(id_user: i32, db: Db, live_games: &LiveGamesHandle) {
 
     live_games.write().await.disconnect(id_user, db).await;
 }
+
+
+
+*/

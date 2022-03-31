@@ -1,40 +1,12 @@
-use crate::{
-    auth::{authenticated_user, Jwt},
-    error::Error,
-    with_db, Db,
-};
+use crate::{auth::Jwt, db::Db, error::Error, filters::leaderboard::LeaderboardQuery};
 use api::{
     auth::AuthWrapper,
     routes::leaderboard::{LeaderboardResponse, LeaderboardRow},
 };
-use serde::{Deserialize, Serialize};
-use warp::{Filter, Rejection, Reply};
-
-/// Filters for the leaderboard routes.
-pub fn all(db: &Db) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone {
-    let leaderboard_no_auth_route = warp::path!("api" / "leaderboard")
-        .and(warp::get())
-        .and(with_db(db))
-        .and(warp::query())
-        .and_then(leaderboard);
-    let leaderboard_auth_route = warp::path!("api" / "leaderboard" / "friends")
-        .and(warp::get())
-        .and(with_db(db))
-        .and(authenticated_user())
-        .and_then(friends_leaderboard);
-
-    leaderboard_no_auth_route.or(leaderboard_auth_route)
-}
-
-/// Query parameter for the leaderboard route.
-#[derive(Serialize, Deserialize)]
-struct LeaderboardQuery {
-    limit: usize,
-    offset: usize,
-}
+use warp::{Rejection, Reply};
 
 /// GET /api/leaderboard
-async fn leaderboard(db: Db, query: LeaderboardQuery) -> Result<impl Reply, Rejection> {
+pub async fn overall_leaderboard(db: Db, query: LeaderboardQuery) -> Result<impl Reply, Rejection> {
     let limit = query.limit.clamp(10, 50) as i64;
     let offset = query.offset as i64;
 
@@ -63,7 +35,7 @@ async fn leaderboard(db: Db, query: LeaderboardQuery) -> Result<impl Reply, Reje
 }
 
 /// GET /api/leaderboard/friends [+Auth]
-async fn friends_leaderboard(db: Db, jwt: Jwt) -> Result<impl Reply, Rejection> {
+pub async fn friends_leaderboard(db: Db, jwt: Jwt) -> Result<impl Reply, Rejection> {
     let id_user = jwt.id_user();
     let rows = sqlx::query_file!("sql/leaderboard/friends.sql", id_user)
         .fetch_all(&db)
