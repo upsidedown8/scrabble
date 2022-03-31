@@ -31,19 +31,6 @@ pub struct FastFsm {
     pub(super) terminal_count: usize,
 }
 
-impl FastFsm {
-    /// Gets the number of states
-    pub fn state_count(&self) -> usize {
-        self.states.len()
-    }
-    /// Gets the number of transitions
-    pub fn transition_count(&self) -> usize {
-        self.states
-            .iter()
-            .map(|state| state.transitions.len())
-            .sum()
-    }
-}
 impl From<FsmBuilder> for FastFsm {
     fn from(mut builder: FsmBuilder) -> Self {
         // the initial state (at index 0) should be non-terminal
@@ -136,6 +123,17 @@ impl From<SmallFsm> for FastFsm {
 }
 impl<'a> Fsm<'a> for FastFsm {
     type TransitionsIter = FastFsmTransitions<'a>;
+
+    fn transition_count(&self) -> usize {
+        self.states
+            .iter()
+            .map(|state| state.transitions.len())
+            .sum()
+    }
+
+    fn state_count(&self) -> usize {
+        self.states.len()
+    }
 
     fn transitions(&'a self, StateId(id): StateId) -> Self::TransitionsIter {
         FastFsmTransitions {

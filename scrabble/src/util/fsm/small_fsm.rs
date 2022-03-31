@@ -46,18 +46,10 @@ impl SmallFsm {
         let State(TransitionStartId(start)) = self.states[id];
         let end = match self.states.get(id + 1) {
             Some(&State(TransitionStartId(end))) => end as usize,
-            _ => self.transitions.len(),
+            _ => self.transition_count(),
         };
 
         (start as usize, end)
-    }
-    /// Gets the number of states
-    pub fn state_count(&self) -> usize {
-        self.states.len()
-    }
-    /// Gets the number of transitions
-    pub fn transition_count(&self) -> usize {
-        self.transitions.len()
     }
 }
 impl From<FsmBuilder> for SmallFsm {
@@ -102,6 +94,14 @@ impl From<FastFsm> for SmallFsm {
 impl<'a> Fsm<'a> for SmallFsm {
     type TransitionsIter = FastFsmTransitions<'a>;
 
+    fn transition_count(&self) -> usize {
+        self.transitions.len()
+    }
+
+    fn state_count(&self) -> usize {
+        self.states.len()
+    }
+
     fn transitions(&'a self, state_id: StateId) -> Self::TransitionsIter {
         let (start, end) = self.transition_limits(state_id);
         FastFsmTransitions {
@@ -121,11 +121,10 @@ impl<'a> Fsm<'a> for SmallFsm {
         let mut curr_state = state_id;
 
         for item in seq.into_iter() {
-            let (start, end) = self.transition_limits(curr_state);
-            curr_state = self.transitions[start..end]
-                .iter()
-                .find(|Transition(k, _)| *k == item)
-                .map(|Transition(_, SmallStateId(id))| StateId(*id as usize))?;
+            curr_state = self
+                .transitions(curr_state)
+                .find(|(k, _)| *k == item)
+                .map(|(_, state)| state)?;
         }
 
         Some(curr_state)

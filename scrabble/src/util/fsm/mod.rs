@@ -29,6 +29,10 @@ pub trait Fsm<'a>: From<FsmBuilder> {
     /// An iterator over the transitions from a state.
     type TransitionsIter: Iterator<Item = (Letter, StateId)> + 'a;
 
+    /// Gets the number of transitions.
+    fn transition_count(&self) -> usize;
+    /// Gets the number of states.
+    fn state_count(&self) -> usize;
     /// Gets an iterator over the transitions from a state.
     fn transitions(&'a self, state: StateId) -> Self::TransitionsIter;
     /// Checks whether a state is terminal (ends a valid sequence).
