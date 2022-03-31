@@ -78,7 +78,7 @@ pub async fn reset_password(
 
         <br />
 
-        <a href="{reset_link}&username={username}">
+        <a href="{reset_link}">
             Click here to reset your password.
         </a>
     </p>
