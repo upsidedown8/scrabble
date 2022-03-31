@@ -74,7 +74,7 @@ async fn handle_rejection(rejection: Rejection) -> Result<impl Reply, Infallible
     } else if rejection.is_not_found() {
         log::info!("not found");
         (StatusCode::NOT_FOUND, "Not found")
-    } else if let Some(error) = rejection.find::<BodyDeserializeError>() {
+    } else if rejection.find::<BodyDeserializeError>().is_some() {
         log::info!("body deserialize error");
         (StatusCode::BAD_REQUEST, "Invalid request body")
     } else {
