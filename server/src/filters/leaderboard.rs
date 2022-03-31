@@ -10,8 +10,8 @@ pub fn all(db: &Db) -> BoxedFilter<(impl Reply,)> {
 /// Query parameter for the leaderboard route.
 #[derive(Serialize, Deserialize)]
 pub struct LeaderboardQuery {
-    pub limit: usize,
-    pub offset: usize,
+    pub limit: Option<usize>,
+    pub offset: Option<usize>,
 }
 
 /// The overall leaderboard.

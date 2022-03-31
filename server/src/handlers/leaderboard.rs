@@ -7,8 +7,8 @@ use warp::{Rejection, Reply};
 
 /// GET /api/leaderboard
 pub async fn overall_leaderboard(db: Db, query: LeaderboardQuery) -> Result<impl Reply, Rejection> {
-    let limit = query.limit.clamp(10, 50) as i64;
-    let offset = query.offset as i64;
+    let limit = query.limit.unwrap_or(20).clamp(10, 50) as i64;
+    let offset = query.offset.unwrap_or(0) as i64;
 
     let rows = sqlx::query_file!("sql/leaderboard/overall.sql", limit, offset)
         .fetch_all(&db)
