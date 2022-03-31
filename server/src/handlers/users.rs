@@ -120,7 +120,7 @@ pub async fn reset_with_secret(
 
     // check that the record has not expired
     if pwd_reset.is_expired() {
-        return Err(Error::ResetTimeout.into());
+        return Err(Error::ResetExpired.into());
     }
 
     // compare the secret with the stored value.
@@ -172,7 +172,7 @@ pub async fn sign_up(db: Db, sign_up: SignUp) -> Result<impl Reply, Rejection> {
     validation::validate_password_complexity(&sign_up.password)?;
     validation::validate_username(&sign_up.username)?;
     validation::validate_email(&sign_up.email)?;
-    models::User::check_username_and_email_free(&db, &sign_up.username, &sign_up.email).await?;
+    models::User::check_username_and_email_free(&db, &sign_up.username, &sign_up.email, -1).await?;
 
     let hashed_pass = auth::hash(&sign_up.password);
     let id_user = models::User::insert(
@@ -235,8 +235,13 @@ pub async fn update(db: Db, jwt: Jwt, update: UpdateAccount) -> Result<impl Repl
     }
     validation::validate_username(&updated_user.username)?;
     validation::validate_email(&updated_user.email)?;
-    models::User::check_username_and_email_free(&db, &updated_user.username, &updated_user.email)
-        .await?;
+    models::User::check_username_and_email_free(
+        &db,
+        &updated_user.username,
+        &updated_user.email,
+        updated_user.id_user(),
+    )
+    .await?;
 
     updated_user.update(&db).await?;
 

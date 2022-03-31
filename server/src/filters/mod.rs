@@ -48,13 +48,17 @@ async fn handle_rejection(rejection: Rejection) -> Result<impl Reply, Infallible
         match error {
             Error::InvalidAuthHeader => (StatusCode::BAD_REQUEST, "Invalid auth header"),
             Error::MissingAuthHeader => (StatusCode::NOT_FOUND, "Missing auth header"),
-            Error::UsernameExists => (StatusCode::FORBIDDEN, "Username exists"),
+            Error::UsernameOrEmailExists => (StatusCode::FORBIDDEN, "Username or email exists"),
             Error::InvalidUsername => (StatusCode::FORBIDDEN, "Username is invalid"),
             Error::InvalidPassword => (StatusCode::FORBIDDEN, "Password is too weak"),
             Error::InvalidEmail => (StatusCode::FORBIDDEN, "Email is invalid"),
             Error::ResetTimeout => (
                 StatusCode::FORBIDDEN,
                 "A recent request was made to reset the password",
+            ),
+            Error::ResetExpired => (
+                StatusCode::FORBIDDEN,
+                "The request to reset your password has expired",
             ),
             Error::JwtDecoding(_)
             | Error::IncorrectResetSecret

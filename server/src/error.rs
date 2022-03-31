@@ -76,8 +76,8 @@ pub enum Error {
     JwtEncoding(jsonwebtoken::errors::Error),
     /// Error decoding the JWT.
     JwtDecoding(jsonwebtoken::errors::Error),
-    /// Username already exists.
-    UsernameExists,
+    /// Username or email already exists.
+    UsernameOrEmailExists,
     /// User has insufficient access.
     InsufficientRole,
     /// The request is missing an authorization header.
@@ -98,4 +98,6 @@ pub enum Error {
     /// An incorrect secret or username was provided to the password reset
     /// route.
     IncorrectResetSecret,
+    /// Request to reset password has expired.
+    ResetExpired,
 }

@@ -44,15 +44,25 @@ impl User {
             is_private: self.is_private,
         }
     }
-    /// Returns Ok(()) if `username` is not taken.
-    pub async fn check_username_and_email_free(db: &Db, username: &str, email: &str) -> Result<()> {
-        let count: Option<i64> =
-            sqlx::query_file_scalar!("sql/users/username_or_email_exists.sql", username, email)
-                .fetch_one(db)
-                .await?;
+    /// Returns Ok(()) if `username` and `email` are not taken (for any user
+    /// whose id is different to `id_user`).
+    pub async fn check_username_and_email_free(
+        db: &Db,
+        username: &str,
+        email: &str,
+        id_user: i32,
+    ) -> Result<()> {
+        let count: Option<i64> = sqlx::query_file_scalar!(
+            "sql/users/username_or_email_exists.sql",
+            username,
+            email,
+            id_user
+        )
+        .fetch_one(db)
+        .await?;
         match count == Some(0) {
             true => Ok(()),
-            false => Err(Error::UsernameExists),
+            false => Err(Error::UsernameOrEmailExists),
         }
     }
     /// Finds a user from the user table by id.
