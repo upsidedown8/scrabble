@@ -2,7 +2,7 @@
 
 use crate::error::Result;
 use lettre::{
-    message::{Mailbox, MultiPart, SinglePart},
+    message::{header::ContentType, Mailbox, MultiPart, SinglePart},
     transport::smtp::authentication::Credentials,
     AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor,
 };
@@ -58,7 +58,7 @@ impl Mailer {
                             .header(ContentType::TEXT_HTML)
                             .body(body_html),
                     ),
-            );
+            )?;
 
         self.mailer.send(msg).await?;
 

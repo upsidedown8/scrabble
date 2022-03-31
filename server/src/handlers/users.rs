@@ -68,8 +68,6 @@ pub async fn reset_password(
         r#"
     <style>
         html {{
-            text-align: center;
-            margin: 20%;
             font-family: monospace;
         }}
     </style>
@@ -77,6 +75,8 @@ pub async fn reset_password(
     <p>
         You are receiving this email because a request was made to
         reset the password for an account with username: {username}.
+
+        <br />
 
         <a href="{reset_link}&username={username}">
             Click here to reset your password.
