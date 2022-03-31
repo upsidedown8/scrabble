@@ -26,54 +26,52 @@ pub fn all(
     db: &Db,
     mailer: &Mailer,
 ) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone {
-    let login_route = warp::path("login")
+    let login_route = warp::path!("api" / "users" / "login")
         .and(warp::post())
         .and(with_db(db))
         .and(warp::body::json())
         .and_then(login);
-    let sign_up_route = warp::any()
+    let sign_up_route = warp::path!("api" / "users")
         .and(warp::post())
         .and(with_db(db))
         .and(warp::body::json())
         .and_then(sign_up);
-    let profile_route = warp::any()
+    let profile_route = warp::path!("api" / "users")
         .and(warp::get())
         .and(with_db(db))
         .and(authenticated_user())
         .and_then(profile);
-    let delete_route = warp::any()
+    let delete_route = warp::path!("api" / "users")
         .and(warp::delete())
         .and(with_db(db))
         .and(authenticated_user())
         .and(warp::body::json())
         .and_then(delete);
-    let update_route = warp::any()
+    let update_route = warp::path!("api" / "users")
         .and(warp::put())
         .and(with_db(db))
         .and(authenticated_user())
         .and(warp::body::json())
         .and_then(update);
-    let reset_password_route = warp::path("reset-password")
+    let reset_password_route = warp::path!("api" / "users" / "reset-password")
         .and(warp::post())
         .and(with_db(db))
         .and(with_mailer(mailer))
         .and(warp::body::json())
         .and_then(reset_password);
-    let reset_password_with_secret_route = warp::path("reset-password")
+    let reset_password_with_secret_route = warp::path!("api" / "users" / "reset-password")
         .and(warp::get())
         .and(with_db(db))
         .and(warp::body::json())
         .and_then(reset_password_with_secret);
 
-    let routes = login_route
+    login_route
         .or(sign_up_route)
         .or(profile_route)
         .or(delete_route)
         .or(update_route)
         .or(reset_password_route)
-        .or(reset_password_with_secret_route);
-
-    warp::path("users").and(routes)
+        .or(reset_password_with_secret_route)
 }
 
 /// POST /api/users/reset-password

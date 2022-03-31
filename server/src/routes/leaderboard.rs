@@ -12,20 +12,18 @@ use warp::{Filter, Rejection, Reply};
 
 /// Filters for the leaderboard routes.
 pub fn all(db: &Db) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone {
-    let leaderboard_no_auth_route = warp::any()
+    let leaderboard_no_auth_route = warp::path!("api" / "leaderboard")
         .and(warp::get())
         .and(with_db(db))
         .and(warp::query())
         .and_then(leaderboard);
-    let leaderboard_auth_route = warp::path("friends")
+    let leaderboard_auth_route = warp::path!("api" / "leaderboard" / "friends")
         .and(warp::get())
         .and(with_db(db))
         .and(authenticated_user())
         .and_then(friends_leaderboard);
 
-    let routes = leaderboard_no_auth_route.or(leaderboard_auth_route);
-
-    warp::path("leaderboard").and(routes)
+    leaderboard_no_auth_route.or(leaderboard_auth_route)
 }
 
 /// Query parameter for the leaderboard route.

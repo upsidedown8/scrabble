@@ -14,36 +14,33 @@ use warp::{Filter, Rejection, Reply};
 
 /// The filter for the games route.
 pub fn all(db: &Db) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone {
-    let list_games_route = warp::any()
+    let list_games_route = warp::path!("api" / "games")
         .and(warp::get())
         .and(with_db(db))
         .and(authenticated_user())
         .and_then(list_games);
-    let get_game_route = warp::any()
+    let get_game_route = warp::path!("api" / "games")
         .and(warp::get())
         .and(with_db(db))
         .and(authenticated_user())
         .and(warp::path::param())
         .and_then(get_game);
-    let game_stats_route = warp::any()
+    let game_stats_route = warp::path!("api" / "games" / i32)
         .and(warp::get())
         .and(with_db(db))
         .and(authenticated_user())
-        .and(warp::path::param())
         .and(warp::path("stats"))
         .and_then(game_stats);
-    let overall_stats_route = warp::path("stats")
+    let overall_stats_route = warp::path!("api" / "games" / "stats")
         .and(warp::get())
         .and(with_db(db))
         .and(authenticated_user())
         .and_then(overall_stats);
 
-    let routes = list_games_route
+    list_games_route
         .or(get_game_route)
         .or(game_stats_route)
-        .or(overall_stats_route);
-
-    warp::path("games").and(routes)
+        .or(overall_stats_route)
 }
 
 /// GET /games [+Auth]
@@ -171,7 +168,7 @@ pub async fn get_game(_db: Db, _jwt: Jwt, _id_game: i32) -> Result<impl Reply, R
 }
 
 /// GET /games/{game id}/stats [+Auth]
-pub async fn game_stats(db: Db, jwt: Jwt, id_game: i32) -> Result<impl Reply, Rejection> {
+pub async fn game_stats(id_game: i32, db: Db, jwt: Jwt) -> Result<impl Reply, Rejection> {
     let row = sqlx::query_file!("sql/games/game_stats.sql", jwt.id_user(), id_game)
         .fetch_one(&db)
         .await
