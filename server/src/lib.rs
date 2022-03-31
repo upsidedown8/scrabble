@@ -62,6 +62,7 @@ pub fn with_mailer(
 
 /// Starts the server on the given address.
 pub async fn serve(addr: impl Into<SocketAddr>) -> Result<()> {
+    // load TLS certificate and private key.
     let cert_path = env::var("CERT_PATH").expect("`CERT_PATH` env variable");
     let key_path = env::var("KEY_PATH").expect("`KEY_PATH` env variable");
 
@@ -75,8 +76,6 @@ pub async fn serve(addr: impl Into<SocketAddr>) -> Result<()> {
     // connect to the database.
     let db = connect_db().await?;
 
-    // the api endpoints.
-    let routes = routes::all(&db, &mailer, fsm);
     // CORS settings, which set allowed origins, headers and methods.
     let cors = warp::cors()
         .allow_any_origin()
@@ -90,7 +89,7 @@ pub async fn serve(addr: impl Into<SocketAddr>) -> Result<()> {
         .allow_headers(vec!["authorization", "content-type"]);
 
     // serve on `addr`.
-    warp::serve(routes.with(cors))
+    warp::serve(routes::all(&db, &mailer, fsm).with(cors))
         .tls()
         .cert_path(cert_path)
         .key_path(key_path)
@@ -100,16 +99,15 @@ pub async fn serve(addr: impl Into<SocketAddr>) -> Result<()> {
     Ok(())
 }
 
-/// Connects to the IMAP email server.
+/// Connects to the SMTP email server.
 fn connect_email() -> Result<Mailer> {
-    let imap_server = env::var("IMAP_SERVER").expect("`IMAP_SERVER` env variable");
-    let server_email_addr =
-        env::var("SERVER_EMAIL_ADDR").expect("`SERVER_EMAIL_ADDR` env variable");
-    let server_password = env::var("SERVER_PASSWORD").expect("`SERVER_PASSWORD` env variable");
+    let smtp_server = env::var("EMAIL_SMTP_SERVER").expect("`EMAIL_SMTP_SERVER` env variable");
+    let email_addr = env::var("EMAIL_ADDRESS").expect("`EMAIL_ADDRESS` env variable");
+    let email_pwd = env::var("EMAIL_PASSWORD").expect("`EMAIL_PASSWORD` env variable");
 
-    let from_mailbox = server_email_addr.parse::<Mailbox>()?;
-    let credentials = Credentials::new(server_email_addr, server_password);
-    let mailer = AsyncSmtpTransport::<Tokio1Executor>::relay(&imap_server)?
+    let from_mailbox = email_addr.parse::<Mailbox>()?;
+    let credentials = Credentials::new(email_addr, email_pwd);
+    let mailer = AsyncSmtpTransport::<Tokio1Executor>::relay(&smtp_server)?
         .credentials(credentials)
         .build();
 
