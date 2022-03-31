@@ -2,8 +2,9 @@
 
 use crate::error::Result;
 use lettre::{
-    message::Mailbox, transport::smtp::authentication::Credentials, AsyncSmtpTransport,
-    AsyncTransport, Message, Tokio1Executor,
+    message::{Mailbox, MultiPart, SinglePart},
+    transport::smtp::authentication::Credentials,
+    AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor,
 };
 use std::{env, sync::Arc};
 
@@ -33,13 +34,31 @@ impl Mailer {
         })
     }
     /// Sends an email message.
-    pub async fn send(&self, to: &str, subject: &str, body: String) -> Result<()> {
+    pub async fn send(
+        &self,
+        to: &str,
+        subject: &str,
+        body_html: String,
+        body_plain: String,
+    ) -> Result<()> {
         let from = (*self.from_mailbox).clone();
         let msg = Message::builder()
             .from(from)
             .to(to.parse()?)
             .subject(subject)
-            .body(body)?;
+            .multipart(
+                MultiPart::alternative()
+                    .singlepart(
+                        SinglePart::builder()
+                            .header(ContentType::TEXT_PLAIN)
+                            .body(body_plain),
+                    )
+                    .singlepart(
+                        SinglePart::builder()
+                            .header(ContentType::TEXT_HTML)
+                            .body(body_html),
+                    ),
+            );
 
         self.mailer.send(msg).await?;
 

@@ -59,7 +59,12 @@ pub async fn reset_password(
     password_reset.insert(&db).await?;
 
     // send a reset password email.
-    let body = format!(
+    let reset_link = format!(
+        "https://scrabble.thrgd.uk/reset-password&secret={hex}&username={username}",
+        username = user.username,
+        hex = secret_hex
+    );
+    let body_html = format!(
         r#"
     <style>
         html {{
@@ -73,16 +78,29 @@ pub async fn reset_password(
         You are receiving this email because a request was made to
         reset the password for an account with username: {username}.
 
-        <a href="https://scrabble.thrgd.uk/reset-password&secret={hex}&username={username}">
+        <a href="{reset_link}&username={username}">
             Click here to reset your password.
         </a>
     </p>
     "#,
         username = user.username,
-        hex = secret_hex,
     );
+    let body_plain = format!(
+        "You are receiving this email because a request was made to \
+        reset the password for an account with username: {username}.
+
+        Click to reset your password: {reset_link}
+        ",
+        username = user.username,
+    );
+
     mailer
-        .send(&user.email, "Scrabble AI: Password Reset", body)
+        .send(
+            &user.email,
+            "Scrabble AI: Password Reset",
+            body_html,
+            body_plain,
+        )
         .await?;
 
     // send a 200 OK reply if the operation succeeded.
