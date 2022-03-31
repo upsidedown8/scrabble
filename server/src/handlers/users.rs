@@ -154,7 +154,7 @@ pub async fn sign_up(db: Db, sign_up: SignUp) -> Result<impl Reply, Rejection> {
     validation::validate_password_complexity(&sign_up.password)?;
     validation::validate_username(&sign_up.username)?;
     validation::validate_email(&sign_up.email)?;
-    models::User::check_username_free(&db, &sign_up.username).await?;
+    models::User::check_username_and_email_free(&db, &sign_up.username, &sign_up.email).await?;
 
     let hashed_pass = auth::hash(&sign_up.password);
     let id_user = models::User::insert(
@@ -217,6 +217,8 @@ pub async fn update(db: Db, jwt: Jwt, update: UpdateAccount) -> Result<impl Repl
     }
     validation::validate_username(&updated_user.username)?;
     validation::validate_email(&updated_user.email)?;
+    models::User::check_username_and_email_free(&db, &updated_user.username, &updated_user.email)
+        .await?;
 
     updated_user.update(&db).await?;
 
