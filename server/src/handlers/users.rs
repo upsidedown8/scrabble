@@ -239,7 +239,7 @@ pub async fn update(db: Db, jwt: Jwt, update: UpdateAccount) -> Result<impl Repl
         &db,
         &updated_user.username,
         &updated_user.email,
-        updated_user.id_user(),
+        jwt.id_user(),
     )
     .await?;
 

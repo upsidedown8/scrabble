@@ -24,6 +24,7 @@ pub struct UserProfile {
 /// is sent to the user's email address.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ResetPassword {
+    /// The account username.
     pub username: String,
 }
 
