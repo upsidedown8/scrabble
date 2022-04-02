@@ -7,7 +7,7 @@
 
 use db::Db;
 use error::Result;
-use fsm::FsmRef;
+use fsm::FsmHandle;
 use mailer::Mailer;
 use std::{env, net::SocketAddr};
 use warp::{http::Method, Filter};
@@ -51,7 +51,7 @@ async fn serve(addr: SocketAddr) -> Result<()> {
     // set up database connection, mail connection, and load the fsm.
     let db = db::connect().await?;
     let mailer = Mailer::new_from_env()?;
-    let fsm = FsmRef::new_from_env()?;
+    let fsm = FsmHandle::new_from_env()?;
 
     // CORS settings, which set allowed origins, headers and methods.
     let cors = warp::cors()

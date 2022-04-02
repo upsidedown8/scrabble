@@ -7,8 +7,8 @@ use std::{env, ops::Deref, sync::Arc};
 /// A structure that contains a thread safe immutable reference
 /// to a `scrabble::util::fsm::Fsm` impl.
 #[derive(Clone, Debug)]
-pub struct FsmRef(Arc<FastFsm>);
-impl FsmRef {
+pub struct FsmHandle(Arc<FastFsm>);
+impl FsmHandle {
     /// Loads the Fsm from env variables.
     pub fn new_from_env() -> Result<Self> {
         let fsm_path = env::var("FAST_FSM_BIN").expect("`FAST_FSM_BIN` env variable");
@@ -21,7 +21,7 @@ impl FsmRef {
         Ok(Self(Arc::new(fast_fsm)))
     }
 }
-impl Deref for FsmRef {
+impl Deref for FsmHandle {
     type Target = FastFsm;
 
     fn deref(&self) -> &Self::Target {
