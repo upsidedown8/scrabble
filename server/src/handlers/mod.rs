@@ -15,7 +15,6 @@ pub fn http_redirect(
 ) -> Result<impl Reply, Rejection> {
     // Find the `host`. e.g. example.com.
     let authority = authority.ok_or(Error::MissingAuthority)?;
-    let host = authority.host();
 
     // Find the path and query. e.g. /leaderboard?limit=20&offset=10.
     let path_and_query = full_path.as_str();
