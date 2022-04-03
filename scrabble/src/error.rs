@@ -7,7 +7,7 @@ use std::{error::Error, fmt};
 pub type GameResult<T> = std::result::Result<T, GameError>;
 
 /// The error type for the game module.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum GameError {
     /// The letter bag does not contain enough letters to redraw the requested tiles.
     NotEnoughLetters,
