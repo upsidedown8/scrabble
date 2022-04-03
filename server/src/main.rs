@@ -9,8 +9,8 @@ use db::Db;
 use error::Result;
 use fsm::FsmHandle;
 use mailer::Mailer;
-use std::{env, net::SocketAddr};
-use warp::{http::Method, Filter};
+use std::env;
+use warp::{cors::Cors, http::Method, Filter};
 
 mod auth;
 mod db;
@@ -29,29 +29,32 @@ async fn main() -> Result<()> {
     // load `.env` file.
     dotenv::dotenv().expect("`.env` file to be present");
 
-    // load and parse the socket address.
-    let socket_addr = env::var("SOCKET_ADDRESS")?;
-    let addr = socket_addr.parse()?;
+    // run a HTTP redirect server.
+    let http = tokio::spawn(serve_http());
+    // run an HTTPS server.
+    let https = tokio::spawn(serve_https());
 
-    // run the server.
-    serve(addr).await?;
+    let result;
+    // wait for either of the servers to run in to an error.
+    tokio::select! {
+        r = http => result = r.unwrap(),
+        r = https => result = r.unwrap(),
+    };
 
-    Ok(())
+    result
 }
 
-/// Starts the server on the given address.
-async fn serve(addr: SocketAddr) -> Result<()> {
-    // load TLS certificate and private key.
-    let cert_path = env::var("CERT_PATH")?;
-    let key_path = env::var("KEY_PATH")?;
+/// Builds the CORS request wrapper.
+fn cors(is_https: bool) -> Result<Cors> {
+    // load the domain name.
+    let domain = env::var("DOMAIN")?;
 
-    // load allowed origin.
-    let origin = env::var("ORIGIN")?;
-
-    // set up database connection, mail connection, and load the fsm.
-    let db = db::connect().await?;
-    let mailer = Mailer::new_from_env()?;
-    let fsm = FsmHandle::new_from_env()?;
+    // Only allow origins from the app fqdn.
+    let origin = if is_https {
+        format!("https://{domain}")
+    } else {
+        format!("http://{domain}")
+    };
 
     // CORS settings, which set allowed origins, headers and methods.
     let cors = warp::cors()
@@ -63,17 +66,43 @@ async fn serve(addr: SocketAddr) -> Result<()> {
             Method::DELETE,
             Method::PUT,
         ])
-        .allow_headers(vec!["authorization", "content-type"]);
+        .allow_headers(vec!["authorization", "content-type"])
+        .build();
 
-    // specify the hostname.
-    let hostname = env::var("HOSTNAME")?;
+    Ok(cors)
+}
 
-    // serve on `addr`.
-    warp::serve(filters::all(&hostname, db, mailer, fsm).with(cors))
+/// Starts a server that redirects requests from :80 to :443.
+async fn serve_http() -> Result<()> {
+    let routes = filters::http_redirect().recover(filters::handle_rejection);
+    let cors = cors(false)?;
+
+    warp::serve(routes.with(cors)).run(([0, 0, 0, 0], 80)).await;
+
+    Ok(())
+}
+
+/// Starts a HTTPS server on localhost:443.
+async fn serve_https() -> Result<()> {
+    // load TLS certificate and private key.
+    let cert_path = env::var("CERT_PATH")?;
+    let key_path = env::var("KEY_PATH")?;
+
+    // set up database connection, mail connection, and load the fsm.
+    let db = db::connect().await?;
+    let mailer = Mailer::new_from_env()?;
+    let fsm = FsmHandle::new_from_env()?;
+
+    // handlers for the endpoints.
+    let routes = filters::all(db, mailer, fsm)?.recover(filters::handle_rejection);
+    let cors = cors(true)?;
+
+    // serve on localhost:443.
+    warp::serve(routes.with(cors))
         .tls()
         .cert_path(cert_path)
         .key_path(key_path)
-        .run(addr)
+        .run(([0, 0, 0, 0], 443))
         .await;
 
     Ok(())

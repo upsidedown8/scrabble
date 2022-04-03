@@ -1,7 +1,7 @@
 //! Module for error handling.
 
 /// The library result type.
-pub type Result<T> = std::result::Result<T, Error>;
+pub type Result<T, E = Error> = std::result::Result<T, E>;
 
 impl warp::reject::Reject for Error {}
 
@@ -76,6 +76,8 @@ pub enum Error {
     JwtEncoding(jsonwebtoken::errors::Error),
     /// Error decoding the JWT.
     JwtDecoding(jsonwebtoken::errors::Error),
+    /// Error from `http`.
+    Http(warp::http::Error),
     /// Username or email already exists.
     UsernameOrEmailExists,
     /// User has insufficient access.
@@ -100,6 +102,6 @@ pub enum Error {
     IncorrectResetSecret,
     /// Request to reset password has expired.
     ResetExpired,
-    /// Missing [`AuthMsg`] for websocket.
-    NoAuthMsg,
+    /// The target authority was missing from the request.
+    MissingAuthority,
 }

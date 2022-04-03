@@ -1,6 +1,11 @@
-use crate::{error::Error, fsm::FsmRef, Db, Mailer};
+use crate::{
+    db::Db,
+    error::{Error, Result},
+    fsm::FsmHandle,
+    handlers, Mailer,
+};
 use api::error::ErrorResponse;
-use std::convert::Infallible;
+use std::{convert::Infallible, env};
 use warp::{
     body::BodyDeserializeError, filters::BoxedFilter, hyper::StatusCode, Filter, Rejection, Reply,
 };
@@ -11,28 +16,51 @@ pub mod leaderboard;
 pub mod live;
 pub mod users;
 
-/// Gets a filter for all the routes.
-pub fn all(hostname: &str, db: Db, mailer: Mailer, fsm: FsmRef) -> BoxedFilter<(impl Reply,)> {
-    let api = friends::all(&db)
+/// Gets a filter that servers the API.
+fn api_filter(db: Db, mailer: Mailer, fsm: FsmHandle) -> BoxedFilter<(impl Reply,)> {
+    friends::all(&db)
         .or(games::all(&db))
         .or(leaderboard::all(&db))
         .or(live::all(&db, &fsm))
-        .or(users::all(&db, &mailer));
+        .or(users::all(&db, &mailer))
+        .boxed()
+}
+
+/// Gets a filter that serves the Single Page App.
+fn app_filter() -> BoxedFilter<(impl Reply,)> {
     let app = warp::fs::dir("static");
-    let index = warp::path!()
+    let index = warp::any()
         .and(warp::get())
         .and(warp::fs::file("static/index.html"));
 
-    // /api/{...} -> API routes
-    // /{...}     -> Static files (JS, WASM, CSS and HTML)
-    // /{...}     -> Index page (if no other routes match and request is GET).
-    let routes = api.or(app).or(index);
+    // If none of the API routes matched, prevent the server
+    // from ignoring a 404 and serving the index file.
+    let api_not_found = warp::path("api").and_then(|| async {
+        // The `Ok` type cannot be inferred, so a type that
+        // implements `warp::Reply` must be specified.
+        Result::<&str, _>::Err(warp::reject::not_found())
+    });
 
-    // Ensure the hostname is as specified in `.env` file.
-    warp::host::exact(hostname)
-        .and(routes)
-        .recover(handle_rejection)
+    api_not_found.or(app).or(index).boxed()
+}
+
+/// A filter that redirects HTTP to HTTPS.
+pub fn http_redirect() -> BoxedFilter<(impl Reply,)> {
+    warp::any()
+        .and(warp::host::optional())
+        .and(warp::path::full())
+        .and_then(|authority, full_path| async { handlers::http_redirect(authority, full_path) })
         .boxed()
+}
+
+/// Gets a filter for all the routes.
+pub fn all(db: Db, mailer: Mailer, fsm: FsmHandle) -> Result<BoxedFilter<(impl Reply,)>> {
+    let api = api_filter(db, mailer, fsm);
+    let app = app_filter();
+
+    let host = env::var("DOMAIN")?;
+
+    Ok(warp::host::exact(&host).and(api.or(app)).boxed())
 }
 
 /// Gets a filter that extracts `T`.
@@ -42,10 +70,11 @@ pub fn with<T: Clone + Send>(data: &T) -> impl Filter<Extract = (T,), Error = In
 }
 
 /// Handles rejections (errors where all filters fail).
-async fn handle_rejection(rejection: Rejection) -> Result<impl Reply, Infallible> {
+pub async fn handle_rejection(rejection: Rejection) -> Result<impl Reply, Infallible> {
     let (status, msg) = if let Some(error) = rejection.find::<Error>() {
         log::info!("rejection: {error:?}");
         match error {
+            Error::Http(_) => (StatusCode::BAD_REQUEST, "Bad request"),
             Error::InvalidAuthHeader => (StatusCode::BAD_REQUEST, "Invalid auth header"),
             Error::MissingAuthHeader => (StatusCode::NOT_FOUND, "Missing auth header"),
             Error::UsernameOrEmailExists => (StatusCode::FORBIDDEN, "Username or email exists"),
@@ -74,6 +103,7 @@ async fn handle_rejection(rejection: Rejection) -> Result<impl Reply, Infallible
             | Error::SocketAddr(_)
             | Error::Sqlx(_)
             | Error::Argon2(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error"),
+            Error::MissingAuthority => todo!(),
         }
     } else if rejection.is_not_found() {
         log::info!("not found");
