@@ -44,7 +44,11 @@ async fn authenticated(mut ws: WebSocket, jwt: Jwt, games: GamesHandle) {
             Ok(client_msg) => {
                 match client_msg {
                     ClientMsg::Join(id_game) => join_game(id_game, ws, jwt, games).await,
-                    ClientMsg::Create(count) => create_game(count, ws, jwt, games).await,
+                    ClientMsg::Create {
+                        ai_count,
+                        player_count,
+                        friends_only,
+                    } => create_game(ai_count, player_count, friends_only, ws, jwt, games).await,
                     msg => {
                         log::error!("unexpected message: {msg:?}");
                     }
@@ -76,10 +80,24 @@ async fn join_game(id_game: i32, ws: WebSocket, jwt: Jwt, games: GamesHandle) {
 }
 
 /// Creates a game.
-async fn create_game(count: usize, ws: WebSocket, jwt: Jwt, games: GamesHandle) {
-    // create the game.
+async fn create_game(
+    ai_count: usize,
+    player_count: usize,
+    friends_only: bool,
+    ws: WebSocket,
+    jwt: Jwt,
+    games: GamesHandle,
+) {
     let mut games_write = games.write().await;
-    let game_handle = games_write.create_game(count).await;
+    // provide the user id if the game is set to friends only.
+    let id_user = match friends_only {
+        true => Some(jwt.id_user()),
+        false => None,
+    };
+    // create the game.
+    let game_handle = games_write
+        .create_game(ai_count, player_count, id_user)
+        .await;
     drop(games_write);
 
     playing(ws, jwt, game_handle).await;
@@ -95,7 +113,10 @@ async fn playing(ws: WebSocket, jwt: Jwt, game: GameHandle) {
     // Add the player to the game.
     let mut game = game.lock().await;
     let game_sender = game.sender();
-    game.add_player(id_user, tx);
+    if !game.add_player(id_user, tx) {
+        // stop execution if adding the player failed.
+        return;
+    }
     drop(game);
 
     // Forward messages from `receiver` -> `game_sender`
@@ -127,7 +148,9 @@ async fn playing(ws: WebSocket, jwt: Jwt, game: GameHandle) {
     }
 
     // Ensure that both async tasks complete.
-    join_handle.await;
+    if let Err(e) = join_handle.await {
+        log::error!("failed to join receiver task: {e:?}");
+    }
 
     log::info!("user disconnecting: {id_user}");
 }
