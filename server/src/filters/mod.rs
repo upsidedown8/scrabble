@@ -35,10 +35,14 @@ fn app_filter() -> BoxedFilter<(impl Reply,)> {
 
     // If none of the API routes matched, prevent the server
     // from ignoring a 404 and serving the index file.
-    let api_not_found = warp::path("api").and_then(|| async {
-        // The `Ok` type cannot be inferred, so a type that
-        // implements `warp::Reply` must be specified.
-        Result::<&str, _>::Err(warp::reject::not_found())
+    let api_not_found = warp::path("api").map(|| {
+        warp::reply::with_status(
+            warp::reply::json(&ErrorResponse {
+                status: String::from("Not found"),
+                msg: StatusCode::NOT_FOUND.to_string(),
+            }),
+            StatusCode::NOT_FOUND,
+        )
     });
 
     api_not_found.or(app).or(index).boxed()
