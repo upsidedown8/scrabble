@@ -66,4 +66,8 @@ impl Grid {
             _ => unreachable!(),
         }
     }
+    /// Gets a reference to the tiles array.
+    pub fn tiles(&self) -> &[Option<Tile>] {
+        &self.tiles
+    }
 }
