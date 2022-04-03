@@ -21,4 +21,9 @@ pub enum ClientMsg {
 pub enum ServerMsg {
     /// A chat message.
     Chat(i32, String),
+    /// An error occured.
+    Error(Error),
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+pub enum Error {}
