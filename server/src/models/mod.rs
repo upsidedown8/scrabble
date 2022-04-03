@@ -13,7 +13,7 @@ pub use friend_request::FriendRequest;
 pub use game::Game;
 pub use password_reset::PasswordReset;
 pub use play::Play;
-pub use player::Player;
+pub use player::{AiDifficulty, Player};
 pub use tile::Tile;
 pub use user::User;
 pub use word::Word;
