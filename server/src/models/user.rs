@@ -81,14 +81,6 @@ impl User {
                 .await?,
         )
     }
-    /// Finds a user by email.
-    pub async fn find_by_email(db: &Db, email: &str) -> Result<Self> {
-        Ok(
-            sqlx::query_file_as!(User, "sql/users/find_by_email.sql", email)
-                .fetch_one(db)
-                .await?,
-        )
-    }
     /// Inserts the record into the database.
     pub async fn insert(
         db: &Db,
