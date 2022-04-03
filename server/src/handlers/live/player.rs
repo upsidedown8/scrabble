@@ -1,7 +1,6 @@
 use api::routes::live::ServerMsg;
 use scrabble::ai::Ai;
 use tokio::sync::mpsc;
-use warp::ws::Message;
 
 /// Either an AI player or a connected user.
 #[derive(Debug)]
@@ -13,16 +12,13 @@ pub enum Player {
     /// A connected player contains a sender which can be used
     /// to directly send a message from the server to the client
     /// over a websocket.
-    Human(Option<mpsc::UnboundedSender<Message>>),
+    Human(Option<mpsc::UnboundedSender<ServerMsg>>),
 }
 impl Player {
     /// Attempts to send a message to a connected client.
-    pub async fn send_msg(&self, msg: &ServerMsg) {
+    pub async fn send_msg(&self, msg: ServerMsg) {
         if let Player::Human(Some(tx)) = &self {
             log::info!("sending message: {msg:?}");
-            // Serialization should never fail.
-            let bytes = bincode::serialize(msg).unwrap();
-            let msg = Message::binary(bytes);
 
             // Attempt to send the message.
             if let Err(e) = tx.send(msg) {

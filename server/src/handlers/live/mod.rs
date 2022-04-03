@@ -1,35 +1,27 @@
-use self::{room::RoomMsg, rooms::RoomsHandle};
-use crate::{
-    auth::{Jwt, Role},
-    db::Db,
-    fsm::FsmHandle,
-    handlers::live::room::Room,
+use self::{
+    game::{GameHandle, GameMsg},
+    games::GamesHandle,
 };
+use crate::auth::{Jwt, Role};
 use api::{auth::Auth, routes::live::ClientMsg};
-use futures::{stream::SplitSink, StreamExt};
+use futures::{SinkExt, StreamExt};
 use tokio::sync::mpsc;
-use tokio_stream::wrappers::UnboundedReceiverStream;
 use warp::ws::{Message, WebSocket};
 
+pub mod game;
+pub mod games;
 pub mod player;
-pub mod room;
-pub mod rooms;
 
 /// WSS /api/live
-pub async fn connect(ws: WebSocket, db: Db, fsm: FsmHandle, rooms: RoomsHandle) {
-    // split socket into sender and reciever.
-    let (sender, mut receiver) = ws.split();
-
+pub async fn connected(mut ws: WebSocket, games: GamesHandle) {
     // listen to `receiver` for an `AuthMsg`.
-    if let Some(Ok(msg)) = receiver.next().await {
+    if let Some(Ok(msg)) = ws.next().await {
         // deserialize the message.
         let bytes = msg.as_bytes();
 
         if let Ok(ClientMsg::Auth(Auth(token))) = bincode::deserialize(bytes) {
             if let Ok(jwt) = Jwt::from_auth_token(&token, Role::User) {
-                let ws = sender.reunite(receiver).unwrap();
-
-                authenticated(ws, jwt, rooms).await;
+                authenticated(ws, jwt, games).await;
             } else {
                 log::error!("invalid token: {token}");
             }
@@ -44,68 +36,98 @@ pub async fn connect(ws: WebSocket, db: Db, fsm: FsmHandle, rooms: RoomsHandle) 
 }
 
 /// Called when a user has authenticated.
-async fn authenticated(ws: WebSocket, jwt: Jwt, rooms: RoomsHandle) {
+async fn authenticated(mut ws: WebSocket, jwt: Jwt, games: GamesHandle) {
     let id_user = jwt.id_user();
-    let (sender, receiver) = ws.split();
 
-    // while let Some(Ok(msg)) = receiver.next().await {
-    //     // Listen for either a `Join` or `Create` message from the user,
-    //     // then add them to a game.
-    //     let room_sender = match bincode::deserialize(msg.as_bytes()) {
-    //         // Player wants to jon a game.
-    //         Ok(ClientMsg::Join(id_room)) => {
-    //             // obtain a mutable reference to the room.
-    //             let rooms_handle = rooms.read().await.handle(id_room);
-    //             let room_handle = rooms_handle.lock().await;
-
-    //             // add the player to the room.
-    //             room_handle.add_player(id_user, sender.clone());
-    //             room_handle.sender()
-    //         }
-    //         // Player wants to create a game.
-    //         Ok(ClientMsg::Create(count)) => {
-    //             // create a game and add the first player.
-    //             let id_room = Room::new_with_player(id_user, sender.clone(), count);
-    //             // add the room to the list of rooms.
-    //             let rooms_handle = rooms.write().await.insert(id_room);
-    //             room.sender()
-    //         }
-    //         // No other messages are allowed at this point.
-    //         Ok(msg) => {
-    //             log::error!("unexpected message: {msg:?}");
-    //             break;
-    //         }
-    //         Err(e) => {
-    //             log::error!("error deserializing message: {e:?}");
-    //             break;
-    //         }
-    //     };
-
-    //     // forward messages to the room.
-    //     forward_messages(id_user, &mut receiver, &room_sender).await;
-    // }
+    if let Some(Ok(msg)) = ws.next().await {
+        match bincode::deserialize(msg.as_bytes()) {
+            Ok(client_msg) => {
+                match client_msg {
+                    ClientMsg::Join(id_game) => join_game(id_game, ws, jwt, games).await,
+                    ClientMsg::Create(count) => create_game(count, ws, jwt, games).await,
+                    msg => {
+                        log::error!("unexpected message: {msg:?}");
+                    }
+                };
+            }
+            Err(e) => {
+                log::error!("deserialize error: {e:?}");
+            }
+        }
+    }
 
     log::info!("disconnecting client: id_user={id_user}");
 }
 
-// /// Forwards received messages from the client to the server.
-// async fn forward_messages(
-//     id_user: i32,
-//     from: &mut SplitSink<WebSocket, Message>,
-//     to: &mpsc::UnboundedSender<RoomMsg>,
-// ) {
-//     while let Some(msg) = from.next().await {
-//         match bincode::deserialize(msg.as_bytes()) {
-//             Ok(msg) => {
-//                 let room_msg = RoomMsg::new(id_user, msg);
+/// Joins a game.
+async fn join_game(id_game: i32, ws: WebSocket, jwt: Jwt, games: GamesHandle) {
+    // attempt to get the game by id.
+    let games_read = games.read().await;
+    let game = games_read.get_game(id_game);
+    drop(games_read);
 
-//                 if let Err(e) = to.send(room_msg) {
-//                     log::error!("failed to send message to room: {e:?}");
-//                 }
-//             }
-//             Err(e) => {
-//                 log::error!("error deserializing message: {e:?}");
-//             }
-//         }
-//     }
-// }
+    match game {
+        // if the game exists, call `playing`.
+        Some(game_handle) => playing(ws, jwt, game_handle).await,
+        None => {
+            log::error!("game not found: {id_game}");
+        }
+    }
+}
+
+/// Creates a game.
+async fn create_game(count: usize, ws: WebSocket, jwt: Jwt, games: GamesHandle) {
+    // create the game.
+    let mut games_write = games.write().await;
+    let game_handle = games_write.create_game(count).await;
+    drop(games_write);
+
+    playing(ws, jwt, game_handle).await;
+}
+
+/// Forwards messages from the user to the game, and from the
+/// game to the user, until the user disconnects.
+async fn playing(ws: WebSocket, jwt: Jwt, game: GameHandle) {
+    let (mut sender, mut receiver) = ws.split();
+    let (tx, mut rx) = mpsc::unbounded_channel();
+    let id_user = jwt.id_user();
+
+    // Add the player to the game.
+    let mut game = game.lock().await;
+    let game_sender = game.sender();
+    game.add_player(id_user, tx);
+    drop(game);
+
+    // Forward messages from `receiver` -> `game_sender`
+    // (Messages from client to the game).
+    let join_handle = tokio::spawn(async move {
+        while let Some(msg) = receiver.next().await {
+            match msg {
+                Ok(msg) => match bincode::deserialize(msg.as_bytes()) {
+                    Ok(msg) => {
+                        let msg = GameMsg::new(id_user, msg);
+                        game_sender.send(msg).unwrap()
+                    }
+                    Err(e) => log::error!("failed to deserialize: {e:?}"),
+                },
+                Err(e) => log::error!("error receiving message: {e:?}"),
+            }
+        }
+    });
+
+    // Forward messages from `rx` -> `sender`
+    // (Messages from game to the client)
+    while let Some(msg) = rx.recv().await {
+        let bytes = bincode::serialize(&msg).expect("failed to serialize message");
+        let msg = Message::binary(bytes);
+
+        if let Err(e) = sender.send(msg).await {
+            log::error!("failed to send message: {e:?}");
+        }
+    }
+
+    // Ensure that both async tasks complete.
+    join_handle.await;
+
+    log::info!("user disconnecting: {id_user}");
+}
