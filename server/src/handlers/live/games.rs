@@ -45,8 +45,14 @@ impl Games {
         self.db.clone()
     }
     /// Inserts a game into the list of games.
-    pub async fn create_game(&mut self, count: usize) -> GameHandle {
-        let (id_game, game_handle) = GameHandle::create(self.db(), self.fsm()).await;
+    pub async fn create_game(
+        &mut self,
+        ai_count: usize,
+        player_count: usize,
+        id_user: Option<i32>,
+    ) -> GameHandle {
+        let (id_game, game_handle) =
+            GameHandle::create(self.db(), self.fsm(), ai_count, player_count, id_user).await;
         self.games.insert(id_game, game_handle.clone());
         game_handle
     }
