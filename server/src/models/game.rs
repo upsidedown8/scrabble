@@ -1,5 +1,5 @@
 use crate::{error::Result, Db};
-use chrono::NaiveDateTime;
+use chrono::{NaiveDateTime, Utc};
 
 /// A record in `tbl_game`.
 #[derive(Debug)]
@@ -23,5 +23,20 @@ impl Game {
                 .fetch_one(db)
                 .await?;
         Ok(game)
+    }
+    /// Inserts the record into the database, returning the id.
+    pub async fn insert(db: &Db) -> Result<i32> {
+        let start_time = Some(Utc::now().naive_utc());
+
+        let id_game = sqlx::query_file_scalar!(
+            "sql/live/insert_game.sql",
+            start_time,
+            Option::<NaiveDateTime>::None, // end_time
+            false,                         // is_over
+        )
+        .fetch_one(db)
+        .await?;
+
+        Ok(id_game)
     }
 }
