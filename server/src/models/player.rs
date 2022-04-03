@@ -1,4 +1,5 @@
-use std::{convert::Infallible, str::FromStr};
+use crate::{db::Db, error::Result};
+use std::{convert::Infallible, fmt, str::FromStr};
 
 /// A record in `tbl_friend_request`.
 #[derive(Debug, Clone)]
@@ -12,10 +13,21 @@ pub struct Player {
     /// Difficulty setting of the ai (easy | medium | hard). Only set
     /// if `id_user` is not set.
     pub ai_difficulty: Option<AiDifficulty>,
-    /// The initial letters on the player's rack.
-    pub initial_rack: String,
     /// Whether the player won the game (may be null).
     pub is_winner: Option<bool>,
+}
+
+impl Player {
+    /// Inserts an Ai player, returning the id.
+    pub async fn insert_ai(db: &Db, id_game: i32, ai_difficulty: AiDifficulty) -> Result<i32> {
+        let ai_difficulty = ai_difficulty.to_string();
+
+        let id_player =
+            sqlx::query_file_scalar!("sql/live/insert_player.sql", id_game, Some(ai_difficulty))
+                .fetch_one(db)
+                .await?;
+        Ok(id_player)
+    }
 }
 
 /// Gets the difficult setting of the ai player.
@@ -26,6 +38,15 @@ pub enum AiDifficulty {
     Hard,
 }
 
+impl fmt::Display for AiDifficulty {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            AiDifficulty::Easy => write!(f, "easy"),
+            AiDifficulty::Medium => write!(f, "medium"),
+            AiDifficulty::Hard => write!(f, "hard"),
+        }
+    }
+}
 impl FromStr for AiDifficulty {
     type Err = Infallible;
 
