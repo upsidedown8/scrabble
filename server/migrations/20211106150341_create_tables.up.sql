@@ -30,7 +30,6 @@ CREATE TABLE tbl_player(
   id_game SERIAL NOT NULL,
   id_user SERIAL,
   ai_difficulty TEXT,
-  initial_rack TEXT NOT NULL,
   is_winner BOOLEAN,
   PRIMARY KEY (id_player),
   FOREIGN KEY (id_game) REFERENCES tbl_game(id_game),
@@ -47,7 +46,11 @@ CREATE TABLE tbl_play(
   letters_added VARCHAR(7) NOT NULL,
   PRIMARY KEY (id_play),
   FOREIGN KEY (id_player) REFERENCES tbl_player (id_player),
-  CONSTRAINT valid_added_count CHECK(LENGTH(letters_added) <= 7)
+  CONSTRAINT valid_added_count CHECK(LENGTH(letters_added) <= 7),
+  CONSTRAINT valid_removed_count CHECK(
+    LENGTH(letters_removed) >= LENGTH(letters_added)
+    AND LENGTH(letters_removed) <= 7
+  )
 );
 CREATE TABLE tbl_tile(
   id_play SERIAL,
