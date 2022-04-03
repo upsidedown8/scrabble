@@ -125,7 +125,9 @@ async fn create_game(
             .await;
         drop(games_write);
 
-        playing(ws, jwt, game_handle).await;
+        if let Some(game_handle) = game_handle {
+            playing(ws, jwt, game_handle).await;
+        }
     }
 }
 

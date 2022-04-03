@@ -50,11 +50,15 @@ impl Games {
         ai_count: usize,
         player_count: usize,
         id_user: Option<i32>,
-    ) -> GameHandle {
-        let (id_game, game_handle) =
-            GameHandle::create(self.db(), self.fsm(), ai_count, player_count, id_user).await;
-        self.games.insert(id_game, game_handle.clone());
-        game_handle
+    ) -> Option<GameHandle> {
+        if let Some((id_game, game_handle)) =
+            GameHandle::create(self.db(), self.fsm(), ai_count, player_count, id_user).await
+        {
+            self.games.insert(id_game, game_handle.clone());
+            Some(game_handle)
+        } else {
+            None
+        }
     }
     /// Gets a reference to a game.
     pub fn get_game(&self, id_game: i32) -> Option<GameHandle> {
