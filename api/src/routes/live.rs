@@ -1,5 +1,7 @@
 //! API types for live games.
 
+use std::collections::HashMap;
+
 use crate::auth::Auth;
 use scrabble::{
     error::GameError,
@@ -47,6 +49,8 @@ pub enum ServerMsg {
         letter_bag_len: usize,
         /// The next player. (None if the game is over).
         next: Option<Player>,
+        /// The current scores.
+        scores: HashMap<Player, usize>,
     },
     /// The user has joined a game.
     Joined {
@@ -60,6 +64,8 @@ pub enum ServerMsg {
         tiles: Vec<Option<Tile>>,
         /// Your rack tiles.
         rack: Vec<Tile>,
+        /// The current scores.
+        scores: HashMap<Player, usize>,
     },
     /// The player has timed out so will disconnect.
     Timeout(Player),
@@ -74,7 +80,7 @@ pub enum ServerMsg {
 }
 
 /// A member of a game.
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Hash, PartialEq, Eq)]
 pub struct Player {
     /// The Id of the player.
     pub id_player: i32,
