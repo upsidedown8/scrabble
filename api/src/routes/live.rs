@@ -56,6 +56,10 @@ pub enum ServerMsg {
         id_player: i32,
         /// The players in the game.
         players: Vec<Player>,
+        /// The tile positions.
+        tiles: Vec<Option<Tile>>,
+        /// Your rack tiles.
+        rack: Vec<Tile>,
     },
     /// The player has timed out so will disconnect.
     Timeout(Player),
@@ -85,4 +89,8 @@ pub enum LiveError {
     Play(GameError),
     /// Not your turn.
     NotYourTurn,
+    /// Cannot create a game containing only Ai players.
+    ZeroPlayers,
+    /// Must be between 2 and 4 players per game.
+    IllegalPlayerCount,
 }

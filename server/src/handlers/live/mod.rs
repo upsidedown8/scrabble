@@ -3,7 +3,10 @@ use self::{
     games::GamesHandle,
 };
 use crate::auth::{Jwt, Role};
-use api::{auth::Auth, routes::live::ClientMsg};
+use api::{
+    auth::Auth,
+    routes::live::{ClientMsg, LiveError, ServerMsg},
+};
 use futures::{SinkExt, StreamExt};
 use tokio::sync::mpsc;
 use warp::ws::{Message, WebSocket};
@@ -84,23 +87,46 @@ async fn create_game(
     ai_count: usize,
     player_count: usize,
     friends_only: bool,
-    ws: WebSocket,
+    mut ws: WebSocket,
     jwt: Jwt,
     games: GamesHandle,
 ) {
-    let mut games_write = games.write().await;
-    // provide the user id if the game is set to friends only.
-    let id_user = match friends_only {
-        true => Some(jwt.id_user()),
-        false => None,
-    };
-    // create the game.
-    let game_handle = games_write
-        .create_game(ai_count, player_count, id_user)
-        .await;
-    drop(games_write);
+    let count = player_count + ai_count;
 
-    playing(ws, jwt, game_handle).await;
+    // send an error if there are no players.
+    if player_count == 0 {
+        let msg = ServerMsg::Error(LiveError::ZeroPlayers);
+        let msg = Message::binary(bincode::serialize(&msg).unwrap());
+
+        if let Err(e) = ws.send(msg).await {
+            log::error!("failed to send message: {e:?}");
+        }
+    }
+    // send an error for too few or too many players.
+    else if !(2..=4).contains(&count) {
+        let msg = ServerMsg::Error(LiveError::IllegalPlayerCount);
+        let msg = Message::binary(bincode::serialize(&msg).unwrap());
+
+        if let Err(e) = ws.send(msg).await {
+            log::error!("failed to send message: {e:?}");
+        }
+    }
+    // otherwise create the game.
+    else {
+        let mut games_write = games.write().await;
+        // provide the user id if the game is set to friends only.
+        let id_user = match friends_only {
+            true => Some(jwt.id_user()),
+            false => None,
+        };
+        // create the game.
+        let game_handle = games_write
+            .create_game(ai_count, player_count, id_user)
+            .await;
+        drop(games_write);
+
+        playing(ws, jwt, game_handle).await;
+    }
 }
 
 /// Forwards messages from the user to the game, and from the
@@ -113,7 +139,7 @@ async fn playing(ws: WebSocket, jwt: Jwt, game: GameHandle) {
     // Add the player to the game.
     let mut game = game.lock().await;
     let game_sender = game.sender();
-    if !game.add_player(id_user, tx) {
+    if !game.add_player(id_user, tx).await {
         // stop execution if adding the player failed.
         return;
     }
