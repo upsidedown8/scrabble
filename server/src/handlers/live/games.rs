@@ -8,9 +8,11 @@ pub struct GamesHandle(Arc<RwLock<Games>>);
 impl GamesHandle {
     /// Creates a new `GamesHandle`.
     pub fn new(db: &Db, fsm: &FsmHandle) -> Self {
-        let games = Games::new(db, fsm);
-
-        GamesHandle(Arc::new(RwLock::new(games)))
+        GamesHandle(Arc::new(RwLock::new(Games {
+            games: HashMap::default(),
+            fsm: fsm.clone(),
+            db: db.clone(),
+        })))
     }
 }
 impl Deref for GamesHandle {
@@ -28,14 +30,6 @@ pub struct Games {
     db: Db,
 }
 impl Games {
-    /// Creates a new list of games.
-    pub fn new(db: &Db, fsm: &FsmHandle) -> Self {
-        Self {
-            games: HashMap::new(),
-            fsm: fsm.clone(),
-            db: db.clone(),
-        }
-    }
     /// Gets a reference to the Fsm.
     pub fn fsm(&self) -> FsmHandle {
         self.fsm.clone()
@@ -44,24 +38,26 @@ impl Games {
     pub fn db(&self) -> Db {
         self.db.clone()
     }
+    /// Gets a reference to a game.
+    pub fn get(&self, id_game: i32) -> Option<GameHandle> {
+        self.games.get(&id_game).cloned()
+    }
     /// Inserts a game into the list of games.
-    pub async fn create_game(
+    pub async fn insert(
         &mut self,
         ai_count: usize,
         player_count: usize,
-        id_user: Option<i32>,
+        id_owner: Option<i32>,
     ) -> Option<GameHandle> {
-        if let Some((id_game, game_handle)) =
-            GameHandle::create(self.db(), self.fsm(), ai_count, player_count, id_user).await
-        {
+        let db = self.db();
+        let fsm = self.fsm();
+        let created = GameHandle::create(db, fsm, ai_count, player_count, id_owner).await;
+
+        if let Some((id_game, game_handle)) = created {
             self.games.insert(id_game, game_handle.clone());
             Some(game_handle)
         } else {
             None
         }
-    }
-    /// Gets a reference to a game.
-    pub fn get_game(&self, id_game: i32) -> Option<GameHandle> {
-        self.games.get(&id_game).cloned()
     }
 }
