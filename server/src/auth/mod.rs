@@ -22,12 +22,6 @@ pub fn authenticated_user() -> impl Filter<Extract = (Jwt,), Error = Rejection> 
 }
 
 /// Filter which checks whether an auth token is present, valid, and
-/// contains the admin role.
-pub fn authenticated_admin() -> impl Filter<Extract = (Jwt,), Error = Rejection> + Copy {
-    auth_validation(Role::Admin)
-}
-
-/// Filter which checks whether an auth token is present, valid, and
 /// contains the specified role.
 fn auth_validation(role: Role) -> impl Filter<Extract = (Jwt,), Error = Rejection> + Copy {
     warp::header::headers_cloned()
