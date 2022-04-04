@@ -131,73 +131,66 @@ impl Game {
     pub fn sender(&self) -> mpsc::UnboundedSender<GameMsg> {
         self.sender.clone()
     }
+
     /// Attempts to add a player to the game. Return value indicates
     /// success.
     pub async fn add_player(&mut self, id_user: i32, tx: mpsc::UnboundedSender<ServerMsg>) -> bool {
         let id_game = self.id_game();
 
+        // first check whether the user is in the game but
+        // has disconnected.
         for player_num in self.game.player_nums() {
-            match self.slots.entry(player_num) {
-                // If the slot is occupied, check whether a player has
-                // disconnected.
-                Entry::Occupied(mut e) => {
-                    let slot = e.get_mut();
+            if let Entry::Occupied(mut e) = self.slots.entry(player_num) {
+                let slot = e.get_mut();
 
-                    // check whether the slot contains a player with the same
-                    // user id.
-                    if Some(id_user) == slot.id_user() {
-                        // update the `tx` field of the user.
-                        slot.set_sender(tx);
+                // check whether the slot contains a player with the same
+                // user id.
+                if Some(id_user) == slot.id_user() {
+                    // update the `tx` field of the user.
+                    slot.set_sender(tx);
 
-                        // since the user was previously added, no database operation
-                        // is required.
-                    }
+                    // since the user was previously added, no database operation
+                    // is required.
+
+                    // Notify the players.
+                    self.send_join_msg(player_num);
+                    return true;
                 }
-                // If the slot is vacant, add the player.
-                Entry::Vacant(e) => {
-                    let id_owner = self.id_owner;
-                    // add a player record in the database if the user is
-                    // a friend of `self.id_owner` (or `self.id_owner` is
-                    // None).
-                    match models::Player::insert_user(&self.db, id_game, id_user, id_owner).await {
-                        Ok((id_player, username)) => {
-                            // Insert the player.
-                            e.insert(Slot {
-                                id_player,
-                                game_player: GamePlayer::User {
-                                    id_user,
-                                    username,
-                                    sender: Some(tx),
-                                },
-                            });
-                        }
-                        Err(e) => {
-                            log::error!("failed to insert user: {e:?}");
+            }
+        }
 
-                            // exit the loop.
-                            break;
-                        }
+        // then try adding the user to a vacant position.
+        for player_num in self.game.player_nums() {
+            // If the slot is vacant, add the player.
+            if let Entry::Vacant(e) = self.slots.entry(player_num) {
+                let id_owner = self.id_owner;
+                // add a player record in the database if the user is
+                // a friend of `self.id_owner` (or `self.id_owner` is
+                // None).
+                match models::Player::insert_user(&self.db, id_game, id_user, id_owner).await {
+                    Ok((id_player, username)) => {
+                        // Insert the player.
+                        e.insert(Slot {
+                            id_player,
+                            game_player: GamePlayer::User {
+                                id_user,
+                                username,
+                                sender: Some(tx),
+                            },
+                        });
+
+                        // Notify the players.
+                        self.send_join_msg(player_num);
+                        return true;
+                    }
+                    Err(e) => {
+                        log::error!("failed to insert user: {e:?}");
+
+                        // exit the loop.
+                        break;
                     }
                 }
             }
-
-            // send a join game message.
-            let slot = &self.slots[&player_num];
-            slot.send_msg(ServerMsg::Joined {
-                id_game: self.id_game(),
-                id_player: slot.id_player(),
-                players: self.api_players(),
-                tiles: self.api_tiles(),
-                rack: self.api_rack(player_num),
-                scores: self.api_scores(),
-                next: self.api_next(),
-            });
-
-            // send a message to update the players.
-            self.send_all(ServerMsg::Players(self.api_players()));
-
-            // The operation succeeded.
-            return true;
         }
 
         // send a message saying that joining failed.
@@ -207,6 +200,25 @@ impl Game {
 
         false
     }
+    /// Sends a join message to the player that joined and notifies
+    /// all other players in the game.
+    fn send_join_msg(&self, player_num: PlayerNum) {
+        // send a join game message.
+        let slot = &self.slots[&player_num];
+        slot.send_msg(ServerMsg::Joined {
+            id_game: self.id_game(),
+            id_player: slot.id_player(),
+            players: self.api_players(),
+            tiles: self.api_tiles(),
+            rack: self.api_rack(player_num),
+            scores: self.api_scores(),
+            next: self.api_next(),
+        });
+
+        // send a message to update the players.
+        self.send_all(ServerMsg::Players(self.api_players()));
+    }
+
     /// Called when a message is received from a user.
     async fn on_msg(&mut self, msg: GameMsg, game_handle: GameHandle) {
         let GameMsg { msg, id_user } = msg;
@@ -221,11 +233,10 @@ impl Game {
             _ => log::error!("unexpected message: {msg:?}"),
         }
     }
-
     /// Called when a chat message is received.
     fn on_chat(&self, id_user: i32, chat: String) {
         if let Some(player_num) = self.id_user_to_player_num(id_user) {
-            let slot = self.slots[&player_num];
+            let slot = &self.slots[&player_num];
             let player = slot.player();
 
             slot.send_msg(ServerMsg::Chat(player, chat));
@@ -234,13 +245,12 @@ impl Game {
     /// Called when a disconnect message is received.
     fn on_disconnect(&mut self, id_user: i32) {
         if let Some(player_num) = self.id_user_to_player_num(id_user) {
-            self.slots[&player_num].disconnect();
+            self.slots.get_mut(&player_num).unwrap().disconnect();
 
             // send a message containing the new players.
             self.send_all(ServerMsg::Players(self.api_players()));
         }
     }
-
     /// Called when a play message is received.
     async fn on_play(&mut self, id_user: i32, play: Play, game_handle: GameHandle) {
         let to_play = self.game.to_play();
@@ -262,7 +272,7 @@ impl Game {
         // attempt to make the play.
         if self.try_play(play, player_num).await {
             // make plays for any ai players.
-            self.make_ai_plays();
+            self.make_ai_plays().await;
 
             match self.game.status() {
                 // start a move timer if the game is ongoing.
@@ -343,7 +353,7 @@ impl Game {
     /// Sends a message to all users.
     fn send_all(&self, msg: ServerMsg) {
         for slot in self.slots.values() {
-            slot.send_msg(msg);
+            slot.send_msg(msg.clone());
         }
     }
 
@@ -471,11 +481,13 @@ impl Slot {
 
     /// Sends a message to the user if they are connected.
     pub fn send_msg(&self, msg: ServerMsg) {
-        if let GamePlayer::User { sender, .. } = self.game_player {
-            if let Some(sender) = sender {
-                if let Err(e) = sender.send(msg) {
-                    log::error!("failed to send message: {e:?}");
-                }
+        if let GamePlayer::User {
+            sender: Some(sender),
+            ..
+        } = &self.game_player
+        {
+            if let Err(e) = sender.send(msg) {
+                log::error!("failed to send message: {e:?}");
             }
         }
     }
