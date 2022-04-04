@@ -34,3 +34,20 @@ pub fn score<'a>(word: Word<'_>, new: &BitBoard, fsm: &impl Fsm<'a>) -> GameResu
         false => Err(GameError::InvalidWord),
     }
 }
+
+/// Finds the score of a word without validating it.
+pub fn score_unchecked(word: Word<'_>, new: &BitBoard) -> usize {
+    let mut score = 0;
+    let mut word_multiplier = 1;
+
+    for (pos, tile) in word {
+        let (tile_m, word_m) = match new.is_set(pos) {
+            true => pos.premium_multipliers(),
+            false => (1, 1),
+        };
+        word_multiplier *= word_m;
+        score += tile_m * tile.score();
+    }
+
+    score * word_multiplier
+}
