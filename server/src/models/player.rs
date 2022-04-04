@@ -22,11 +22,51 @@ impl Player {
     pub async fn insert_ai(db: &Db, id_game: i32, ai_difficulty: AiDifficulty) -> Result<i32> {
         let ai_difficulty = ai_difficulty.to_string();
 
-        let id_player =
-            sqlx::query_file_scalar!("sql/live/insert_player.sql", id_game, Some(ai_difficulty))
-                .fetch_one(db)
-                .await?;
+        let id_player = sqlx::query_file_scalar!(
+            "sql/live/insert_ai_player.sql",
+            id_game,
+            Some(ai_difficulty)
+        )
+        .fetch_one(db)
+        .await?;
         Ok(id_player)
+    }
+    /// Inserts a user player, returning (id, username).
+    pub async fn insert_user(
+        db: &Db,
+        id_game: i32,
+        id_user: i32,
+        id_owner: Option<i32>,
+    ) -> Result<(i32, String)> {
+        // find the username for the user.
+        let username = sqlx::query_file!("sql/live/find_username.sql", id_user)
+            .fetch_one(db)
+            .await?
+            .username;
+
+        // id of the inserted player.
+        let id_player = match id_owner {
+            // Ensure the user is the owner or a friend of the
+            // owner.
+            Some(id_owner) => {
+                sqlx::query_file_scalar!(
+                    "sql/live/insert_player_if_friend.sql",
+                    id_game,
+                    id_user,
+                    id_owner
+                )
+                .fetch_one(db)
+                .await?
+            }
+            // Don't check that the user is the owner.
+            None => {
+                sqlx::query_file_scalar!("sql/live/insert_player.sql", id_game, id_user)
+                    .fetch_one(db)
+                    .await?
+            }
+        };
+
+        Ok((id_player, username))
     }
 }
 

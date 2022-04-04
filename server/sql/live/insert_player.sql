@@ -1,3 +1,3 @@
-INSERT INTO tbl_player (id_game, ai_difficulty)
+INSERT INTO tbl_player (id_game, id_user)
 VALUES ($1, $2)
-RETURNING tbl_player.id_player;
+RETURNING id_player;
