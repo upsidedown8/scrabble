@@ -101,4 +101,6 @@ pub enum LiveError {
     ZeroPlayers,
     /// Must be between 2 and 4 players per game.
     IllegalPlayerCount,
+    /// Failed to join a game.
+    FailedToJoin,
 }
