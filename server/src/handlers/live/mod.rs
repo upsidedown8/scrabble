@@ -13,7 +13,6 @@ use warp::ws::{Message, WebSocket};
 
 pub mod game;
 pub mod games;
-pub mod player;
 
 /// WSS /api/live
 pub async fn connected(mut ws: WebSocket, games: GamesHandle) {
@@ -70,7 +69,7 @@ async fn authenticated(mut ws: WebSocket, jwt: Jwt, games: GamesHandle) {
 async fn join_game(id_game: i32, ws: WebSocket, jwt: Jwt, games: GamesHandle) {
     // attempt to get the game by id.
     let games_read = games.read().await;
-    let game = games_read.get_game(id_game);
+    let game = games_read.get(id_game);
     drop(games_read);
 
     match game {
@@ -120,9 +119,7 @@ async fn create_game(
             false => None,
         };
         // create the game.
-        let game_handle = games_write
-            .create_game(ai_count, player_count, id_user)
-            .await;
+        let game_handle = games_write.insert(ai_count, player_count, id_user).await;
         drop(games_write);
 
         if let Some(game_handle) = game_handle {

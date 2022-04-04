@@ -10,7 +10,13 @@ use scrabble::{
     game::{play::Play, tile::Tile, GameStatus, PlayerNum},
     util::fsm::FastFsm,
 };
-use std::{collections::HashMap, env, ops::Deref, sync::Arc, time::Duration};
+use std::{
+    collections::{hash_map::Entry, HashMap},
+    env,
+    ops::Deref,
+    sync::Arc,
+    time::Duration,
+};
 use tokio::sync::{mpsc, Mutex};
 
 lazy_static::lazy_static! {
@@ -127,8 +133,79 @@ impl Game {
     }
     /// Attempts to add a player to the game. Return value indicates
     /// success.
-    pub async fn add_player(&mut self) -> bool {
-        todo!()
+    pub async fn add_player(&mut self, id_user: i32, tx: mpsc::UnboundedSender<ServerMsg>) -> bool {
+        let id_game = self.id_game();
+
+        for player_num in self.game.player_nums() {
+            match self.slots.entry(player_num) {
+                // If the slot is occupied, check whether a player has
+                // disconnected.
+                Entry::Occupied(mut e) => {
+                    let slot = e.get_mut();
+
+                    // check whether the slot contains a player with the same
+                    // user id.
+                    if Some(id_user) == slot.id_user() {
+                        // update the `tx` field of the user.
+                        slot.set_sender(tx);
+
+                        // since the user was previously added, no database operation
+                        // is required.
+                    }
+                }
+                // If the slot is vacant, add the player.
+                Entry::Vacant(e) => {
+                    let id_owner = self.id_owner;
+                    // add a player record in the database if the user is
+                    // a friend of `self.id_owner` (or `self.id_owner` is
+                    // None).
+                    match models::Player::insert_user(&self.db, id_game, id_user, id_owner).await {
+                        Ok((id_player, username)) => {
+                            // Insert the player.
+                            e.insert(Slot {
+                                id_player,
+                                game_player: GamePlayer::User {
+                                    id_user,
+                                    username,
+                                    sender: Some(tx),
+                                },
+                            });
+                        }
+                        Err(e) => {
+                            log::error!("failed to insert user: {e:?}");
+
+                            // exit the loop.
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // send a join game message.
+            let slot = &self.slots[&player_num];
+            slot.send_msg(ServerMsg::Joined {
+                id_game: self.id_game(),
+                id_player: slot.id_player(),
+                players: self.api_players(),
+                tiles: self.api_tiles(),
+                rack: self.api_rack(player_num),
+                scores: self.api_scores(),
+                next: self.api_next(),
+            });
+
+            // send a message to update the players.
+            self.send_all(ServerMsg::Players(self.api_players()));
+
+            // The operation succeeded.
+            return true;
+        }
+
+        // send a message saying that joining failed.
+        if let Err(e) = tx.send(ServerMsg::Error(LiveError::FailedToJoin)) {
+            log::error!("failed to send message to user: {e:?}");
+        }
+
+        false
     }
     /// Called when a message is received from a user.
     async fn on_msg(&mut self, msg: GameMsg, game_handle: GameHandle) {
@@ -218,7 +295,7 @@ impl Game {
                 self.play_count += 1;
 
                 // send a rack message.
-                self.slots[&player_num].send_msg(ServerMsg::Rack(self.rack(player_num)));
+                self.slots[&player_num].send_msg(ServerMsg::Rack(self.api_rack(player_num)));
                 // send a play message to all players.
                 self.send_all(ServerMsg::Play {
                     player: self.api_player(player_num).unwrap(),
@@ -282,7 +359,6 @@ impl Game {
     fn is_full(&self) -> bool {
         self.slot_count() == self.occupied_count()
     }
-
     /// Finds `PlayerNum` by user id.
     fn id_user_to_player_num(&self, id_user: i32) -> Option<PlayerNum> {
         self.slots
@@ -290,11 +366,6 @@ impl Game {
             .find(|(_, slot)| slot.id_user() == Some(id_user))
             .map(|(player_num, _)| player_num)
             .copied()
-    }
-
-    /// Gets the rack tiles for a player.
-    fn rack(&self, player_num: PlayerNum) -> Vec<Tile> {
-        self.game.player(player_num).rack().tiles().collect()
     }
     /// Gets the score for a player.
     fn score(&self, player_num: PlayerNum) -> usize {
@@ -306,6 +377,10 @@ impl Game {
         }
     }
 
+    /// Gets the rack tiles API type for a player.
+    fn api_rack(&self, player_num: PlayerNum) -> Vec<Tile> {
+        self.game.player(player_num).rack().tiles().collect()
+    }
     /// Gets the API type for the next player.
     fn api_next(&self) -> Option<Player> {
         self.game
@@ -384,6 +459,13 @@ impl Slot {
             }),
             GamePlayer::User { sender: None, .. } => Some(Ai::easy()),
             _ => None,
+        }
+    }
+
+    /// Updates the `sender` of the contained user.
+    pub fn set_sender(&mut self, tx: mpsc::UnboundedSender<ServerMsg>) {
+        if let GamePlayer::User { sender, .. } = &mut self.game_player {
+            *sender = Some(tx);
         }
     }
 
