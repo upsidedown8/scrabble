@@ -110,10 +110,15 @@ impl GameOver {
     pub fn reason(&self) -> GameOverReason {
         self.reason
     }
-    /// Gets an iterator over the numbers of the winning players.
+    /// Gets an iterator over the winning players.
     pub fn winners(&self) -> impl Iterator<Item = (PlayerNum, usize)> + '_ {
         self.final_scores()
             .filter(|&(_, score)| score == self.max_score)
+    }
+    /// Gets an iterator over the losing players.
+    pub fn losers(&self) -> impl Iterator<Item = (PlayerNum, usize)> + '_ {
+        self.final_scores()
+            .filter(|&(_, score)| score < self.max_score)
     }
     /// Gets an iterator over (player number, score) tuples.
     pub fn final_scores(&self) -> impl Iterator<Item = (PlayerNum, usize)> + '_ {

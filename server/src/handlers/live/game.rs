@@ -4,10 +4,11 @@ use crate::{
     models::{self, AiDifficulty},
 };
 use api::routes::live::{ClientMsg, LiveError, Player, ServerMsg};
+use chrono::Utc;
 use scrabble::{
     ai::Ai,
     error::GameError,
-    game::{play::Play, tile::Tile, GameStatus, PlayerNum},
+    game::{play::Play, tile::Tile, GameOver, GameStatus, PlayerNum},
     util::fsm::FastFsm,
 };
 use std::{
@@ -277,8 +278,37 @@ impl Game {
             match self.game.status() {
                 // start a move timer if the game is ongoing.
                 &GameStatus::ToPlay(to_play) => self.start_timer(to_play, game_handle),
-                GameStatus::Over(game_over) => todo!(),
+                // when the game ends, update the database records.
+                GameStatus::Over(game_over) => self.on_game_over(game_over).await,
             }
+        }
+    }
+    /// Handles database updates for the end of the game.
+    async fn on_game_over(&self, game_over: &GameOver) {
+        // set the `is_over` column to true and the `end_time` column
+        // to the current time on `tbl_game`.
+        let end_time = Utc::now().naive_utc();
+        sqlx::query_file!("sql/live/set_game_over.sql", self.id_game(), end_time)
+            .execute(&self.db)
+            .await
+            .unwrap();
+
+        // set `is_winner` to true for all winners.
+        for (player_num, _) in game_over.winners() {
+            let id_player = self.slots[&player_num].id_player();
+            sqlx::query_file!("sql/live/set_winner.sql", id_player)
+                .execute(&self.db)
+                .await
+                .unwrap();
+        }
+
+        // set `is_winner` to false for all losers.
+        for (player_num, _) in game_over.losers() {
+            let id_player = self.slots[&player_num].id_player();
+            sqlx::query_file!("sql/live/set_loser.sql", id_player)
+                .execute(&self.db)
+                .await
+                .unwrap();
         }
     }
     /// Continues to make plays for Ai players until a connected
