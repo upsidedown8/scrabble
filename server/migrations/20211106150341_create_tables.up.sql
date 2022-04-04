@@ -42,15 +42,8 @@ CREATE TABLE tbl_player(
 CREATE TABLE tbl_play(
   id_play SERIAL,
   id_player SERIAL NOT NULL,
-  letters_removed VARCHAR(7) NOT NULL,
-  letters_added VARCHAR(7) NOT NULL,
   PRIMARY KEY (id_play),
-  FOREIGN KEY (id_player) REFERENCES tbl_player (id_player),
-  CONSTRAINT valid_added_count CHECK(LENGTH(letters_added) <= 7),
-  CONSTRAINT valid_removed_count CHECK(
-    LENGTH(letters_removed) >= LENGTH(letters_added)
-    AND LENGTH(letters_removed) <= 7
-  )
+  FOREIGN KEY (id_player) REFERENCES tbl_player (id_player)
 );
 CREATE TABLE tbl_tile(
   id_play SERIAL,
