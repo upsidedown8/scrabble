@@ -66,6 +66,8 @@ pub enum ServerMsg {
         rack: Vec<Tile>,
         /// The current scores.
         scores: HashMap<Player, usize>,
+        /// The next player (None if the game is over).
+        next: Option<Player>,
     },
     /// The player has timed out so will disconnect.
     Timeout(Player),
