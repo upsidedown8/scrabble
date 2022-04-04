@@ -137,7 +137,7 @@ impl Ai {
                 // Find all rack tiles below the limit (taking no more than are left in
                 // the bag).
                 let redraw = rack
-                    .iter()
+                    .tiles()
                     .filter(|tile| tile.score() <= REDRAW_LIMIT)
                     .take(letter_bag_len)
                     .collect::<Vec<_>>();

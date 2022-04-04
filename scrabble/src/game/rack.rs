@@ -25,7 +25,7 @@ pub struct Rack {
 impl fmt::Display for Rack {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[")?;
-        for tile in self.iter() {
+        for tile in self.tiles() {
             write!(f, "{}", tile)?;
         }
         write!(f, "]")
@@ -122,7 +122,7 @@ impl Rack {
         self.counts.remove(tiles)
     }
     /// Gets an iterator over the tiles in the rack.
-    pub fn iter(&self) -> impl Iterator<Item = Tile> + '_ {
+    pub fn tiles(&self) -> impl Iterator<Item = Tile> + '_ {
         self.counts.iter()
     }
 }
