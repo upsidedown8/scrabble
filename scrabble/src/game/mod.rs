@@ -98,6 +98,10 @@ impl GameOver {
             reason,
         }
     }
+    /// Gets the score for a particular player.
+    pub fn score(&self, player_num: PlayerNum) -> usize {
+        self.scores[usize::from(player_num)]
+    }
     /// Gets the maximum score achieved.
     pub fn max_score(&self) -> usize {
         self.max_score
@@ -157,7 +161,7 @@ impl From<PlayerNum> for usize {
 
 impl Game {
     /// Constructs a new [`Game`] from the number of players.
-    pub fn with_players(player_count: usize) -> Self {
+    pub fn new(player_count: usize) -> Self {
         let mut letter_bag = LetterBag::default();
 
         let players = (0..player_count)
@@ -203,6 +207,11 @@ impl Game {
     pub fn player_count(&self) -> usize {
         self.players.len()
     }
+    /// Gets an iterator over player numbers for the game.
+    pub fn player_nums(&self) -> impl Iterator<Item = PlayerNum> {
+        PlayerNum::iter(self.player_count())
+    }
+
     /// Attempts to make a [`Play`].
     pub fn make_play<'a, F: Fsm<'a>>(&mut self, play: &Play, fsm: &F) -> GameResult<()> {
         // Return early if the game is over.

@@ -10,7 +10,7 @@ fn main() {
     let rdr = BufReader::new(file);
     let fsm: FastFsm = bincode::deserialize_from(rdr).unwrap();
     let ai = Ai::easy();
-    let mut game = Game::with_players(4);
+    let mut game = Game::new(4);
 
     while let GameStatus::ToPlay(_) = game.status() {
         let play = ai.next_play(&fsm, &game);
