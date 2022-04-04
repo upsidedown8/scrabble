@@ -9,7 +9,7 @@ use scrabble::{
     ai::Ai,
     error::GameError,
     game::{play::Play, tile::Tile, GameOver, GameStatus, PlayerNum},
-    util::fsm::FastFsm,
+    util::{bitboard::BitBoard, fsm::FastFsm, scoring, words::WordsExt},
 };
 use std::{
     collections::{hash_map::Entry, HashMap},
@@ -334,6 +334,9 @@ impl Game {
             Ok(()) => {
                 self.play_count += 1;
 
+                // add the play to the database.
+                self.insert_play(&play, player_num).await;
+
                 // send a rack message.
                 self.slots[&player_num].send_msg(ServerMsg::Rack(self.api_rack(player_num)));
                 // send a play message to all players.
@@ -354,6 +357,66 @@ impl Game {
                 false
             }
         }
+    }
+    /// Adds a play to the database.
+    async fn insert_play(&mut self, play: &Play, player_num: PlayerNum) {
+        let slot = &self.slots[&player_num];
+        let id_player = slot.id_player;
+
+        // insert a play record.
+        let id_play = models::Play::insert(&self.db, id_player).await.unwrap();
+
+        // insert records for each of the placed tiles.
+        let mut new_h = BitBoard::default();
+        let mut new_v = BitBoard::default();
+        if let Play::Place(tile_positions) = play {
+            for (pos, tile) in tile_positions {
+                models::Tile::insert(&self.db, id_play, pos, tile)
+                    .await
+                    .unwrap();
+
+                new_h.set(*pos);
+                new_v.set(pos.swap_rc());
+            }
+        }
+
+        // insert records for each of the vertical and horizontal words.
+        for (letters, score) in self.words(new_h, new_v) {
+            models::Word::insert(&self.db, id_play, letters, score)
+                .await
+                .unwrap();
+        }
+    }
+
+    /// Iterates over the new (word, score) tuples on the board.
+    fn words(
+        &self,
+        new_h: BitBoard,
+        new_v: BitBoard,
+    ) -> impl Iterator<Item = (String, usize)> + '_ {
+        let board = self.game.board();
+        let horizontal = board
+            .grid_h()
+            .word_boundaries()
+            .intersecting(new_h)
+            .words(board.grid_h())
+            .map(move |word| {
+                let word_str = word.to_string();
+                let score = scoring::score_unchecked(word, &new_h);
+                (word_str, score)
+            });
+        let vertical = board
+            .grid_v()
+            .word_boundaries()
+            .intersecting(new_v)
+            .words(board.grid_v())
+            .map(move |word| {
+                let word_str = word.to_string();
+                let score = scoring::score_unchecked(word, &new_v);
+                (word_str, score)
+            });
+
+        horizontal.chain(vertical)
     }
     /// Starts a move timer for the specified player.
     fn start_timer(&self, player_num: PlayerNum, game_handle: GameHandle) {
