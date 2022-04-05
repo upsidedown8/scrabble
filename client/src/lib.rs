@@ -26,28 +26,52 @@ pub enum AppRoutes {
     #[to("/")]
     Home,
     /// Account page, requires login
-    #[to("/account")]
+    #[to("/users/account")]
     Account,
     /// Login page
-    #[to("/login")]
+    #[to("/users/login")]
     Login,
     /// Sigup page
-    #[to("/signup")]
+    #[to("/users/signup")]
     SignUp,
-    /// Play (games) page, requires login
-    #[to("/play")]
-    Play,
     /// Page to send reset password email.
-    #[to("/reset-password")]
+    #[to("/users/reset-password")]
     ResetPassword,
     /// Reset password from email link.
-    #[to("/reset-password/<username>/<secret>")]
+    #[to("/users/reset-password/<username>/<secret>")]
     ResetWithSecret {
         /// User to reset password for.
         username: String,
         /// Random secret from the server.
         secret: String,
     },
+    /// Create a live game page, requires login.
+    #[to("/live/create")]
+    CreateLive,
+    /// Play live games page, requires login
+    #[to("/live/<id_game>")]
+    Live {
+        /// Id of the live game.
+        id_game: i32,
+    },
+    /// Leaderboard page.
+    #[to("/leaderboard")]
+    Leaderboard,
+    /// Friends leaderboard page.
+    #[to("/leaderboard/friends")]
+    FriendsLeaderboard,
+    /// Game list page.
+    #[to("/games")]
+    GameList,
+    /// Stats for a game.
+    #[to("/games/<id_game>/stats")]
+    GameStats {
+        /// Id of the game.
+        id_game: i32,
+    },
+    /// View and manage friends.
+    #[to("/friends")]
+    Friends,
     /// Not found page
     #[not_found]
     NotFound,
@@ -92,6 +116,7 @@ pub fn App<G: Html>(ctx: ScopeRef) -> View<G> {
             integration: HistoryIntegration::new(),
             view: move |ctx, route: &ReadSignal<AppRoutes>| view! { ctx,
                 div(id="app") {
+                    // The navbar at the top of the page.
                     Navbar(active)
 
                     ({let logged_in = *ctx.use_logged_in().get();
@@ -101,11 +126,14 @@ pub fn App<G: Html>(ctx: ScopeRef) -> View<G> {
                     //   - the user is logged in, or
                     //   - the route doesn't require auth
                     match route.get().as_ref() {
+                        // Home page.
+                        AppRoutes::Home if logged_in => view! { ctx, HomePage() },
+
+                        // User pages.
+                        AppRoutes::Account if logged_in => view! { ctx, AccountPage() },
                         AppRoutes::Login if !logged_in => view! { ctx, LoginPage() },
                         AppRoutes::SignUp if !logged_in => view! { ctx, SignUpPage() },
-                        AppRoutes::Account if logged_in => view! { ctx, AccountPage() },
-                        AppRoutes::Play if logged_in => view! { ctx, PlayPage() },
-                        AppRoutes::Home => view! { ctx, HomePage() },
+                        AppRoutes::ResetPassword => view! { ctx, ResetPasswordPage() },
                         AppRoutes::ResetWithSecret {
                             username,
                             secret,
@@ -115,10 +143,40 @@ pub fn App<G: Html>(ctx: ScopeRef) -> View<G> {
                                 secret: secret.clone(),
                             }
                         },
-                        AppRoutes::ResetPassword => view! { ctx, ResetPasswordPage() },
-                        _ => view! { ctx, NotFoundPage() },
+
+                        // Live game pages.
+                        AppRoutes::CreateLive if logged_in => view! { ctx,
+                            LivePage {
+                                id_game: None,
+                            }
+                        },
+                        AppRoutes::Live { id_game } if logged_in => view! { ctx,
+                            LivePage {
+                                id_game: Some(*id_game),
+                            }
+                        },
+
+                        // Leaderboard pages.
+                        AppRoutes::Leaderboard => view! { ctx, LeaderboardPage() },
+                        AppRoutes::FriendsLeaderboard if logged_in => view! { ctx, FriendsLeaderboardPage() },
+
+                        // Game stats pages.
+                        AppRoutes::GameList if logged_in => view! { ctx, GameListPage() },
+                        AppRoutes::GameStats { id_game } if logged_in => view! { ctx,
+                            GameStatsPage {
+                                id_game: *id_game,
+                            }
+                        },
+
+                        // Friends pages.
+                        AppRoutes::Friends => view! { ctx, FriendsPage() },
+
+                        // Error pages.
+                        AppRoutes::NotFound => view! { ctx, NotFoundPage() },
+                        _ => view! { ctx, InvalidStatePage() },
                     }})
 
+                    // The footer at the bottom of the page.
                     Footer {}
                 }
             }
