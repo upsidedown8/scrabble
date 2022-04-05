@@ -13,6 +13,8 @@ pub trait ScopeExt<'a> {
     /// Signal storing a boolean value for whether the
     /// user is logged in.
     fn use_logged_in(&'a self) -> &'a ReadSignal<bool>;
+    /// Gets a signal for the optional auth token.
+    fn use_token(&'a self) -> &'a ReadSignal<Option<Auth>>;
 }
 
 impl<'a> ScopeExt<'a> for Scope<'a> {
@@ -21,8 +23,11 @@ impl<'a> ScopeExt<'a> for Scope<'a> {
     }
     fn use_logged_in(&'a self) -> &'a ReadSignal<bool> {
         let auth_ctx = self.use_auth_context();
-
         self.create_memo(|| auth_ctx.get().is_some())
+    }
+    fn use_token(&'a self) -> &'a ReadSignal<Option<Auth>> {
+        let auth_ctx = self.use_auth_context();
+        self.create_memo(|| auth_ctx.get().as_ref().as_ref().map(|ctx| ctx.auth.clone()))
     }
 }
 
@@ -33,7 +38,7 @@ pub type AuthSignal = Signal<Option<AuthCtx>>;
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct AuthCtx {
     /// Username and email
-    pub details: UserDetails,
+    pub user_details: UserDetails,
     /// JWT from server
     pub auth: Auth,
 }
