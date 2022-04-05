@@ -127,7 +127,7 @@ pub fn App<G: Html>(ctx: ScopeRef) -> View<G> {
                     //   - the route doesn't require auth
                     match route.get().as_ref() {
                         // Home page.
-                        AppRoutes::Home if logged_in => view! { ctx, HomePage() },
+                        AppRoutes::Home => view! { ctx, HomePage() },
 
                         // User pages.
                         AppRoutes::Account if logged_in => view! { ctx, AccountPage() },
