@@ -29,7 +29,7 @@ pub fn ResetPasswordPage<G: Html>(ctx: ScopeRef) -> View<G> {
             };
 
             match reset_password(&req).await {
-                Ok(()) => {}
+                Ok(()) => success.set(true),
                 Err(e) => err.set(Some(e)),
             }
 
