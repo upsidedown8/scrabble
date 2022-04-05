@@ -34,18 +34,12 @@ pub fn LoginPage<G: Html>(ctx: ScopeRef) -> View<G> {
 
             match login(&req).await {
                 // Successful request.
-                Ok((Some(auth), login_response)) => {
-                    auth_ctx.set(Some(AuthCtx {
-                        user_details: login_response.user_details,
-                        auth,
-                    }));
-
+                Ok((auth, user_details)) => {
+                    auth_ctx.set(Some(AuthCtx { user_details, auth }));
                     navigate("/");
                 }
                 // An error occured.
                 Err(e) => err.set(Some(e)),
-                // auth was None.
-                _ => log::error!("expected auth from login route"),
             };
 
             loading.set(false);

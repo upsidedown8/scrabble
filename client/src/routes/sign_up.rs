@@ -41,18 +41,12 @@ pub fn SignUpPage<G: Html>(ctx: ScopeRef) -> View<G> {
         ctx.spawn_local(async {
             match sign_up(sign_up_req.get().as_ref()).await {
                 // Successful request.
-                Ok((Some(auth), sign_up_response)) => {
-                    auth_ctx.set(Some(AuthCtx {
-                        user_details: sign_up_response.user_details,
-                        auth,
-                    }));
-
+                Ok((auth, user_details)) => {
+                    auth_ctx.set(Some(AuthCtx { user_details, auth }));
                     navigate("/");
                 }
                 // An error occurred.
                 Err(e) => err.set(Some(e)),
-                // Received auth was None.
-                _ => log::error!("expected auth"),
             };
 
             loading.set(false);
