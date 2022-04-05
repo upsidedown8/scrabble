@@ -13,7 +13,7 @@ pub mod games;
 pub mod leaderboard;
 pub mod users;
 
-const API_URL: &str = "https://thrgd.uk/api";
+const API_URL: &str = "https://localhost/api";
 
 /// Sends the [`Request`].
 async fn send_request<U>(req: Request) -> Result<(Option<Auth>, U)>
@@ -38,14 +38,13 @@ where
                 (None, response.json().await?)
             }
         }),
-        // 400 BAD_REQUEST
-        400 => Err(Error::BadRequest),
-        // 401 UNAUTHORIZED
-        401 => Err(Error::Unauthorized),
-        // 403 FORBIDDEN
-        403 => Err(Error::Forbidden),
-        404 => Err(Error::NotFound),
-        500 => Err(Error::InternalServerError),
+        status @ (400 | 401 | 403 | 404 | 500) => {
+            if let Ok(error_response) = response.json().await {
+                Err(Error::ApiError(error_response))
+            } else {
+                Err(Error::HttpStatus(status))
+            }
+        }
         status => Err(Error::HttpStatus(status)),
     }
 }

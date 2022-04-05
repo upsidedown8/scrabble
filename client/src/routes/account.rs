@@ -33,6 +33,7 @@ pub fn AccountPage<G: Html>(ctx: ScopeRef) -> View<G> {
     // Called when the user clicks the update button.
     let on_update = |_| {
         loading.set(true);
+        err.set(None);
 
         ctx.spawn_local(async {
             let req = UpdateAccount {
@@ -67,6 +68,8 @@ pub fn AccountPage<G: Html>(ctx: ScopeRef) -> View<G> {
                 }
                 Err(e) => err.set(Some(e)),
             }
+
+            loading.set(false);
         });
     };
 

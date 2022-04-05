@@ -2,6 +2,8 @@
 
 use std::fmt;
 
+use api::error::ErrorResponse;
+
 /// The result type for the client.
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
@@ -13,17 +15,9 @@ pub enum Error {
     /// Error originated from serializing or deserializing
     /// data.
     SerdeJson(serde_json::Error),
-    /// 400 Bad request
-    BadRequest,
-    /// 401 Unauthorized
-    Unauthorized,
-    /// 403 Forbidden
-    Forbidden,
-    /// 404 Not found
-    NotFound,
-    /// 500 Internal server error
-    InternalServerError,
-    /// Any other http status that is not `200..=299` (ok).
+    /// Error from the API.
+    ApiError(ErrorResponse),
+    /// Unexpected HTTP status code.
     HttpStatus(u16),
 }
 
@@ -31,13 +25,11 @@ impl std::error::Error for Error {}
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Error::Reqwasm(err) => writeln!(f, "{err}"),
-            Error::SerdeJson(err) => writeln!(f, "{err}"),
-            Error::BadRequest => writeln!(f, "Bad Request"),
-            Error::Unauthorized => writeln!(f, "Unauthorised"),
-            Error::Forbidden => writeln!(f, "Forbidden"),
-            Error::NotFound => writeln!(f, "Not Found"),
-            Error::InternalServerError => writeln!(f, "Internal Server Error"),
+            Error::Reqwasm(err) => {
+                writeln!(f, "Request failed")
+            }
+            Error::SerdeJson(err) => writeln!(f, "Failed to deserialize response body"),
+            Error::ApiError(err) => writeln!(f, "API error: {err:?}"),
             Error::HttpStatus(status) => writeln!(f, "HTTP status: {status}"),
         }
     }

@@ -25,6 +25,7 @@ pub fn LoginPage<G: Html>(ctx: ScopeRef) -> View<G> {
     // Called when the user clicks the sign in button.
     let on_sign_in = |_| {
         loading.set(true);
+        err.set(None);
 
         ctx.spawn_local(async {
             let req = Login {
@@ -50,17 +51,10 @@ pub fn LoginPage<G: Html>(ctx: ScopeRef) -> View<G> {
         div(class="page is-centered is-vcentered is-flex columns") {
             div(class="box") {
                 div(class="has-text-centered") {
-                    p (class="mb-3") {
-                        a(href="/signup") {
-                            "Need an account?"
-                        }
-                    }
-
-                    p {
-                        a(href="/reset-password") {
-                            "Forgot password?"
-                        }
-                    }
+                    a(href="/signup") { "Need an account?" }
+                    br
+                    br
+                    a(href="/reset-password") { "Forgot password?" }
                 }
 
                 hr
@@ -84,7 +78,7 @@ pub fn LoginPage<G: Html>(ctx: ScopeRef) -> View<G> {
                 }
 
                 button(on:click=on_sign_in, disabled=*loading.get(), class="button is-primary") {
-                    "Sign in"
+                    "Log in"
                 }
 
                 ProgressBar(loading)
