@@ -8,10 +8,11 @@ use sycamore::prelude::*;
 pub fn InvalidStatePage<G: Html>(ctx: ScopeRef) -> View<G> {
     view! { ctx,
         div(class="page is-centered is-vcentered columns") {
-            div {
-                h1(class="h1") {
+            div(class="has-text-centered") {
+                h1(class="h1 is-size-5") {
                     "Invalid state"
                 }
+
                 p {
                     "An error occured: the current page cannot be displayed in this state."
                     "Perhaps you need to log in?"

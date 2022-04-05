@@ -8,10 +8,11 @@ use sycamore::prelude::*;
 pub fn NotFoundPage<G: Html>(ctx: ScopeRef) -> View<G> {
     view! { ctx,
         div(class="page is-centered is-vcentered columns") {
-            div {
-                h1(class="h1") {
-                    "404: Not Found"
+            div(class="has-text-centered") {
+                h1(class="h1 is-size-5") {
+                    "Not Found"
                 }
+
                 p {
                     "An error occured: the current URL does not refer to a route"
                 }
