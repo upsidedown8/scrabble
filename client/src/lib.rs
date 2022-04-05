@@ -145,16 +145,8 @@ pub fn App<G: Html>(ctx: ScopeRef) -> View<G> {
                         },
 
                         // Live game pages.
-                        AppRoutes::CreateLive if logged_in => view! { ctx,
-                            LivePage {
-                                id_game: None,
-                            }
-                        },
-                        AppRoutes::Live { id_game } if logged_in => view! { ctx,
-                            LivePage {
-                                id_game: Some(*id_game),
-                            }
-                        },
+                        AppRoutes::CreateLive if logged_in => view! { ctx, LivePage(None) },
+                        AppRoutes::Live { id_game } if logged_in => view! { ctx, LivePage(Some(*id_game)) },
 
                         // Leaderboard pages.
                         AppRoutes::Leaderboard => view! { ctx, LeaderboardPage() },
@@ -162,11 +154,7 @@ pub fn App<G: Html>(ctx: ScopeRef) -> View<G> {
 
                         // Game stats pages.
                         AppRoutes::GameList if logged_in => view! { ctx, GameListPage() },
-                        AppRoutes::GameStats { id_game } if logged_in => view! { ctx,
-                            GameStatsPage {
-                                id_game: *id_game,
-                            }
-                        },
+                        AppRoutes::GameStats { id_game } if logged_in => view! { ctx, GameStatsPage(*id_game) },
 
                         // Friends pages.
                         AppRoutes::Friends => view! { ctx, FriendsPage() },

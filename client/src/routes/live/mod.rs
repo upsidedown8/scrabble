@@ -7,16 +7,9 @@ use reqwasm::websocket::{futures::WebSocket, Message};
 use scrabble::util::pos::Pos;
 use sycamore::{futures::ScopeSpawnLocal, prelude::*};
 
-/// Properties for the live page.
-#[derive(Prop)]
-pub struct Props {
-    /// Id of the live game to join.
-    pub id_game: Option<i32>,
-}
-
 /// Page for playing live games.
 #[component]
-pub fn LivePage<G: Html>(ctx: ScopeRef, props: Props) -> View<G> {
+pub fn LivePage<G: Html>(ctx: ScopeRef, id_game: Option<i32>) -> View<G> {
     let auth_ctx = ctx.use_auth_context();
 
     let msg = ctx.create_signal(String::new());
