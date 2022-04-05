@@ -15,7 +15,7 @@ pub struct ListGamesResponse {
 }
 
 /// Metadata about a game.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GameMetadata {
     /// The id of the game.
     pub id_game: i32,
@@ -39,7 +39,7 @@ pub struct GameResponse {
 }
 
 /// Stats about an individual game.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GameStatsResponse {
     /// Metadata about the game.
     pub meta: GameMetadata,
