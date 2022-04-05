@@ -2,6 +2,9 @@
 
 use std::fmt;
 
+/// The result type for the client.
+pub type Result<T, E = Error> = std::result::Result<T, E>;
+
 /// The error variants for the client.
 #[derive(Debug)]
 pub enum Error {
