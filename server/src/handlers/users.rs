@@ -8,8 +8,7 @@ use crate::{
 use api::{
     auth::AuthWrapper,
     routes::users::{
-        DeleteAccount, Login, LoginResponse, ProfileResponse, ResetPassword,
-        ResetPasswordWithSecret, SignUp, SignUpResponse, UpdateAccount, UserDetails,
+        DeleteAccount, Login, ResetPassword, ResetWithSecret, SignUp, UpdateAccount, UserDetails,
     },
 };
 use chrono::{Duration, Utc};
@@ -113,7 +112,7 @@ pub async fn reset_password(
 /// GET /api/users/reset-password
 pub async fn reset_with_secret(
     db: Db,
-    with_secret: ResetPasswordWithSecret,
+    with_secret: ResetWithSecret,
 ) -> Result<impl Reply, Rejection> {
     // lookup the secret in the database.
     let pwd_reset = models::PasswordReset::find_by_username(&db, &with_secret.username).await?;
@@ -148,7 +147,11 @@ pub async fn reset_with_secret(
 
     Ok(warp::reply::json(&AuthWrapper {
         auth: Some(jwt.auth()?),
-        response: (),
+        response: UserDetails {
+            username: new_user.username,
+            email: new_user.email,
+            is_private: new_user.is_private,
+        },
     }))
 }
 
@@ -161,9 +164,7 @@ pub async fn log_in(db: Db, login: Login) -> Result<impl Reply, Rejection> {
 
     Ok(warp::reply::json(&AuthWrapper {
         auth: Some(jwt.auth()?),
-        response: LoginResponse {
-            user_details: user.into_user_details(),
-        },
+        response: user.into_user_details(),
     }))
 }
 
@@ -189,12 +190,10 @@ pub async fn sign_up(db: Db, sign_up: SignUp) -> Result<impl Reply, Rejection> {
 
     Ok(warp::reply::json(&AuthWrapper {
         auth: Some(jwt.auth()?),
-        response: SignUpResponse {
-            user_details: UserDetails {
-                username: sign_up.username,
-                email: sign_up.email,
-                is_private: sign_up.is_private,
-            },
+        response: UserDetails {
+            username: sign_up.username,
+            email: sign_up.email,
+            is_private: sign_up.is_private,
         },
     }))
 }
@@ -205,9 +204,7 @@ pub async fn profile(db: Db, jwt: Jwt) -> Result<impl Reply, Rejection> {
 
     Ok(warp::reply::json(&AuthWrapper {
         auth: Some(jwt.auth()?),
-        response: ProfileResponse {
-            user_details: user.into_user_details(),
-        },
+        response: user.into_user_details(),
     }))
 }
 

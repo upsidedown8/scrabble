@@ -31,7 +31,7 @@ pub struct ResetPassword {
 /// Request sent to update a password after the secret
 /// has been recieved by email.
 #[derive(Debug, Serialize, Deserialize)]
-pub struct ResetPasswordWithSecret {
+pub struct ResetWithSecret {
     /// Random hexadecimal secret.
     pub secret_hex: String,
     /// The new password for the account.
@@ -49,13 +49,6 @@ pub struct Login {
     pub password: String,
 }
 
-/// Response (200 OK) from the login endpoint.
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct LoginResponse {
-    /// Information about the user account.
-    pub user_details: UserDetails,
-}
-
 /// Request sent to the signup endpoint. All fields are validated
 /// on the server side.
 #[derive(Debug, Serialize, Deserialize)]
@@ -68,20 +61,6 @@ pub struct SignUp {
     pub password: String,
     /// Whether to make the account private.
     pub is_private: bool,
-}
-
-/// Response (200 OK) sent from the signup endpoint.
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct SignUpResponse {
-    /// Information about the user account.
-    pub user_details: UserDetails,
-}
-
-/// Response (200 OK) sent from the profile endpoint.
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ProfileResponse {
-    /// Information about the requested user account,
-    pub user_details: UserDetails,
 }
 
 /// A request to update a user account.
