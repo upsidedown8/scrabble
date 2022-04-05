@@ -32,11 +32,10 @@ pub fn SignUpPage<G: Html>(ctx: ScopeRef) -> View<G> {
     let loading = ctx.create_signal(false);
     let err = ctx.create_signal(None);
 
-    // Called when the user toggles the checkbox.
-    let on_toggle = |_| is_private.set(!*is_private.get());
     // Called when the user clicks the signup button.
     let on_sign_up = |_| {
         loading.set(true);
+        err.set(None);
 
         ctx.spawn_local(async {
             match sign_up(sign_up_req.get().as_ref()).await {
@@ -91,23 +90,18 @@ pub fn SignUpPage<G: Html>(ctx: ScopeRef) -> View<G> {
                     }
                 }
 
-                hr
-
                 div(class="field") {
                     label(class="checkbox") {
-                        input(type="checkbox", checked=*is_private.get(), on:click=on_toggle)
+                        input(type="checkbox", checked=*is_private.get(), bind:checked=is_private)
                         "  Private account?"
                     }
                 }
-
-                hr
 
                 div(class="field") {
                     button(on:click=on_sign_up, disabled=*loading.get(), class="button is-primary") {
                         "Sign up"
                     }
                 }
-
 
                 ProgressBar(loading)
                 ErrorMsg(err)
