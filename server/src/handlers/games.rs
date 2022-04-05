@@ -8,7 +8,7 @@ use api::{
 };
 use warp::{Rejection, Reply};
 
-/// GET /games [+Auth]
+/// GET /api/games [+Auth]
 pub async fn list(db: Db, jwt: Jwt) -> Result<impl Reply, Rejection> {
     let games = sqlx::query_file!("sql/games/list.sql", jwt.id_user())
         .fetch_all(&db)
@@ -29,7 +29,7 @@ pub async fn list(db: Db, jwt: Jwt) -> Result<impl Reply, Rejection> {
     }))
 }
 
-/// GET /games/{game id}/stats [+Auth]
+/// GET /api/games/{game id}/stats [+Auth]
 pub async fn stats(id_game: i32, db: Db, jwt: Jwt) -> Result<impl Reply, Rejection> {
     let row = sqlx::query_file!("sql/games/game_stats.sql", jwt.id_user(), id_game)
         .fetch_one(&db)
@@ -58,7 +58,7 @@ pub async fn stats(id_game: i32, db: Db, jwt: Jwt) -> Result<impl Reply, Rejecti
     }))
 }
 
-/// GET /games/stats [+Auth]
+/// GET /api/games/stats [+Auth]
 pub async fn overall_stats(db: Db, jwt: Jwt) -> Result<impl Reply, Rejection> {
     // Just query a single leaderboard row for this user.
     let row = sqlx::query_file!("sql/games/leaderboard_row.sql", jwt.id_user())

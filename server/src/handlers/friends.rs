@@ -5,7 +5,7 @@ use api::{
 };
 use warp::{Rejection, Reply};
 
-/// POST /api/friends [+Auth]
+/// POST /api/friends/{username} [+Auth]
 pub async fn add(username: String, db: Db, jwt: Jwt) -> Result<impl Reply, Rejection> {
     models::FriendRequest::insert(&db, jwt.id_user(), &username).await?;
 
