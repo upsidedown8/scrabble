@@ -7,7 +7,8 @@ use crate::{
 use api::error::ErrorResponse;
 use std::{convert::Infallible, env};
 use warp::{
-    body::BodyDeserializeError, filters::BoxedFilter, hyper::StatusCode, Filter, Rejection, Reply,
+    body::BodyDeserializeError, filters::BoxedFilter, hyper::StatusCode, path::Peek, Filter,
+    Rejection, Reply,
 };
 
 pub mod friends;
@@ -18,12 +19,28 @@ pub mod users;
 
 /// Gets a filter that servers the API.
 fn api_filter(db: Db, mailer: Mailer, fsm: FsmHandle) -> BoxedFilter<(impl Reply,)> {
-    friends::all(&db)
-        .or(games::all(&db))
-        .or(leaderboard::all(&db))
-        .or(live::all(&db, &fsm))
-        .or(users::all(&db, &mailer))
+    warp::path("api")
+        .and(
+            friends::all(&db)
+                .or(games::all(&db))
+                .or(leaderboard::all(&db))
+                .or(live::all(&db, &fsm))
+                .or(users::all(&db, &mailer)),
+        )
         .boxed()
+}
+
+/// Gets a filter that checks that the route is not the api (used for
+/// serving the index page).
+fn is_static_route() -> impl Filter<Extract = (), Error = Rejection> + Copy {
+    warp::path::peek()
+        .and_then(|path: Peek| async move {
+            match path.as_str().starts_with("api") {
+                true => Err(warp::reject::reject()),
+                false => Ok(()),
+            }
+        })
+        .untuple_one()
 }
 
 /// Gets a filter that serves the Single Page App.
@@ -33,19 +50,10 @@ fn app_filter() -> BoxedFilter<(impl Reply,)> {
         .and(warp::get())
         .and(warp::fs::file("static/index.html"));
 
-    // If none of the API routes matched, prevent the server
-    // from ignoring a 404 and serving the index file.
-    let api_not_found = warp::path("api").map(|| {
-        warp::reply::with_status(
-            warp::reply::json(&ErrorResponse {
-                status: String::from("Not found"),
-                msg: StatusCode::NOT_FOUND.to_string(),
-            }),
-            StatusCode::NOT_FOUND,
-        )
-    });
-
-    api_not_found.or(app).or(index).boxed()
+    warp::any()
+        .and(is_static_route())
+        .and(app.or(index))
+        .boxed()
 }
 
 /// A filter that redirects HTTP to HTTPS.
