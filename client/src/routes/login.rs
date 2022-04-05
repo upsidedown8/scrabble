@@ -13,29 +13,39 @@ use sycamore_router::navigate;
 #[component]
 pub fn LoginPage<G: Html>(ctx: ScopeRef) -> View<G> {
     let auth_ctx = ctx.use_auth_context();
+
+    // Input signals
     let username = ctx.create_signal(String::from(""));
     let password = ctx.create_signal(String::from(""));
-    let login_req = ctx.create_memo(|| Login {
-        username: (*username.get()).clone(),
-        password: (*password.get()).clone(),
-    });
+
+    // State signals
     let loading = ctx.create_signal(false);
     let err = ctx.create_signal(None);
 
-    let onsignin = |_| {
+    // Called when the user clicks the sign in button.
+    let on_sign_in = |_| {
         loading.set(true);
 
         ctx.spawn_local(async {
-            match login(auth_ctx, login_req.get().as_ref()).await {
-                Ok(login_response) => {
+            let req = Login {
+                username: (*username.get()).clone(),
+                password: (*password.get()).clone(),
+            };
+
+            match login(&req).await {
+                // Successful request.
+                Ok((Some(auth), login_response)) => {
                     auth_ctx.set(Some(AuthCtx {
-                        details: login_response.user_details,
-                        auth: login_response.auth,
+                        user_details: login_response.user_details,
+                        auth,
                     }));
 
                     navigate("/");
                 }
+                // An error occured.
                 Err(e) => err.set(Some(e)),
+                // auth was None.
+                _ => log::error!("expected auth from login route"),
             };
 
             loading.set(false);
@@ -43,11 +53,19 @@ pub fn LoginPage<G: Html>(ctx: ScopeRef) -> View<G> {
     };
 
     view! { ctx,
-        div(class="login-route is-centered is-vcentered is-flex columns") {
+        div(class="page is-centered is-vcentered is-flex columns") {
             div(class="box") {
                 div(class="has-text-centered") {
-                    a(href="/signup") {
-                        "Need an account?"
+                    p (class="mb-3") {
+                        a(href="/signup") {
+                            "Need an account?"
+                        }
+                    }
+
+                    p {
+                        a(href="/reset-password") {
+                            "Forgot password?"
+                        }
                     }
                 }
 
@@ -71,7 +89,7 @@ pub fn LoginPage<G: Html>(ctx: ScopeRef) -> View<G> {
                     }
                 }
 
-                button(on:click=onsignin, disabled=*loading.get(), class="button is-primary") {
+                button(on:click=on_sign_in, disabled=*loading.get(), class="button is-primary") {
                     "Sign in"
                 }
 
