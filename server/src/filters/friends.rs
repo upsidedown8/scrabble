@@ -3,16 +3,14 @@ use warp::{filters::BoxedFilter, Filter, Reply};
 
 /// Combined filter for the friends route.
 pub fn all(db: &Db) -> BoxedFilter<(impl Reply,)> {
-    add(db)
-        .or(remove(db))
-        .or(list(db))
-        .or(list_requests(db))
+    warp::path("friends")
+        .and(add(db).or(remove(db)).or(list(db)).or(list_requests(db)))
         .boxed()
 }
 
 /// Add friend.
 fn add(db: &Db) -> BoxedFilter<(impl Reply,)> {
-    warp::path!("api" / "friends" / String)
+    warp::path!(String)
         .and(warp::post())
         .and(with(db))
         .and(authenticated_user())
@@ -22,7 +20,7 @@ fn add(db: &Db) -> BoxedFilter<(impl Reply,)> {
 
 /// Remove friend.
 fn remove(db: &Db) -> BoxedFilter<(impl Reply,)> {
-    warp::path!("api" / "friends" / String)
+    warp::path!(String)
         .and(warp::delete())
         .and(with(db))
         .and(authenticated_user())
@@ -32,7 +30,7 @@ fn remove(db: &Db) -> BoxedFilter<(impl Reply,)> {
 
 /// List friends.
 fn list(db: &Db) -> BoxedFilter<(impl Reply,)> {
-    warp::path!("api" / "friends")
+    warp::path!()
         .and(warp::get())
         .and(with(db))
         .and(authenticated_user())
@@ -42,7 +40,7 @@ fn list(db: &Db) -> BoxedFilter<(impl Reply,)> {
 
 /// List friend requests.
 fn list_requests(db: &Db) -> BoxedFilter<(impl Reply,)> {
-    warp::path!("api" / "friends" / "requests")
+    warp::path!("requests")
         .and(warp::get())
         .and(with(db))
         .and(authenticated_user())

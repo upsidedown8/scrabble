@@ -3,12 +3,14 @@ use warp::{filters::BoxedFilter, Filter, Reply};
 
 /// Combined filter for the games route.
 pub fn all(db: &Db) -> BoxedFilter<(impl Reply,)> {
-    list(db).or(stats(db)).or(overall_stats(db)).boxed()
+    warp::path("games")
+        .and(list(db).or(stats(db)).or(overall_stats(db)))
+        .boxed()
 }
 
 /// List games that the user has played.
 fn list(db: &Db) -> BoxedFilter<(impl Reply,)> {
-    warp::path!("api" / "games")
+    warp::path!()
         .and(warp::get())
         .and(with(db))
         .and(authenticated_user())
@@ -18,7 +20,7 @@ fn list(db: &Db) -> BoxedFilter<(impl Reply,)> {
 
 /// Get stats for a particular game.
 fn stats(db: &Db) -> BoxedFilter<(impl Reply,)> {
-    warp::path!("api" / "games" / i32 / "stats")
+    warp::path!(i32 / "stats")
         .and(warp::get())
         .and(with(db))
         .and(authenticated_user())
@@ -28,7 +30,7 @@ fn stats(db: &Db) -> BoxedFilter<(impl Reply,)> {
 
 /// Get stats over all games a user has played.
 fn overall_stats(db: &Db) -> BoxedFilter<(impl Reply,)> {
-    warp::path!("api" / "games" / "stats")
+    warp::path!("stats")
         .and(warp::get())
         .and(with(db))
         .and(authenticated_user())

@@ -4,7 +4,7 @@ use warp::{filters::BoxedFilter, Filter, Reply};
 
 /// Combined filter for the leaderboard route.
 pub fn all(db: &Db) -> BoxedFilter<(impl Reply,)> {
-    overall_leaderboard(db).or(friends_leaderboard(db)).boxed()
+    warp::path("leaderboard").and(overall_leaderboard(db).or(friends_leaderboard(db))).boxed()
 }
 
 /// Query parameter for the leaderboard route.
@@ -16,7 +16,7 @@ pub struct LeaderboardQuery {
 
 /// The overall leaderboard.
 fn overall_leaderboard(db: &Db) -> BoxedFilter<(impl Reply,)> {
-    warp::path!("api" / "leaderboard")
+    warp::path!()
         .and(warp::get())
         .and(with(db))
         .and(warp::query())
@@ -26,7 +26,7 @@ fn overall_leaderboard(db: &Db) -> BoxedFilter<(impl Reply,)> {
 
 /// A leaderboard that only contains the user's friends.
 fn friends_leaderboard(db: &Db) -> BoxedFilter<(impl Reply,)> {
-    warp::path!("api" / "leaderboard" / "friends")
+    warp::path!("friends")
         .and(warp::get())
         .and(with(db))
         .and(authenticated_user())

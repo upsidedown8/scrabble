@@ -10,12 +10,12 @@ use warp::{filters::BoxedFilter, ws::Ws, Filter, Reply};
 pub fn all(db: &Db, fsm: &FsmHandle) -> BoxedFilter<(impl Reply,)> {
     let games = GamesHandle::new(db, fsm);
 
-    connect(&games)
+    warp::path("live").and(connect(&games)).boxed()
 }
 
 /// Connect to the server via websocket.
 fn connect(games: &GamesHandle) -> BoxedFilter<(impl Reply,)> {
-    warp::path!("api" / "live")
+    warp::path!()
         .and(warp::ws())
         .and(with(games))
         .map(|ws: Ws, games: GamesHandle| {

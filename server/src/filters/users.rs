@@ -3,19 +3,22 @@ use warp::{filters::BoxedFilter, Filter, Reply};
 
 /// Combined filter for the users route.
 pub fn all(db: &Db, mailer: &Mailer) -> BoxedFilter<(impl Reply,)> {
-    log_in(db)
-        .or(sign_up(db))
-        .or(profile(db))
-        .or(delete(db))
-        .or(update(db))
-        .or(reset_password(db, mailer))
-        .or(reset_with_secret(db))
+    warp::path("users")
+        .and(
+            log_in(db)
+                .or(sign_up(db))
+                .or(profile(db))
+                .or(delete(db))
+                .or(update(db))
+                .or(reset_password(db, mailer))
+                .or(reset_with_secret(db)),
+        )
         .boxed()
 }
 
 /// Log in to an account.
 fn log_in(db: &Db) -> BoxedFilter<(impl Reply,)> {
-    warp::path!("api" / "users" / "login")
+    warp::path!("login")
         .and(warp::post())
         .and(with(db))
         .and(warp::body::json())
@@ -25,7 +28,7 @@ fn log_in(db: &Db) -> BoxedFilter<(impl Reply,)> {
 
 /// Sign up for an account.
 fn sign_up(db: &Db) -> BoxedFilter<(impl Reply,)> {
-    warp::path!("api" / "users")
+    warp::path!()
         .and(warp::post())
         .and(with(db))
         .and(warp::body::json())
@@ -35,7 +38,7 @@ fn sign_up(db: &Db) -> BoxedFilter<(impl Reply,)> {
 
 /// Get account information.
 fn profile(db: &Db) -> BoxedFilter<(impl Reply,)> {
-    warp::path!("api" / "users")
+    warp::path!()
         .and(warp::get())
         .and(with(db))
         .and(authenticated_user())
@@ -45,7 +48,7 @@ fn profile(db: &Db) -> BoxedFilter<(impl Reply,)> {
 
 /// Delete an account.
 fn delete(db: &Db) -> BoxedFilter<(impl Reply,)> {
-    warp::path!("api" / "users")
+    warp::path!()
         .and(warp::delete())
         .and(with(db))
         .and(authenticated_user())
@@ -56,7 +59,7 @@ fn delete(db: &Db) -> BoxedFilter<(impl Reply,)> {
 
 /// Update an account.
 fn update(db: &Db) -> BoxedFilter<(impl Reply,)> {
-    warp::path!("api" / "users")
+    warp::path!()
         .and(warp::put())
         .and(with(db))
         .and(authenticated_user())
@@ -67,7 +70,7 @@ fn update(db: &Db) -> BoxedFilter<(impl Reply,)> {
 
 /// Reset password (sends an email).
 fn reset_password(db: &Db, mailer: &Mailer) -> BoxedFilter<(impl Reply,)> {
-    warp::path!("api" / "users" / "reset-password")
+    warp::path!("reset-password")
         .and(warp::post())
         .and(with(db))
         .and(with(mailer))
@@ -78,7 +81,7 @@ fn reset_password(db: &Db, mailer: &Mailer) -> BoxedFilter<(impl Reply,)> {
 
 /// Reset password from secret sent in email link.
 fn reset_with_secret(db: &Db) -> BoxedFilter<(impl Reply,)> {
-    warp::path!("api" / "users" / "reset-password")
+    warp::path!("reset-password")
         .and(warp::get())
         .and(with(db))
         .and(warp::body::json())
