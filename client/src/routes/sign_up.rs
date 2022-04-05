@@ -13,32 +13,46 @@ use sycamore_router::navigate;
 #[component]
 pub fn SignUpPage<G: Html>(ctx: ScopeRef) -> View<G> {
     let auth_ctx = ctx.use_auth_context();
+
+    // Signals for signup options.
     let username = ctx.create_signal(String::from(""));
     let email = ctx.create_signal(String::from(""));
     let password = ctx.create_signal(String::from(""));
+    let is_private = ctx.create_signal(false);
+
+    // Request signal.
     let sign_up_req = ctx.create_memo(|| SignUp {
         username: (*username.get()).clone(),
         email: (*email.get()).clone(),
         password: (*password.get()).clone(),
-        is_private: false,
+        is_private: *is_private.get(),
     });
+
+    // State signals.
     let loading = ctx.create_signal(false);
     let err = ctx.create_signal(None);
 
-    let onsignup = |_| {
+    // Called when the user toggles the checkbox.
+    let on_toggle = |_| is_private.set(!*is_private.get());
+    // Called when the user clicks the signup button.
+    let on_sign_up = |_| {
         loading.set(true);
 
         ctx.spawn_local(async {
-            match sign_up(auth_ctx, sign_up_req.get().as_ref()).await {
-                Ok(sign_up_response) => {
+            match sign_up(sign_up_req.get().as_ref()).await {
+                // Successful request.
+                Ok((Some(auth), sign_up_response)) => {
                     auth_ctx.set(Some(AuthCtx {
-                        details: sign_up_response.user_details,
-                        auth: sign_up_response.auth,
+                        user_details: sign_up_response.user_details,
+                        auth,
                     }));
 
                     navigate("/");
                 }
+                // An error occurred.
                 Err(e) => err.set(Some(e)),
+                // Received auth was None.
+                _ => log::error!("expected auth"),
             };
 
             loading.set(false);
@@ -46,7 +60,7 @@ pub fn SignUpPage<G: Html>(ctx: ScopeRef) -> View<G> {
     };
 
     view! { ctx,
-        div(class="signup-route is-centered is-vcentered is-flex columns") {
+        div(class="page is-centered is-vcentered is-flex columns") {
             div(class="box") {
                 div(class="has-text-centered") {
                     a(href="/login") {
@@ -83,9 +97,23 @@ pub fn SignUpPage<G: Html>(ctx: ScopeRef) -> View<G> {
                     }
                 }
 
-                button(on:click=onsignup, disabled=*loading.get(), class="button is-primary") {
-                    "Sign up"
+                hr
+
+                div(class="field") {
+                    label(class="checkbox") {
+                        input(type="checkbox", checked=*is_private.get(), on:click=on_toggle)
+                        "  Private account?"
+                    }
                 }
+
+                hr
+
+                div(class="field") {
+                    button(on:click=on_sign_up, disabled=*loading.get(), class="button is-primary") {
+                        "Sign up"
+                    }
+                }
+
 
                 ProgressBar(loading)
                 ErrorMsg(err)
