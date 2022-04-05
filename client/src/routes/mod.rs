@@ -1,19 +1,19 @@
 //! Module containing code for displaying pages.
 
-mod account;
+mod friends;
+mod games;
 mod home;
-mod login;
+mod invalid_state;
+mod leaderboards;
+mod live;
 mod not_found;
-mod play;
-mod reset_password;
-mod reset_with_secret;
-mod sign_up;
+mod users;
 
-pub use account::AccountPage;
+pub use friends::FriendsPage;
+pub use games::{GameListPage, GameStatsPage};
 pub use home::HomePage;
-pub use login::LoginPage;
+pub use invalid_state::InvalidStatePage;
+pub use leaderboards::{FriendsLeaderboardPage, LeaderboardPage};
+pub use live::LivePage;
 pub use not_found::NotFoundPage;
-pub use play::PlayPage;
-pub use reset_password::ResetPasswordPage;
-pub use reset_with_secret::ResetWithSecretPage;
-pub use sign_up::SignUpPage;
+pub use users::{AccountPage, LoginPage, ResetPasswordPage, ResetWithSecretPage, SignUpPage};

@@ -1,15 +1,22 @@
-//! Implementation of the [`PlayPage`].
+//! Implementation of the [`LivePage`].
 
 use crate::{components::Board, contexts::ScopeExt};
-use api::routes::live::GameMessage;
+use api::routes::live::{ClientMsg, LiveError, ServerMsg};
 use futures::{channel::mpsc, SinkExt, StreamExt};
 use reqwasm::websocket::{futures::WebSocket, Message};
 use scrabble::util::pos::Pos;
 use sycamore::{futures::ScopeSpawnLocal, prelude::*};
 
+/// Properties for the live page.
+#[derive(Prop)]
+pub struct Props {
+    /// Id of the live game to join.
+    pub id_game: Option<i32>,
+}
+
 /// Page for playing live games.
 #[component]
-pub fn PlayPage<G: Html>(ctx: ScopeRef) -> View<G> {
+pub fn LivePage<G: Html>(ctx: ScopeRef, props: Props) -> View<G> {
     let auth_ctx = ctx.use_auth_context();
 
     let msg = ctx.create_signal(String::new());

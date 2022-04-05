@@ -9,7 +9,7 @@ pub fn NotFoundPage<G: Html>(ctx: ScopeRef) -> View<G> {
     view! { ctx,
         div(class="page is-centered is-vcentered columns") {
             div {
-                h1 {
+                h1(class="h1") {
                     "404: Not Found"
                 }
                 p {
