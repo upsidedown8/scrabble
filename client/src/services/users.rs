@@ -14,10 +14,7 @@ pub async fn login(req: &Login) -> Result<(Option<Auth>, LoginResponse), Error> 
 }
 
 /// POST /api/users
-pub async fn sign_up(
-    auth_ctx: &AuthSignal,
-    req: &SignUp,
-) -> Result<(Option<Auth>, SignUpResponse), Error> {
+pub async fn sign_up(req: &SignUp) -> Result<(Option<Auth>, SignUpResponse), Error> {
     request(None, "/users", req, Method::POST).await
 }
 
