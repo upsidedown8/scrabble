@@ -60,7 +60,7 @@ pub async fn reset_password(
 
     // send a reset password email.
     let reset_link = format!(
-        "https://scrabble.thrgd.uk/reset-password&secret={hex}&username={username}",
+        "https://scrabble.thrgd.uk/reset-password/{username}/{hex}",
         username = user.username,
         hex = secret_hex
     );
