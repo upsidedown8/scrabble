@@ -20,7 +20,7 @@ pub mod services;
 const AUTH_KEY: &str = "scrabble.auth";
 
 /// Represents the pages of the app.
-#[derive(Route, Debug, Clone, Copy)]
+#[derive(Route, Debug, Clone)]
 pub enum AppRoutes {
     /// Home page
     #[to("/")]
@@ -37,6 +37,17 @@ pub enum AppRoutes {
     /// Play (games) page, requires login
     #[to("/play")]
     Play,
+    /// Page to send reset password email.
+    #[to("/reset-password")]
+    ResetPassword,
+    /// Reset password from email link.
+    #[to("/reset-password/<username>/<secret>")]
+    ResetWithSecret {
+        /// User to reset password for.
+        username: String,
+        /// Random secret from the server.
+        secret: String,
+    },
     /// Not found page
     #[not_found]
     NotFound,
@@ -95,6 +106,16 @@ pub fn App<G: Html>(ctx: ScopeRef) -> View<G> {
                         AppRoutes::Account if logged_in => view! { ctx, AccountPage() },
                         AppRoutes::Play if logged_in => view! { ctx, PlayPage() },
                         AppRoutes::Home => view! { ctx, HomePage() },
+                        AppRoutes::ResetWithSecret {
+                            username,
+                            secret,
+                        } => view! { ctx,
+                            ResetWithSecretPage {
+                                username: username.clone(),
+                                secret: secret.clone(),
+                            }
+                        },
+                        AppRoutes::ResetPassword => view! { ctx, ResetPasswordPage() },
                         _ => view! { ctx, NotFoundPage() },
                     }})
 
