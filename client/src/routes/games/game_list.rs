@@ -119,12 +119,15 @@ pub fn GameListPage<G: Html>(ctx: ScopeRef) -> View<G> {
                                             let end_time = end_time
                                                 .map(|date| date.to_string())
                                                 .unwrap_or_default();
+                                            let game_link = format!("/games/{id_game}/stats");
 
                                             view! { ctx,
                                                 tr {
                                                     // Link to the game page.
                                                     td {
-                                                        (id_game)
+                                                        a(href=game_link) {
+                                                            (id_game)
+                                                        }
                                                     }
                                                     td { (start_time) }
                                                     td { (end_time) }
