@@ -56,7 +56,7 @@ pub fn SignUpPage<G: Html>(ctx: ScopeRef) -> View<G> {
         div(class="page is-centered is-vcentered is-flex columns") {
             div(class="box") {
                 div(class="has-text-centered") {
-                    a(href="/login") {
+                    a(href="/users/login") {
                         "Already have an account?"
                     }
                 }

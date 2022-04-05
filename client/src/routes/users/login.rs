@@ -51,10 +51,10 @@ pub fn LoginPage<G: Html>(ctx: ScopeRef) -> View<G> {
         div(class="page is-centered is-vcentered is-flex columns") {
             div(class="box") {
                 div(class="has-text-centered") {
-                    a(href="/signup") { "Need an account?" }
+                    a(href="/users/signup") { "Need an account?" }
                     br
                     br
-                    a(href="/reset-password") { "Forgot password?" }
+                    a(href="/users/reset-password") { "Forgot password?" }
                 }
 
                 hr

@@ -71,7 +71,7 @@ fn NavbarEnd<'a, G: Html>(ctx: ScopeRef<'a>, logged_in: &'a ReadSignal<bool>) ->
                 div(class="buttons") {
                     (if *logged_in.get() {
                         view! { ctx,
-                            a(class="button is-light", href="/account") {
+                            a(class="button is-light", href="/users/account") {
                                 "Account"
                             }
                             a(class="button is-primary", on:click=|_| auth_ctx.set(None), href="/") {
@@ -80,12 +80,12 @@ fn NavbarEnd<'a, G: Html>(ctx: ScopeRef<'a>, logged_in: &'a ReadSignal<bool>) ->
                         }
                     } else {
                         view! { ctx,
-                            a(class="button is-primary", href="/signup") {
+                            a(class="button is-primary", href="/users/signup") {
                                 strong {
                                     "Sign up"
                                 }
                             }
-                            a(class="button is-light", href="/login") {
+                            a(class="button is-light", href="/users/login") {
                                 "Log in"
                             }
                         }
