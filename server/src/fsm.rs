@@ -11,7 +11,7 @@ pub struct FsmHandle(Arc<FastFsm>);
 impl FsmHandle {
     /// Loads the Fsm from env variables.
     pub fn new_from_env() -> Result<Self> {
-        let fsm_path = env::var("FAST_FSM_BIN").expect("`FAST_FSM_BIN` env variable");
+        let fsm_path = env::var("FAST_FSM_BIN")?;
 
         log::info!("loading fast fsm: {fsm_path}");
         let file = std::fs::File::open(&fsm_path)?;
