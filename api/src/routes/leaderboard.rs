@@ -10,7 +10,7 @@ pub struct LeaderboardResponse {
 }
 
 /// One row of the leaderboard.
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone, PartialEq)]
 pub struct LeaderboardRow {
     /// The username for the entry.
     pub username: String,
