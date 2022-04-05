@@ -1,8 +1,7 @@
 //! Module containing the error types.
 
-use std::fmt;
-
 use api::error::ErrorResponse;
+use std::fmt;
 
 /// The result type for the client.
 pub type Result<T, E = Error> = std::result::Result<T, E>;
@@ -26,9 +25,13 @@ impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Error::Reqwasm(err) => {
+                log::error!("reqwasm error: {err:?}");
                 writeln!(f, "Request failed")
             }
-            Error::SerdeJson(err) => writeln!(f, "Failed to deserialize response body"),
+            Error::SerdeJson(err) => {
+                log::error!("serde error: {err:?}");
+                writeln!(f, "Failed to deserialize response body")
+            }
             Error::ApiError(err) => writeln!(f, "API error: {err:?}"),
             Error::HttpStatus(status) => writeln!(f, "HTTP status: {status}"),
         }
