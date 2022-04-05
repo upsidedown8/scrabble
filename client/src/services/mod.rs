@@ -2,27 +2,25 @@
 
 use crate::{
     contexts::{AuthCtx, AuthSignal},
-    error::Error,
+    error::{Error, Result},
 };
-use api::{
-    auth::{Auth, AuthWrapper},
-    routes::users::UserDetails,
-};
+use api::auth::{Auth, AuthWrapper};
 use reqwasm::http::{Method, Request};
 use serde::{de::DeserializeOwned, Serialize};
 
 pub mod users;
 
-const API_URL: &str = "https://localhost:8000/api";
+const API_URL: &str = "https://thrgd.uk/api";
 
 /// Make a request to the path {API_URL}/{url}, with the provided
-/// method and data.
-pub async fn make_request<T, U>(
-    auth_ctx: &AuthSignal,
+/// method and data. Returns the optional auth from the server and
+/// the requested value.
+pub async fn request<T, U>(
+    auth: Option<&Auth>,
     url: &str,
     data: &T,
     method: Method,
-) -> Result<(Option<Auth>, U), Error>
+) -> Result<(Option<Auth>, U)>
 where
     T: Serialize,
     U: DeserializeOwned,
@@ -40,8 +38,7 @@ where
 
     log::info!("{req:#?}");
 
-    if let Some(AuthCtx { auth, .. }) = auth_ctx.get().as_ref() {
-        let Auth(token) = auth;
+    if let Some(Auth(token)) = auth {
         let bearer = format!("Bearer {token}");
 
         req = req.header("Authorization", &bearer);
@@ -77,4 +74,41 @@ where
         500 => Err(Error::InternalServerError),
         status => Err(Error::HttpStatus(status)),
     }
+}
+
+/// Makes a request and update the auth field if a token is
+/// received.
+pub async fn std_request<T, U>(
+    auth_ctx: &AuthSignal,
+    url: &str,
+    data: &T,
+    method: Method,
+) -> Result<U>
+where
+    T: Serialize,
+    U: DeserializeOwned,
+{
+    // Extract the token from the auth signal.
+    let ctx = auth_ctx.get();
+    let token = ctx.as_ref().as_ref().map(|ctx| &ctx.auth);
+
+    // Make the request.
+    let (auth, response) = request(token, url, data, method).await?;
+
+    // If a new auth token is received, update the stored token.
+    if let Some(auth) = auth {
+        let details = auth_ctx
+            .get()
+            .as_ref()
+            .as_ref()
+            .map(|auth_ctx| auth_ctx.user_details.clone())
+            .unwrap_or_default();
+        auth_ctx.set(Some(AuthCtx {
+            user_details: details,
+            auth,
+        }))
+    }
+
+    // Return the response from the server.
+    Ok(response)
 }
