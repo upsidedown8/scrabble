@@ -13,7 +13,7 @@ pub mod games;
 pub mod leaderboard;
 pub mod users;
 
-const API_URL: &str = "https://localhost/api";
+const API_URL: &str = "https://thrgd.uk/api";
 
 /// Sends the [`Request`].
 async fn send_request<U>(req: Request) -> Result<(Option<Auth>, U)>
