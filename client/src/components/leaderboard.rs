@@ -22,7 +22,7 @@ pub fn Leaderboard<'a, G: Html>(
                     th {abbr(title="best") { "Best score" }}
                     th {abbr(title="score/game") { "Average score per game" }}
                     th {abbr(title="score/tile") { "Average score per tile" }}
-                    th {abbr(title="w") { "Win percentage" }}
+                    th {abbr(title="w%") { "Win percentage" }}
                 }
             }
             // define the body of the table.
