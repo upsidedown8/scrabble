@@ -47,7 +47,7 @@ CREATE TABLE tbl_play(
 );
 CREATE TABLE tbl_tile(
   id_play SERIAL,
-  pos INTEGER,
+  pos INTEGER NOT NULL,
   letter CHAR NOT NULL,
   is_blank BOOLEAN NOT NULL,
   PRIMARY KEY (id_play, pos),
@@ -63,8 +63,7 @@ CREATE TABLE tbl_word(
   score INTEGER NOT NULL,
   letters VARCHAR(15) NOT NULL,
   PRIMARY KEY (id_word),
-  FOREIGN KEY (id_play) REFERENCES tbl_play (id_play),
-  CONSTRAINT valid_letter_count CHECK(LENGTH(letters) <= 15)
+  FOREIGN KEY (id_play) REFERENCES tbl_play (id_play)
 );
 CREATE TABLE IF NOT EXISTS tbl_password_reset(
   id_user SERIAL,
