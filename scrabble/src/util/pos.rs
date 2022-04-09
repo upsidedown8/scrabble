@@ -1,9 +1,12 @@
 //! Module containing newtypes representing checked board [`Pos`]itions,
 //! [`Row`]s, [`Col`]umns and orthagonal directions.
 
-use crate::game::{
-    board::{CELLS, COLS, ROWS},
-    tile::Letter,
+use crate::{
+    game::{
+        board::{CELLS, COLS, ROWS},
+        tile::Letter,
+    },
+    util,
 };
 use serde::{Deserialize, Deserializer, Serialize};
 use std::fmt;
@@ -53,7 +56,7 @@ impl Premium {
 #[derive(Default, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Serialize, Deserialize)]
 pub struct Pos(#[serde(deserialize_with = "deserialize_pos")] usize);
 
-/// Custom deserializer that ensures that deserialized letter values
+/// Custom deserializer that ensures that deserialized positions
 /// are valid.
 fn deserialize_pos<'de, D>(deserializer: D) -> Result<usize, D::Error>
 where
@@ -112,25 +115,24 @@ impl Pos {
     }
     /// Gets the optional tile bonus of the `Pos`.
     pub fn premium(&self) -> Option<Premium> {
-        let (row, col) = self.row_col();
+        // find difference to start square
+        let d_row = util::abs_diff(usize::from(self.row()), 7);
+        let d_col = util::abs_diff(usize::from(self.col()), 7);
 
-        // finds positive difference between two unsigned numbers
-        let abs_diff = |a, b| match a > b {
-            true => a - b,
-            false => b - a,
+        // sort the tuple.
+        let (x, y) = match (d_row, d_col) {
+            (a, b) if a > b => (b, a),
+            (a, b) => (a, b),
         };
 
-        // find difference to start square
-        let delta_row = abs_diff(usize::from(row), 7);
-        let delta_col = abs_diff(usize::from(col), 7);
-
-        match (delta_row, delta_col) {
+        // (x, y) is the pair of differences with x < y.
+        // since the scrabble board has the premium tiles symmetrically
+        // distributed, the same effect can be achieved with fewer comparisons.
+        match (x, y) {
             (0, 0) => Some(Premium::Start),
-            (2, 2) | (2, 6) | (6, 2) => Some(Premium::TripleLetter),
-            (0, 4) | (4, 0) | (1, 1) | (1, 5) | (5, 1) | (7, 4) | (4, 7) => {
-                Some(Premium::DoubleLetter)
-            }
-            (7, 7) | (0, 7) | (7, 0) => Some(Premium::TripleWord),
+            (2, 2) | (2, 6) => Some(Premium::TripleLetter),
+            (0, 4) | (1, 1) | (1, 5) | (4, 7) => Some(Premium::DoubleLetter),
+            (7, 7) | (0, 7) => Some(Premium::TripleWord),
             (a, b) if a == b => Some(Premium::DoubleWord),
             _ => None,
         }
@@ -151,10 +153,6 @@ impl Pos {
     pub fn col(&self) -> Col {
         Col::from(self.0 % COLS)
     }
-    /// Gets the pair (row, col) for the coordinate
-    pub fn row_col(&self) -> (Row, Col) {
-        (self.row(), self.col())
-    }
     /// Finds the pos in the grid offset by 1 in the given direction.
     pub fn dir(&self, dir: Direction) -> Option<Self> {
         self.offset(dir, 1)
@@ -164,7 +162,8 @@ impl Pos {
         let (drow, dcol) = dir.vector(count);
 
         // current coordinates
-        let (row, col) = self.row_col();
+        let row = self.row();
+        let col = self.col();
 
         // calculate new coordinates
         let row = usize::from(row) as i32 + drow;
