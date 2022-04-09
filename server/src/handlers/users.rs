@@ -1,7 +1,7 @@
 use crate::{
     auth::{self, hex, validation, Jwt, Role},
     db::Db,
-    error::Error,
+    error::{Error, Result},
     mailer::Mailer,
     models,
 };
@@ -57,10 +57,31 @@ pub async fn reset_password(
     };
     password_reset.insert(&db).await?;
 
+    // send the email on a seperate task as it may take a while.
+    tokio::spawn(async move {
+        let result = send_reset_email(mailer, user.email, user.username, secret_hex).await;
+        if let Err(e) = result {
+            log::error!("failed to send email: {e:?}");
+        }
+    });
+
+    // send a 200 OK reply if the operation succeeded.
+    Ok(warp::reply::json(&AuthWrapper {
+        auth: None,
+        response: (),
+    }))
+}
+/// Sends an email to reset the user's password.
+async fn send_reset_email(
+    mailer: Mailer,
+    email: String,
+    username: String,
+    secret_hex: String,
+) -> Result<()> {
     // send a reset password email.
     let reset_link = format!(
         "https://thrgd.uk/users/reset-password/{username}/{hex}",
-        username = user.username,
+        username = username,
         hex = secret_hex
     );
     let body_html = format!(
@@ -82,7 +103,7 @@ pub async fn reset_password(
         </a>
     </p>
     "#,
-        username = user.username,
+        username = username,
     );
     let body_plain = format!(
         "You are receiving this email because a request was made to \
@@ -90,23 +111,12 @@ pub async fn reset_password(
 
         Click to reset your password: {reset_link}
         ",
-        username = user.username,
+        username = username,
     );
 
     mailer
-        .send(
-            &user.email,
-            "Scrabble AI: Password Reset",
-            body_html,
-            body_plain,
-        )
-        .await?;
-
-    // send a 200 OK reply if the operation succeeded.
-    Ok(warp::reply::json(&AuthWrapper {
-        auth: None,
-        response: (),
-    }))
+        .send(&email, "Scrabble AI: Password Reset", body_html, body_plain)
+        .await
 }
 
 /// GET /api/users/reset-password
