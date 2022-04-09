@@ -15,8 +15,8 @@ CREATE TABLE tbl_friend_request (
   to_id_user SERIAL,
   date_sent TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (from_id_user, to_id_user),
-  FOREIGN KEY (from_id_user) REFERENCES tbl_user(id_user),
-  FOREIGN KEY (to_id_user) REFERENCES tbl_user(id_user)
+  FOREIGN KEY (from_id_user) REFERENCES tbl_user(id_user) ON DELETE CASCADE,
+  FOREIGN KEY (to_id_user) REFERENCES tbl_user(id_user) ON DELETE CASCADE
 );
 CREATE TABLE tbl_game(
   id_game SERIAL,
@@ -32,8 +32,8 @@ CREATE TABLE tbl_player(
   ai_difficulty TEXT,
   is_winner BOOLEAN,
   PRIMARY KEY (id_player),
-  FOREIGN KEY (id_game) REFERENCES tbl_game(id_game),
-  FOREIGN KEY (id_user) REFERENCES tbl_user(id_user),
+  FOREIGN KEY (id_game) REFERENCES tbl_game(id_game) ON DELETE CASCADE,
+  FOREIGN KEY (id_user) REFERENCES tbl_user(id_user) ON DELETE CASCADE,
   CONSTRAINT ai_xor_human CHECK (
     (id_user IS NULL) != (ai_difficulty IS NULL)
   ),
@@ -43,7 +43,7 @@ CREATE TABLE tbl_play(
   id_play SERIAL,
   id_player SERIAL NOT NULL,
   PRIMARY KEY (id_play),
-  FOREIGN KEY (id_player) REFERENCES tbl_player (id_player)
+  FOREIGN KEY (id_player) REFERENCES tbl_player (id_player) ON DELETE CASCADE
 );
 CREATE TABLE tbl_tile(
   id_play SERIAL,
@@ -51,7 +51,7 @@ CREATE TABLE tbl_tile(
   letter CHAR NOT NULL,
   is_blank BOOLEAN NOT NULL,
   PRIMARY KEY (id_play, pos),
-  FOREIGN KEY (id_play) REFERENCES tbl_play (id_play),
+  FOREIGN KEY (id_play) REFERENCES tbl_play (id_play) ON DELETE CASCADE,
   CONSTRAINT valid_pos CHECK (
     pos >= 0
     AND pos < 225
@@ -63,12 +63,12 @@ CREATE TABLE tbl_word(
   score INTEGER NOT NULL,
   letters VARCHAR(15) NOT NULL,
   PRIMARY KEY (id_word),
-  FOREIGN KEY (id_play) REFERENCES tbl_play (id_play)
+  FOREIGN KEY (id_play) REFERENCES tbl_play (id_play) ON DELETE CASCADE
 );
 CREATE TABLE IF NOT EXISTS tbl_password_reset(
   id_user SERIAL,
   secret_hex TEXT NOT NULL,
   valid_until TIMESTAMP NOT NULL,
   PRIMARY KEY (id_user),
-  FOREIGN KEY (id_user) REFERENCES tbl_user (id_user)
+  FOREIGN KEY (id_user) REFERENCES tbl_user (id_user) ON DELETE CASCADE
 );
