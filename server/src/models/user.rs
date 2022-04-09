@@ -67,19 +67,17 @@ impl User {
     }
     /// Finds a user from the user table by id.
     pub async fn find_by_id(db: &Db, id_user: i32) -> Result<Self> {
-        Ok(
-            sqlx::query_file_as!(User, "sql/users/find_by_id.sql", id_user)
-                .fetch_one(db)
-                .await?,
-        )
+        sqlx::query_file_as!(User, "sql/users/find_by_id.sql", id_user)
+            .fetch_optional(db)
+            .await?
+            .ok_or(Error::MissingAccount)
     }
     /// Finds a user from the user table by username.
     pub async fn find_by_username(db: &Db, username: &str) -> Result<Self> {
-        Ok(
-            sqlx::query_file_as!(User, "sql/users/find_by_username.sql", username)
-                .fetch_one(db)
-                .await?,
-        )
+        sqlx::query_file_as!(User, "sql/users/find_by_username.sql", username)
+            .fetch_optional(db)
+            .await?
+            .ok_or(Error::MissingAccount)
     }
     /// Inserts the record into the database.
     pub async fn insert(

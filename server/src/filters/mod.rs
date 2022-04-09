@@ -87,24 +87,11 @@ pub async fn handle_rejection(rejection: Rejection) -> Result<impl Reply, Infall
         log::info!("rejection: {error:?}");
         match error {
             Error::Http(_) => (StatusCode::BAD_REQUEST, "Bad request"),
-            Error::InvalidAuthHeader => (StatusCode::BAD_REQUEST, "Invalid auth header"),
             Error::MissingAuthHeader => (StatusCode::NOT_FOUND, "Missing auth header"),
             Error::UsernameOrEmailExists => (StatusCode::FORBIDDEN, "Username or email exists"),
             Error::InvalidUsername => (StatusCode::FORBIDDEN, "Username is invalid"),
             Error::InvalidPassword => (StatusCode::FORBIDDEN, "Password is too weak"),
             Error::InvalidEmail => (StatusCode::FORBIDDEN, "Email is invalid"),
-            Error::ResetTimeout => (
-                StatusCode::FORBIDDEN,
-                "A recent request was made to reset the password",
-            ),
-            Error::ResetExpired => (
-                StatusCode::FORBIDDEN,
-                "The request to reset your password has expired",
-            ),
-            Error::JwtDecoding(_)
-            | Error::IncorrectResetSecret
-            | Error::IncorrectPassword
-            | Error::InsufficientRole => (StatusCode::UNAUTHORIZED, "Unauthorized"),
             Error::Lettre(_)
             | Error::Address(_)
             | Error::JwtEncoding(_)
@@ -115,7 +102,23 @@ pub async fn handle_rejection(rejection: Rejection) -> Result<impl Reply, Infall
             | Error::SocketAddr(_)
             | Error::Sqlx(_)
             | Error::Argon2(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error"),
-            Error::MissingAuthority => todo!(),
+            Error::InvalidAuthHeader | Error::MissingAuthority => {
+                (StatusCode::BAD_REQUEST, "Invalid auth header")
+            }
+            Error::ResetTimeout => (
+                StatusCode::FORBIDDEN,
+                "A recent request was made to reset the password",
+            ),
+            Error::ResetExpired => (
+                StatusCode::FORBIDDEN,
+                "The request to reset your password has expired",
+            ),
+            Error::MissingAccount | Error::IncorrectPassword => {
+                (StatusCode::UNAUTHORIZED, "Incorrect username or password")
+            }
+            Error::JwtDecoding(_) | Error::IncorrectResetSecret | Error::InsufficientRole => {
+                (StatusCode::UNAUTHORIZED, "Unauthorized")
+            }
         }
     } else if rejection.is_not_found() {
         log::info!("not found");

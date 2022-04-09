@@ -104,4 +104,6 @@ pub enum Error {
     ResetExpired,
     /// The target authority was missing from the request.
     MissingAuthority,
+    /// The client made a request for an account that no longer exists.
+    MissingAccount,
 }
