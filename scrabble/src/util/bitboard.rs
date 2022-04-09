@@ -93,6 +93,18 @@ impl From<BitBoard> for ReverseBits {
     }
 }
 
+/// Macro that creates a bitboard.
+macro_rules! bitboard {
+    ($b:expr) => {
+        bitboard!($b, $b, $b, $b)
+    };
+    ($b0:expr, $b1:expr, $b2:expr, $b3:expr) => {
+        BitBoard {
+            boards: [$b0, $b1, $b2, ($b3) & FINAL_WORD_MASK],
+        }
+    };
+}
+
 /// A scrabble board has [`ROWS`](crate::game::board::ROWS) *
 /// [`COLS`](crate::game::board::COLS) = 15 * 15 = 225 squares.
 /// The nearest multiple of 64 bit integers is 4, giving 256
@@ -109,39 +121,27 @@ pub struct BitBoard {
 }
 impl BitBoard {
     /// An empty bitboard.
-    pub const ZERO: BitBoard = BitBoard {
-        boards: [0, 0, 0, 0],
-    };
+    pub const ZERO: BitBoard = bitboard![0, 0, 0, 0];
     /// A full bitboard.
-    pub const FULL: BitBoard = BitBoard {
-        boards: [u64::MAX, u64::MAX, u64::MAX, FINAL_WORD_MASK],
-    };
+    pub const FULL: BitBoard = bitboard![u64::MAX];
     /// Only the top row.
-    pub const TOP_ROW: BitBoard = BitBoard {
-        boards: [0x7FFF, 0, 0, 0],
-    };
+    pub const TOP_ROW: BitBoard = bitboard![0x7fff, 0, 0, 0];
     /// Only the bottom row.
-    pub const BOTTOM_ROW: BitBoard = BitBoard {
-        boards: [0, 0, 0, 0x1FFFC0000],
-    };
+    pub const BOTTOM_ROW: BitBoard = bitboard![0, 0, 0, 0x1fffc0000];
     /// Only the left column.
-    pub const LEFT_COL: BitBoard = BitBoard {
-        boards: [
-            0x1000200040008001,
-            0x100020004000800,
-            0x10002000400080,
-            0x40008,
-        ],
-    };
+    pub const LEFT_COL: BitBoard = bitboard![
+        0x1000200040008001,
+        0x100020004000800,
+        0x10002000400080,
+        0x40008
+    ];
     /// Only the right column.
-    pub const RIGHT_COL: BitBoard = BitBoard {
-        boards: [
-            0x800100020004000,
-            0x80010002000400,
-            0x8001000200040,
-            0x100020004,
-        ],
-    };
+    pub const RIGHT_COL: BitBoard = bitboard![
+        0x800100020004000,
+        0x80010002000400,
+        0x8001000200040,
+        0x100020004
+    ];
 
     /// Gets an iterator over the [`WordBoundaries`](super::words::WordBoundaries)s
     /// on the board.
@@ -413,12 +413,6 @@ impl Not for BitBoard {
     }
 }
 
-impl From<[u64; 4]> for BitBoard {
-    fn from(mut boards: [u64; 4]) -> Self {
-        boards[3] &= FINAL_WORD_MASK;
-        Self { boards }
-    }
-}
 impl FromIterator<Pos> for BitBoard {
     fn from_iter<T: IntoIterator<Item = Pos>>(iter: T) -> Self {
         let mut bb = BitBoard::default();
@@ -430,7 +424,6 @@ impl FromIterator<Pos> for BitBoard {
         bb
     }
 }
-
 impl fmt::Display for BitBoard {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write_grid(f, |pos| match self.is_set(pos) {
@@ -446,14 +439,12 @@ mod tests {
 
     #[test]
     fn not() {
-        let bb = BitBoard {
-            boards: [
-                0x00ff_00ff_00ff_00ff_u64,
-                0xaa00_aa00_aa00_aa00_u64,
-                0x00ff_00ff_00ff_00ff_u64,
-                0xaa00_aa00_aa00_aa00_u64 & FINAL_WORD_MASK,
-            ],
-        };
+        let bb = bitboard![
+            0x00ff_00ff_00ff_00ff_u64,
+            0xaa00_aa00_aa00_aa00_u64,
+            0x00ff_00ff_00ff_00ff_u64,
+            0xaa00_aa00_aa00_aa00_u64 & FINAL_WORD_MASK
+        ];
         let not_bb = !bb;
         assert_eq!(
             not_bb.boards,
@@ -474,22 +465,18 @@ mod tests {
 
     #[test]
     fn or() {
-        let bb = BitBoard {
-            boards: [
-                0xaa00_aa00_aa00_aa00_u64,
-                0x00bb_00bb_00bb_00bb_u64,
-                0xaa00_aa00_aa00_aa00_u64,
-                0x00bb_00bb_00bb_00bb_u64 & FINAL_WORD_MASK,
-            ],
-        };
-        let other = BitBoard {
-            boards: [
-                0x00aa_00aa_00aa_00aa_u64,
-                0xbb00_bb00_bb00_bb00_u64,
-                0x00aa_00aa_00aa_00aa_u64,
-                0xbb00_bb00_bb00_bb00_u64 & FINAL_WORD_MASK,
-            ],
-        };
+        let bb = bitboard![
+            0xaa00_aa00_aa00_aa00_u64,
+            0x00bb_00bb_00bb_00bb_u64,
+            0xaa00_aa00_aa00_aa00_u64,
+            0x00bb_00bb_00bb_00bb_u64 & FINAL_WORD_MASK
+        ];
+        let other = bitboard![
+            0x00aa_00aa_00aa_00aa_u64,
+            0xbb00_bb00_bb00_bb00_u64,
+            0x00aa_00aa_00aa_00aa_u64,
+            0xbb00_bb00_bb00_bb00_u64 & FINAL_WORD_MASK
+        ];
         let or = bb | other;
         assert_eq!(
             or.boards,
@@ -504,22 +491,18 @@ mod tests {
 
     #[test]
     fn and() {
-        let bb = BitBoard {
-            boards: [
-                0xaa00_aa00_aa00_aa00_u64,
-                0x00bb_00bb_00bb_00bb_u64,
-                0xaa00_aa00_aa00_aa00_u64,
-                0x00bb_00bb_00bb_00bb_u64 & FINAL_WORD_MASK,
-            ],
-        };
-        let other = BitBoard {
-            boards: [
-                0xaa00_aa00_aa00_aa00_u64,
-                0x00bb_00bb_00bb_00bb_u64,
-                0xaa00_aa00_aa00_aa00_u64,
-                0x00bb_00bb_00bb_00bb_u64 & FINAL_WORD_MASK,
-            ],
-        };
+        let bb = bitboard![
+            0xaa00_aa00_aa00_aa00_u64,
+            0x00bb_00bb_00bb_00bb_u64,
+            0xaa00_aa00_aa00_aa00_u64,
+            0x00bb_00bb_00bb_00bb_u64 & FINAL_WORD_MASK
+        ];
+        let other = bitboard![
+            0xaa00_aa00_aa00_aa00_u64,
+            0x00bb_00bb_00bb_00bb_u64,
+            0xaa00_aa00_aa00_aa00_u64,
+            0x00bb_00bb_00bb_00bb_u64 & FINAL_WORD_MASK
+        ];
         let and = bb & other;
         assert_eq!(and, bb);
     }
