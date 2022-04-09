@@ -169,7 +169,8 @@ impl Board {
 
         // store the row and column of the first tile.
         let (first_pos, _) = tile_positions[0];
-        let (row, col) = first_pos.row_col();
+        let row = first_pos.row();
+        let col = first_pos.col();
         let mut same_row = true;
         let mut same_col = true;
 
