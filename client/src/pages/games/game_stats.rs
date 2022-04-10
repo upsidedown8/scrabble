@@ -6,7 +6,7 @@ use sycamore::{prelude::*, suspense::Suspense};
 
 /// Props for `GameStatsPage`.
 #[derive(Prop)]
-struct Props {
+pub struct Props {
     /// The game id.
     pub id_game: i32,
 }
