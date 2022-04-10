@@ -26,15 +26,10 @@ pub async fn remove(auth_signal: &AuthSignal, username: String) -> Result<()> {
 
 /// GET /api/friends [+Auth]
 pub async fn list(auth_signal: &AuthSignal) -> Result<FriendsResponse> {
-    req_no_body(&format!("/friends"), Method::GET, Some(auth_signal)).await
+    req_no_body("/friends", Method::GET, Some(auth_signal)).await
 }
 
 /// GET /api/friends/requests [+Auth]
 pub async fn list_requests(auth_signal: &AuthSignal) -> Result<FriendRequestsResponse> {
-    req_no_body(
-        &format!("/friends/requests"),
-        Method::GET,
-        Some(auth_signal),
-    )
-    .await
+    req_no_body("/friends/requests", Method::GET, Some(auth_signal)).await
 }

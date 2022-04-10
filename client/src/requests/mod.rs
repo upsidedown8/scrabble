@@ -70,7 +70,7 @@ where
         }),
         status => {
             if let Ok(error_response) = response.json().await {
-                Err(Error::ApiError(error_response))
+                Err(Error::Api(error_response))
             } else {
                 Err(Error::HttpStatus(status))
             }
@@ -90,13 +90,10 @@ where
     T: Serialize,
     U: DeserializeOwned,
 {
-    let auth_signal: Option<&AuthSignal> = auth_signal.into();
-    let data: Option<&T> = data.into();
-
-    let (auth, response) = request(url, method, data, auth_signal).await?;
+    let (token, response) = request(url, method, data, auth_signal).await?;
 
     // If a new auth token is received, update the stored token.
-    if let Some(token) = auth {
+    if let Some(token) = token {
         if let Some(auth_signal) = auth_signal {
             set_token(auth_signal, token);
         }
