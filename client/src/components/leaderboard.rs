@@ -5,7 +5,7 @@ use sycamore::prelude::*;
 
 /// Props for the leaderboard.
 #[derive(Prop)]
-struct Props<'a> {
+pub struct Props<'a> {
     /// The rows of the leaderboard.
     pub rows: &'a ReadSignal<Vec<ApiLeaderboardRow>>,
 }

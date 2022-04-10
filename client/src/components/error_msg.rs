@@ -3,7 +3,7 @@ use sycamore::prelude::*;
 
 /// Props for the error message.
 #[derive(Prop)]
-struct ErrorMsgProps<'a> {
+pub struct ErrorMsgProps<'a> {
     /// The optional error.
     pub err: &'a Signal<Option<Error>>,
 }
@@ -22,6 +22,15 @@ pub fn ErrorMsg<'a, G: Html>(cx: Scope<'a>, props: ErrorMsgProps<'a>) -> View<G>
         (match props.err.get().is_some() {
             false => view! { cx, },
             true => view! { cx,
+                article(class="message is-danger mt-3") {
+                    div(class="message-header") {
+                        p { "Error" }
+                        button(on:click=|_| props.err.set(None), class="delete") {}
+                    }
+                    div(class="message-body") {
+                        (msg.get())
+                    }
+                }
             }
         })
     }
@@ -29,7 +38,7 @@ pub fn ErrorMsg<'a, G: Html>(cx: Scope<'a>, props: ErrorMsgProps<'a>) -> View<G>
 
 /// Props for `StaticErrorMsg`.
 #[derive(Prop)]
-struct StaticErrorMsgProps {
+pub struct StaticErrorMsgProps {
     /// The optional error message.
     pub err: Error,
 }

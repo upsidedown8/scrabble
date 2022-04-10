@@ -5,7 +5,7 @@ use sycamore::prelude::*;
 
 /// Properties for the `Navbar`.
 #[derive(Prop)]
-struct Props<'a> {
+pub struct Props<'a> {
     /// Whether the navbar is expanded.
     pub is_expanded: &'a Signal<bool>,
 }

@@ -4,7 +4,7 @@ use sycamore::prelude::*;
 
 /// Properties for `FaIcon`.
 #[derive(Prop)]
-struct Props<'a> {
+pub struct Props<'a> {
     /// The class of the icon.
     pub class: &'a str,
 }

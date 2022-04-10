@@ -4,7 +4,7 @@ use sycamore::prelude::*;
 
 /// Props for `ProgressBar`.
 #[derive(Prop)]
-struct Props<'a> {
+pub struct Props<'a> {
     /// Whether the progress bar is visible.
     pub is_visible: &'a ReadSignal<bool>,
 }
