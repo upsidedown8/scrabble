@@ -76,7 +76,7 @@ pub fn use_user_details(cx: Scope) -> &ReadSignal<Option<UserDetails>> {
 }
 
 /// Gets a signal containing the optional auth token.
-pub fn use_token<'a>(cx: Scope<'a>) -> &'a ReadSignal<Option<Token>> {
+pub fn use_token(cx: Scope) -> &ReadSignal<Option<Token>> {
     let auth = use_auth(cx);
 
     create_memo(cx, || {
