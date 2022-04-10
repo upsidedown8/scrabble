@@ -1,3 +1,8 @@
+//! SPA web client.
+
+// Produce a compiler warning for missing documentation.
+#![warn(missing_docs)]
+
 use sycamore::prelude::*;
 
 mod app;
