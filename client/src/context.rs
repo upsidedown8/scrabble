@@ -42,8 +42,9 @@ pub fn provide_auth_context(cx: Scope) -> &AuthSignal {
     let auth = provide_context_ref(cx, create_signal(cx, auth_ctx));
 
     // store new value in LocalStorage whenever the auth data is updated.
-    create_effect(cx, || {
-        let auth_ctx = auth.get().as_ref();
+    create_effect(cx, move || {
+        let auth = auth.get();
+        let auth_ctx = auth.as_ref();
         let serialized = serde_json::to_string(auth_ctx).unwrap();
 
         local_storage.set_item(AUTH_KEY, &serialized).unwrap();
@@ -69,9 +70,8 @@ pub fn use_user_details(cx: Scope) -> &ReadSignal<Option<UserDetails>> {
     let auth = use_auth(cx);
 
     create_memo(cx, || {
-        let auth: Option<&AuthCtx> = auth.get().as_ref().as_ref();
-
-        auth.map(|ctx| ctx.user_details)
+        let auth = auth.get();
+        auth.as_ref().as_ref().map(|ctx| ctx.user_details.clone())
     })
 }
 
@@ -80,9 +80,8 @@ pub fn use_token<'a>(cx: Scope<'a>) -> &'a ReadSignal<Option<Token>> {
     let auth = use_auth(cx);
 
     create_memo(cx, || {
-        let auth: Option<&AuthCtx> = auth.get().as_ref().as_ref();
-
-        auth.map(|ctx| ctx.token)
+        let auth = auth.get();
+        auth.as_ref().as_ref().map(|ctx| ctx.token.clone())
     })
 }
 

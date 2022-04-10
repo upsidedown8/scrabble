@@ -15,7 +15,7 @@ pub enum Error {
     /// data.
     SerdeJson(serde_json::Error),
     /// Error from the API.
-    ApiError(ErrorResponse),
+    Api(ErrorResponse),
     /// Unexpected HTTP status code.
     HttpStatus(u16),
 }
@@ -32,7 +32,7 @@ impl fmt::Display for Error {
                 log::error!("serde error: {err:?}");
                 writeln!(f, "Failed to deserialize response body")
             }
-            Error::ApiError(err) => {
+            Error::Api(err) => {
                 let ErrorResponse { status, msg } = err;
 
                 writeln!(f, "API error ({status}): {msg}")

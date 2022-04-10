@@ -17,12 +17,11 @@ pub fn App<G: Html>(cx: Scope) -> View<G> {
 
     // store the open state for the navbar.
     let is_expanded = create_signal(cx, false);
-    let logged_in = use_logged_in(cx);
 
     view! { cx,
         Router {
             integration: HistoryIntegration::new(),
-            view: |cx, route: &ReadSignal<Routes>| view! { cx,
+            view: move |cx, route: &ReadSignal<Routes>| view! { cx,
                 // Navbar at the top of every page.
                 Navbar {
                     is_expanded: is_expanded,
@@ -43,7 +42,7 @@ pub fn App<G: Html>(cx: Scope) -> View<G> {
 
 /// Represents the pages of the app.
 #[derive(Route)]
-enum Routes {
+pub enum Routes {
     /// Home page
     #[to("/")]
     Home,
@@ -101,7 +100,7 @@ enum Routes {
 
 /// Properties for rendering a page.
 #[derive(Prop)]
-struct RouteProps<'a> {
+pub struct RouteProps<'a> {
     /// References the signal for whether the navbar is expanded.
     pub is_expanded: &'a Signal<bool>,
     /// Read-only signal for the current route.
@@ -115,7 +114,8 @@ pub fn Route<'a, G: Html>(cx: Scope<'a>, props: RouteProps<'a>) -> View<G> {
     view! { cx,
         ({
             let logged_in = *is_logged_in.get();
-            let route = props.route.get().as_ref();
+            let route_signal = props.route.get();
+            let route = route_signal.as_ref();
 
             // Collapse the navbar whenever the user navigates to a
             // new route.
