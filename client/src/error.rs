@@ -32,7 +32,11 @@ impl fmt::Display for Error {
                 log::error!("serde error: {err:?}");
                 writeln!(f, "Failed to deserialize response body")
             }
-            Error::ApiError(err) => writeln!(f, "API error: {err:?}"),
+            Error::ApiError(err) => {
+                let ErrorResponse { status, msg } = err;
+
+                writeln!(f, "API error ({status}): {msg}")
+            }
             Error::HttpStatus(status) => writeln!(f, "HTTP status: {status}"),
         }
     }

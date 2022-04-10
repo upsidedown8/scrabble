@@ -1,5 +1,3 @@
-//! Module for the overall and friends leaderboards.
-
 mod friends_leaderboard;
 mod leaderboard;
 

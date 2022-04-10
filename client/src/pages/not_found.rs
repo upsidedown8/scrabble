@@ -5,11 +5,11 @@ use sycamore::prelude::*;
 /// Page rendered when the url did not match any other page,
 /// or the page matched required the user to be logged in.
 #[component]
-pub fn NotFoundPage<G: Html>(ctx: ScopeRef) -> View<G> {
-    view! { ctx,
+pub fn NotFoundPage<G: Html>(cx: Scope) -> View<G> {
+    view! { cx,
         div(class="page is-centered is-vcentered columns") {
             div(class="has-text-centered") {
-                h1(class="h1 is-size-5") {
+                h1(class="is-size-5") {
                     "Not Found"
                 }
 

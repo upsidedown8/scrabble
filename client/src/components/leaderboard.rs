@@ -3,13 +3,17 @@
 use api::routes::leaderboard::LeaderboardRow as ApiLeaderboardRow;
 use sycamore::prelude::*;
 
+/// Props for the leaderboard.
+#[derive(Prop)]
+struct Props<'a> {
+    /// The rows of the leaderboard.
+    pub rows: &'a ReadSignal<Vec<ApiLeaderboardRow>>,
+}
+
 /// Renders a row of a leaderboard within a table.
 #[component]
-pub fn Leaderboard<'a, G: Html>(
-    ctx: ScopeRef<'a>,
-    rows: &'a Signal<Vec<ApiLeaderboardRow>>,
-) -> View<G> {
-    view! { ctx,
+pub fn Leaderboard<'a, G: Html>(cx: Scope<'a>, props: Props<'a>) -> View<G> {
+    view! { cx,
         table(class="table") {
             // define the headers of the table.
             thead {
@@ -28,8 +32,8 @@ pub fn Leaderboard<'a, G: Html>(
             // define the body of the table.
             tbody {
                 Indexed {
-                    iterable: rows,
-                    view: |ctx, row| view! { ctx,
+                    iterable: props.rows,
+                    view: |cx, row| view! { cx,
                         tr {
                             td { (row.username) }
                             td { (row.avg_score_per_play) }

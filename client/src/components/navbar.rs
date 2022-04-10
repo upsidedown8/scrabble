@@ -1,22 +1,29 @@
-use crate::contexts::ScopeExt;
+//! Navbar component.
+
+use crate::context::{use_auth, use_logged_in};
 use sycamore::prelude::*;
+
+/// Properties for the `Navbar`.
+#[derive(Prop)]
+struct Props<'a> {
+    /// Whether the navbar is expanded.
+    pub is_expanded: &'a Signal<bool>,
+}
 
 /// Appears at the top of every page.
 #[component]
-pub fn Navbar<'a, G: Html>(ctx: ScopeRef<'a>, active: &'a Signal<bool>) -> View<G> {
-    let logged_in = ctx.use_logged_in();
-
-    let menu_class = ctx.create_memo(|| match *active.get() {
+pub fn Navbar<'a, G: Html>(cx: Scope<'a>, props: Props<'a>) -> View<G> {
+    let menu_class = create_memo(cx, || match *props.is_expanded.get() {
         true => "navbar-menu is-active",
         false => "navbar-menu",
     });
 
-    view! { ctx,
+    view! { cx,
         nav(class="navbar is-dark is-fixed-top") {
-            NavbarBrand(active)
+            NavbarBrand(props.is_expanded)
             div(class=menu_class) {
-                NavbarStart(logged_in)
-                NavbarEnd(logged_in)
+                NavbarStart {}
+                NavbarEnd {}
             }
         }
     }
@@ -24,16 +31,15 @@ pub fn Navbar<'a, G: Html>(ctx: ScopeRef<'a>, active: &'a Signal<bool>) -> View<
 
 /// The brand and hamburger menu.
 #[component]
-fn NavbarBrand<'a, G: Html>(ctx: ScopeRef<'a>, active: &'a Signal<bool>) -> View<G> {
-    let burger_class = ctx.create_memo(|| match *active.get() {
+fn NavbarBrand<'a, G: Html>(cx: Scope<'a>, is_expanded: &'a Signal<bool>) -> View<G> {
+    let burger_class = create_memo(cx, || match *is_expanded.get() {
         true => "navbar-burger is-active",
         false => "navbar-burger",
     });
-    let onclick = |_| active.set(!*active.get());
 
-    view! { ctx,
+    view! { cx,
         div(class="navbar-brand") {
-            a(class=burger_class, on:click=onclick) {
+            a(class=burger_class, on:click=|_| is_expanded.set(!*is_expanded.get())) {
                 span {}
                 span {}
                 span {}
@@ -44,17 +50,18 @@ fn NavbarBrand<'a, G: Html>(ctx: ScopeRef<'a>, active: &'a Signal<bool>) -> View
 
 /// The start (left part) of the menu.
 #[component]
-fn NavbarStart<'a, G: Html>(ctx: ScopeRef<'a>, logged_in: &'a ReadSignal<bool>) -> View<G> {
-    view! { ctx,
+fn NavbarStart<G: Html>(cx: Scope) -> View<G> {
+    let is_logged_in = use_logged_in(cx);
+
+    view! { cx,
         div(class="navbar-start") {
-            (if *logged_in.get() {
-                view! { ctx,
+            (match *is_logged_in.get() {
+                false => view! { cx, },
+                true => view! { cx,
                     a(class="navbar-item is-primary", href="/play") {
                         "Play"
                     }
-                }
-            } else {
-                view! { ctx, }
+                },
             })
         }
     }
@@ -62,36 +69,49 @@ fn NavbarStart<'a, G: Html>(ctx: ScopeRef<'a>, logged_in: &'a ReadSignal<bool>) 
 
 /// The end (right part) of the menu.
 #[component]
-fn NavbarEnd<'a, G: Html>(ctx: ScopeRef<'a>, logged_in: &'a ReadSignal<bool>) -> View<G> {
-    let auth_ctx = ctx.use_auth_context();
+fn NavbarEnd<G: Html>(cx: Scope) -> View<G> {
+    let is_logged_in = use_logged_in(cx);
 
-    view! { ctx,
+    view! { cx,
         div(class="navbar-end") {
             div(class="navbar-item") {
                 div(class="buttons") {
-                    (if *logged_in.get() {
-                        view! { ctx,
-                            a(class="button is-light", href="/users/account") {
-                                "Account"
-                            }
-                            a(class="button is-primary", on:click=|_| auth_ctx.set(None), href="/") {
-                                "Log out"
-                            }
-                        }
-                    } else {
-                        view! { ctx,
-                            a(class="button is-primary", href="/users/signup") {
-                                strong {
-                                    "Sign up"
-                                }
-                            }
-                            a(class="button is-light", href="/users/login") {
-                                "Log in"
-                            }
-                        }
+                    (match *is_logged_in.get() {
+                        true => view! { cx, NavbarEndLoggedIn {} },
+                        false => view! { cx, NavbarEndLoggedOut {} },
                     })
                 }
             }
+        }
+    }
+}
+
+/// The end part of the menu, when logged in.
+#[component]
+fn NavbarEndLoggedIn<G: Html>(cx: Scope) -> View<G> {
+    let auth = use_auth(cx);
+
+    view! { cx,
+        a(class="button is-light", href="/users/account") {
+            "Account"
+        }
+        a(class="button is-primary", href="/", on:click=|_| auth.set(None)) {
+            "Log out"
+        }
+    }
+}
+
+/// The end part of the menu, when logged out.
+#[component]
+fn NavbarEndLoggedOut<G: Html>(cx: Scope) -> View<G> {
+    view! { cx,
+        a(class="button is-primary", href="/users/signup") {
+            strong {
+                "Sign up"
+            }
+        }
+        a(class="button is-light", href="/users/login") {
+            "Log in"
         }
     }
 }

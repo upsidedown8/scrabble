@@ -1,4 +1,4 @@
-//! Module containing code for displaying pages.
+//! Module containing implementations for each page.
 
 mod friends;
 mod games;

@@ -1,0 +1,118 @@
+//! Methods for interacting with the API asynchronously.
+
+use crate::{
+    context::{set_token, AuthCtx, AuthSignal},
+    error::{Error, Result},
+};
+use api::auth::{AuthWrapper, Token};
+use reqwasm::http::{Method, Request};
+use serde::{de::DeserializeOwned, Serialize};
+
+pub mod friends;
+pub mod games;
+pub mod leaderboard;
+pub mod users;
+
+const API_URL: &str = "https://localhost/api";
+
+/// Make a request to the path {API_URL}/{url}, with the provided
+/// method and data. Returns the optional auth from the server and
+/// the requested value.
+pub async fn request<T, U>(
+    url: &str,
+    method: Method,
+    data: Option<&T>,
+    auth: Option<&AuthSignal>,
+) -> Result<(Option<Token>, U)>
+where
+    T: Serialize,
+    U: DeserializeOwned,
+{
+    let mut req = Request::new(&format!("{API_URL}{url}")).method(method);
+
+    // Add the JSON body.
+    if let Some(data) = data {
+        let body = serde_json::to_string(data)?;
+        req = req.header("Content-Type", "Application/JSON").body(body);
+        log::info!("added json body");
+    }
+
+    // Add the auth header
+    if let Some(auth_signal) = auth {
+        let auth_ctx = auth_signal.get();
+
+        if let Some(AuthCtx { token, .. }) = auth_ctx.as_ref() {
+            let Token(token) = token;
+            req = req.header("Authorization", &format!("Bearer {token}"));
+            log::info!("added auth header");
+        }
+    }
+
+    log::info!("sending request: {req:#?}");
+
+    let response = req.send().await?;
+
+    log::info!("response received: {response:?}");
+
+    // match on the response http status and return either
+    // an error message or the deserialized content.
+    match response.status() {
+        // (200 OK) or (201 CREATED)
+        200 | 201 => Ok({
+            // attempt to deserialize as `AuthWrapper<U>`.
+            if let Ok(AuthWrapper { token, response }) = response.json().await {
+                (token, response)
+            }
+            // attempt to deserialize as `U`.
+            else {
+                (None, response.json().await?)
+            }
+        }),
+        status => {
+            if let Ok(error_response) = response.json().await {
+                Err(Error::ApiError(error_response))
+            } else {
+                Err(Error::HttpStatus(status))
+            }
+        }
+    }
+}
+
+/// Makes a request and updates the auth field if a token is
+/// received.
+pub async fn req_std<T, U>(
+    url: &str,
+    method: Method,
+    data: Option<&T>,
+    auth_signal: Option<&AuthSignal>,
+) -> Result<U>
+where
+    T: Serialize,
+    U: DeserializeOwned,
+{
+    let auth_signal: Option<&AuthSignal> = auth_signal.into();
+    let data: Option<&T> = data.into();
+
+    let (auth, response) = request(url, method, data, auth_signal).await?;
+
+    // If a new auth token is received, update the stored token.
+    if let Some(token) = auth {
+        if let Some(auth_signal) = auth_signal {
+            set_token(auth_signal, token);
+        }
+    }
+
+    Ok(response)
+}
+
+/// Makes a standard request with an empty body.
+pub async fn req_no_body<U>(
+    url: &str,
+    method: Method,
+    auth_signal: Option<&AuthSignal>,
+) -> Result<U>
+where
+    U: DeserializeOwned,
+{
+    req_std(url, method, Option::<&()>::None, auth_signal).await
+}
