@@ -2,7 +2,7 @@ use crate::{
     auth::hex,
     error::{Error, Result},
 };
-use api::auth::Auth;
+use api::auth::Token;
 use chrono::{Duration, Utc};
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
@@ -112,7 +112,7 @@ impl Jwt {
     }
     /// Encodes the JWT, using the secret and expiry time offset
     /// from the `.env` file.
-    pub fn auth(mut self) -> Result<Auth> {
+    pub fn token(mut self) -> Result<Token> {
         // get current time, and add `JWT_EXPIRY_SECONDS` to get final time
         let exp_time = Utc::now() + *JWT_EXPIRY_DURATION;
         self.0.exp = exp_time.timestamp() as usize;
@@ -120,7 +120,7 @@ impl Jwt {
         let claims = &self.0;
 
         encode(&HEADER, claims, &ENCODING_KEY)
-            .map(Auth)
+            .map(Token)
             .map_err(Error::JwtEncoding)
     }
 }

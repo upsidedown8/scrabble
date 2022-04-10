@@ -24,7 +24,7 @@ pub async fn list(db: Db, jwt: Jwt) -> Result<impl Reply, Rejection> {
         .collect();
 
     Ok(warp::reply::json(&AuthWrapper {
-        auth: Some(jwt.auth()?),
+        token: Some(jwt.token()?),
         response: ListGamesResponse { games },
     }))
 }
@@ -53,7 +53,7 @@ pub async fn stats(id_game: i32, db: Db, jwt: Jwt) -> Result<impl Reply, Rejecti
     };
 
     Ok(warp::reply::json(&AuthWrapper {
-        auth: Some(jwt.auth()?),
+        token: Some(jwt.token()?),
         response: game_stats,
     }))
 }
@@ -80,7 +80,7 @@ pub async fn overall_stats(db: Db, jwt: Jwt) -> Result<impl Reply, Rejection> {
         .unwrap_or_default();
 
     Ok(warp::reply::json(&AuthWrapper {
-        auth: Some(jwt.auth()?),
+        token: Some(jwt.token()?),
         response: OverallStatsResponse { row },
     }))
 }

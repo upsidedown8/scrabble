@@ -67,7 +67,7 @@ pub async fn reset_password(
 
     // send a 200 OK reply if the operation succeeded.
     Ok(warp::reply::json(&AuthWrapper {
-        auth: None,
+        token: None,
         response: (),
     }))
 }
@@ -156,7 +156,7 @@ pub async fn reset_with_secret(
     let jwt = Jwt::new(new_user.id_user(), new_user.role());
 
     Ok(warp::reply::json(&AuthWrapper {
-        auth: Some(jwt.auth()?),
+        token: Some(jwt.token()?),
         response: UserDetails {
             username: new_user.username,
             email: new_user.email,
@@ -173,7 +173,7 @@ pub async fn log_in(db: Db, login: Login) -> Result<impl Reply, Rejection> {
     auth::verify(&user.hashed_pass, &login.password)?;
 
     Ok(warp::reply::json(&AuthWrapper {
-        auth: Some(jwt.auth()?),
+        token: Some(jwt.token()?),
         response: user.into_user_details(),
     }))
 }
@@ -199,7 +199,7 @@ pub async fn sign_up(db: Db, sign_up: SignUp) -> Result<impl Reply, Rejection> {
     let jwt = Jwt::new(id_user, Role::User);
 
     Ok(warp::reply::json(&AuthWrapper {
-        auth: Some(jwt.auth()?),
+        token: Some(jwt.token()?),
         response: UserDetails {
             username: sign_up.username,
             email: sign_up.email,
@@ -213,7 +213,7 @@ pub async fn profile(db: Db, jwt: Jwt) -> Result<impl Reply, Rejection> {
     let user = models::User::find_by_id(&db, jwt.id_user()).await?;
 
     Ok(warp::reply::json(&AuthWrapper {
-        auth: Some(jwt.auth()?),
+        token: Some(jwt.token()?),
         response: user.into_user_details(),
     }))
 }
@@ -253,7 +253,7 @@ pub async fn update(db: Db, jwt: Jwt, update: UpdateAccount) -> Result<impl Repl
     updated_user.update(&db).await?;
 
     Ok(warp::reply::json(&AuthWrapper {
-        auth: Some(jwt.auth()?),
+        token: Some(jwt.token()?),
         response: (),
     }))
 }
@@ -265,7 +265,7 @@ pub async fn delete(db: Db, jwt: Jwt, delete: DeleteAccount) -> Result<impl Repl
     user.delete(&db).await?;
 
     Ok(warp::reply::json(&AuthWrapper {
-        auth: None,
+        token: None,
         response: (),
     }))
 }

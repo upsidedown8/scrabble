@@ -4,14 +4,14 @@ use serde::{Deserialize, Serialize};
 
 /// Auth token (JWT)
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
-pub struct Auth(pub String);
+pub struct Token(pub String);
 
 /// A wrapper for all response types that provides an optional
 /// auth token.
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct AuthWrapper<T> {
     /// The JWT.
-    pub auth: Option<Auth>,
+    pub token: Option<Token>,
     /// The actual response data.
     pub response: T,
 }

@@ -10,7 +10,7 @@ pub async fn add(username: String, db: Db, jwt: Jwt) -> Result<impl Reply, Rejec
     models::FriendRequest::insert(&db, jwt.id_user(), &username).await?;
 
     Ok(warp::reply::json(&AuthWrapper {
-        auth: Some(jwt.auth()?),
+        token: Some(jwt.token()?),
         response: (),
     }))
 }
@@ -20,7 +20,7 @@ pub async fn remove(username: String, db: Db, jwt: Jwt) -> Result<impl Reply, Re
     models::FriendRequest::delete(&db, jwt.id_user(), &username).await?;
 
     Ok(warp::reply::json(&AuthWrapper {
-        auth: Some(jwt.auth()?),
+        token: Some(jwt.token()?),
         response: (),
     }))
 }
@@ -41,7 +41,7 @@ pub async fn list(db: Db, jwt: Jwt) -> Result<impl Reply, Rejection> {
         .collect();
 
     Ok(warp::reply::json(&AuthWrapper {
-        auth: Some(jwt.auth()?),
+        token: Some(jwt.token()?),
         response: FriendsResponse { friends },
     }))
 }
@@ -60,7 +60,7 @@ pub async fn list_requests(db: Db, jwt: Jwt) -> Result<impl Reply, Rejection> {
         .collect();
 
     Ok(warp::reply::json(&AuthWrapper {
-        auth: Some(jwt.auth()?),
+        token: Some(jwt.token()?),
         response: FriendRequestsResponse { requests },
     }))
 }

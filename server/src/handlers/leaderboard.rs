@@ -29,7 +29,7 @@ pub async fn overall_leaderboard(db: Db, query: LeaderboardQuery) -> Result<impl
         .collect::<Vec<_>>();
 
     Ok(warp::reply::json(&AuthWrapper {
-        auth: None,
+        token: None,
         response: LeaderboardResponse { rows },
     }))
 }
@@ -57,7 +57,7 @@ pub async fn friends_leaderboard(db: Db, jwt: Jwt) -> Result<impl Reply, Rejecti
 
     // get a leaderboard only containing scores of friends.
     Ok(warp::reply::json(&AuthWrapper {
-        auth: Some(jwt.auth()?),
+        token: Some(jwt.token()?),
         response: LeaderboardResponse { rows },
     }))
 }

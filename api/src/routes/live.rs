@@ -2,7 +2,7 @@
 
 use std::collections::HashMap;
 
-use crate::auth::Auth;
+use crate::auth::Token;
 use scrabble::{
     error::GameError,
     game::{play::Play, tile::Tile},
@@ -31,7 +31,7 @@ pub enum ClientMsg {
     /// A play message.
     Play(Play),
     /// The first message sent, authenticates the user.
-    Auth(Auth),
+    Auth(Token),
 }
 
 /// Messages sent from the server.

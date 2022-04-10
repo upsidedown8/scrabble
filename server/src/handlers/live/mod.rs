@@ -4,7 +4,7 @@ use self::{
 };
 use crate::auth::{Jwt, Role};
 use api::{
-    auth::Auth,
+    auth::Token,
     routes::live::{ClientMsg, LiveError, ServerMsg},
 };
 use futures::{SinkExt, StreamExt};
@@ -21,7 +21,7 @@ pub async fn connected(mut ws: WebSocket, games: GamesHandle) {
         // deserialize the message.
         let bytes = msg.as_bytes();
 
-        if let Ok(ClientMsg::Auth(Auth(token))) = bincode::deserialize(bytes) {
+        if let Ok(ClientMsg::Auth(Token(token))) = bincode::deserialize(bytes) {
             if let Ok(jwt) = Jwt::from_auth_token(&token, Role::User) {
                 authenticated(ws, jwt, games).await;
             } else {
