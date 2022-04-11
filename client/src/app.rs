@@ -9,37 +9,6 @@ use crate::{
     pages::*,
 };
 
-/// Top level component for the app.
-#[component]
-pub fn App<G: Html>(cx: Scope) -> View<G> {
-    // Allow all components and pages to access the auth data.
-    provide_auth_context(cx);
-
-    // store the open state for the navbar.
-    let is_expanded = create_signal(cx, false);
-
-    view! { cx,
-        Router {
-            integration: HistoryIntegration::new(),
-            view: move |cx, route: &ReadSignal<Routes>| view! { cx,
-                // Navbar at the top of every page.
-                Navbar {
-                    is_expanded: is_expanded,
-                }
-
-                // Main body of the page.
-                Route {
-                    is_expanded: is_expanded,
-                    route: route,
-                }
-
-                // Footer at the bottom of every page.
-                Footer {}
-            }
-        }
-    }
-}
-
 /// Represents the pages of the app.
 #[derive(Route)]
 pub enum Routes {
@@ -98,21 +67,58 @@ pub enum Routes {
     NotFound,
 }
 
-/// Properties for rendering a page.
+/// Top level component for the app.
+#[component]
+pub fn App<G: Html>(cx: Scope) -> View<G> {
+    log::info!("running app!");
+
+    // Allow all components and pages to access the auth data.
+    provide_auth_context(cx);
+
+    // Store the navbar expanded state.
+    let is_expanded = create_signal(cx, false);
+
+    log::info!("provided context!!");
+
+    view! { cx,
+        Router {
+            integration: HistoryIntegration::new(),
+            view: move |cx, route: &ReadSignal<Routes>| {
+                view! { cx,
+                    div(class="app") {
+                        // Navbar at the top of every page.
+                        Navbar {
+                            is_expanded: is_expanded,
+                        }
+
+                        ViewRoute {
+                            is_expanded: is_expanded,
+                            route: route,
+                        }
+
+                        // Footer at the bottom of every page.
+                        Footer {}
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Props for `ViewRoute`.
 #[derive(Prop)]
-pub struct RouteProps<'a> {
-    /// References the signal for whether the navbar is expanded.
+struct ViewRouteProps<'a> {
+    /// Whether the navbar is expanded.
     pub is_expanded: &'a Signal<bool>,
-    /// Read-only signal for the current route.
+    /// The route to display.
     pub route: &'a ReadSignal<Routes>,
 }
 
 #[component]
-pub fn Route<'a, G: Html>(cx: Scope<'a>, props: RouteProps<'a>) -> View<G> {
-    let is_logged_in = use_logged_in(cx);
-
+fn ViewRoute<'a, G: Html>(cx: Scope<'a>, props: ViewRouteProps<'a>) -> View<G> {
     view! { cx,
         ({
+            let is_logged_in = use_logged_in(cx);
             let logged_in = *is_logged_in.get();
             let route_signal = props.route.get();
             let route = route_signal.as_ref();
