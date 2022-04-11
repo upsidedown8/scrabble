@@ -41,10 +41,11 @@ pub fn LoginPage<G: Html>(cx: Scope) -> View<G> {
                     }));
                     navigate("/");
                 }
-                Err(e) => err.set(Some(e)),
+                Err(e) => {
+                    err.set(Some(e));
+                    is_loading.set(false);
+                }
             }
-
-            is_loading.set(false);
         });
     };
 

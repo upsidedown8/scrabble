@@ -44,10 +44,11 @@ pub fn SignUpPage<G: Html>(cx: Scope) -> View<G> {
                     }));
                     navigate("/");
                 }
-                Err(e) => err.set(Some(e)),
+                Err(e) => {
+                    is_loading.set(false);
+                    err.set(Some(e))
+                }
             }
-
-            is_loading.set(false);
         });
     };
 

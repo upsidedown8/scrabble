@@ -52,7 +52,10 @@ pub fn ResetWithSecretPage<G: Html>(cx: Scope, props: Props) -> View<G> {
                     }));
                     navigate("/");
                 }
-                Err(e) => err.set(Some(e)),
+                Err(e) => {
+                    is_loading.set(false);
+                    err.set(Some(e))
+                }
             }
         });
     };
