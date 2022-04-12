@@ -5,7 +5,6 @@ use crate::{
     context::use_auth,
     requests::leaderboard::friends_leaderboard,
 };
-use api::routes::leaderboard::LeaderboardResponse;
 use sycamore::{prelude::*, suspense::Suspense};
 
 /// Page for the friends leaderboard.
@@ -33,25 +32,18 @@ async fn FetchFriendsLeaderboard<G: Html>(cx: Scope<'_>) -> View<G> {
     let auth = use_auth(cx);
 
     match friends_leaderboard(auth).await {
-        Ok(response) => view! { cx,
-            ViewFriendsLeaderboard(response)
-        },
+        Ok(response) => {
+            let rows = create_signal(cx, response.rows);
+            view! { cx,
+                Leaderboard {
+                    rows: rows,
+                }
+            }
+        }
         Err(e) => view! { cx,
             StaticErrorMsg {
                 err: e,
             }
         },
-    }
-}
-
-/// Component that displays the leaderboard.
-#[component]
-fn ViewFriendsLeaderboard<G: Html>(cx: Scope, response: LeaderboardResponse) -> View<G> {
-    let rows = create_signal(cx, response.rows);
-
-    view! { cx,
-        Leaderboard {
-            rows: rows,
-        }
     }
 }
