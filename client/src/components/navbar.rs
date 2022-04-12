@@ -55,11 +55,23 @@ fn NavbarStart<G: Html>(cx: Scope) -> View<G> {
 
     view! { cx,
         div(class="navbar-start") {
+            a(class="navbar-item is-primary", href="/") {
+                "Home"
+            }
+            a(class="navbar-item is-primary", href="/leaderboard") {
+                "Leaderboard"
+            }
             (match *is_logged_in.get() {
                 false => view! { cx, },
                 true => view! { cx,
-                    a(class="navbar-item is-primary", href="/play") {
-                        "Play"
+                    a(class="navbar-item is-primary", href="/games") {
+                        "Game list"
+                    }
+                    a(class="navbar-item is-primary", href="/leaderboard/friends") {
+                        "Friend Leaderboard"
+                    }
+                    a(class="navbar-item is-primary", href="/friends") {
+                        "Friends"
                     }
                 },
             })

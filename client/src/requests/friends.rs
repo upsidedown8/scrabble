@@ -29,7 +29,12 @@ pub async fn list(auth_signal: &AuthSignal) -> Result<FriendsResponse> {
     req_no_body("/friends", Method::GET, Some(auth_signal)).await
 }
 
-/// GET /api/friends/requests [+Auth]
-pub async fn list_requests(auth_signal: &AuthSignal) -> Result<FriendRequestsResponse> {
-    req_no_body("/friends/requests", Method::GET, Some(auth_signal)).await
+/// GET /api/friends/requests/incoming [+Auth]
+pub async fn list_incoming(auth_signal: &AuthSignal) -> Result<FriendRequestsResponse> {
+    req_no_body("/friends/requests/incoming", Method::GET, Some(auth_signal)).await
+}
+
+/// GET /api/friends/requests/outgoing [+Auth]
+pub async fn list_outgoing(auth_signal: &AuthSignal) -> Result<FriendRequestsResponse> {
+    req_no_body("/friends/requests/outgoing", Method::GET, Some(auth_signal)).await
 }

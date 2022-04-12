@@ -135,11 +135,11 @@ fn ViewRoute<'a, G: Html>(cx: Scope<'a>, props: ViewRouteProps<'a>) -> View<G> {
                 Routes::Account if logged_in => view! { cx, AccountPage {} },
                 Routes::Login if !logged_in => view! { cx, LoginPage {} },
                 Routes::SignUp if !logged_in => view! { cx, SignUpPage {} },
-                Routes::ResetPassword => view! { cx, ResetPasswordPage {} },
+                Routes::ResetPassword if !logged_in => view! { cx, ResetPasswordPage {} },
                 Routes::ResetWithSecret {
                     username,
                     secret,
-                } => view! { cx,
+                } if !logged_in => view! { cx,
                     ResetWithSecretPage {
                         username: username.clone(),
                         secret: secret.clone(),
@@ -171,7 +171,7 @@ fn ViewRoute<'a, G: Html>(cx: Scope<'a>, props: ViewRouteProps<'a>) -> View<G> {
                 },
 
                 // Friends pages.
-                Routes::Friends => view! { cx, FriendsPage {} },
+                Routes::Friends if logged_in => view! { cx, FriendsPage {} },
 
                 // Error pages.
                 Routes::NotFound => view! { cx, NotFoundPage {} },
