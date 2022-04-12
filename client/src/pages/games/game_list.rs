@@ -14,10 +14,6 @@ pub fn GameListPage<G: Html>(cx: Scope) -> View<G> {
     view! { cx,
         div(class="page is-centered") {
             div {
-                div(class="m-3 has-text-centered") {
-                    h1(class="h1 is-size-5") { "Game list" }
-                }
-
                 Suspense {
                     fallback: view! { cx, p { "loading summary" } },
                     FetchGameSummary {}
@@ -87,13 +83,15 @@ fn ViewList<G: Html>(cx: Scope, list: ListGamesResponse) -> View<G> {
     );
 
     view! { cx,
+        h1(class="h1 is-size-5", style="margin-top: 10%") { "Game list" }
+
         table(class="table") {
             thead {
                 tr {
-                    th { abbr(title="Game id") { "Game id: click for more" } }
-                    th { "Start time" }
-                    th { "End time" }
-                    th { "Is the game over?" }
+                    th { abbr(title="Game id: click for more information") { "id" } }
+                    th { abbr(title="Start time") { "start" } }
+                    th { abbr(title="End time") { "end" } }
+                    th { abbr(title="Is the game over?") { "over?" } }
                 }
             }
             tbody {
@@ -126,22 +124,20 @@ fn ViewSummary<G: Html>(cx: Scope, summary: OverallStatsResponse) -> View<G> {
     let OverallStatsResponse { row } = summary;
 
     view! { cx,
-        hr
-
         h1(class="h1 is-size-5") { "Overall stats" }
 
         table(class="table") {
             // define the headers of the table.
             thead {
                 tr {
-                    th {abbr(title="score/play") { "Average score" }}
-                    th {abbr(title="wlen/play") { "Average word length" }}
-                    th {abbr(title="tiles/play") { "Average tiles placed" }}
-                    th {abbr(title="longest") { "Longest word length" }}
-                    th {abbr(title="best") { "Best score" }}
-                    th {abbr(title="score/game") { "Average score per game" }}
-                    th {abbr(title="score/tile") { "Average score per tile" }}
-                    th {abbr(title="w%") { "Win percentage" }}
+                    th {abbr(title="Average score") { "score/play" }}
+                    th {abbr(title="Average word length") { "wlen/play" }}
+                    th {abbr(title="Average tiles placed") { "tiles/play" }}
+                    th {abbr(title="Longest word length") { "longest" }}
+                    th {abbr(title="Best score") { "best" }}
+                    th {abbr(title="Average score per game") { "score/game" }}
+                    th {abbr(title="Average score per tile") { "score/tile" }}
+                    th {abbr(title="Win percentage") { "w%" }}
                 }
             }
             // define the body of the table.
