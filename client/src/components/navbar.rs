@@ -19,7 +19,7 @@ pub fn Navbar<'a, G: Html>(cx: Scope<'a>, props: Props<'a>) -> View<G> {
     });
 
     view! { cx,
-        nav(class="navbar is-dark is-fixed-top") {
+        nav(class="navbar is-black is-fixed-top") {
             NavbarBrand(props.is_expanded)
             div(class=menu_class) {
                 NavbarStart {}
