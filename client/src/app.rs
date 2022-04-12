@@ -70,15 +70,11 @@ pub enum Routes {
 /// Top level component for the app.
 #[component]
 pub fn App<G: Html>(cx: Scope) -> View<G> {
-    log::info!("running app!");
-
     // Allow all components and pages to access the auth data.
     provide_auth_context(cx);
 
     // Store the navbar expanded state.
     let is_expanded = create_signal(cx, false);
-
-    log::info!("provided context!!");
 
     view! { cx,
         Router {
@@ -116,19 +112,22 @@ struct ViewRouteProps<'a> {
 
 #[component]
 fn ViewRoute<'a, G: Html>(cx: Scope<'a>, props: ViewRouteProps<'a>) -> View<G> {
+    let is_logged_in = use_logged_in(cx);
+
+    create_effect(cx, || {
+        // Collapse the navbar whenever the user navigates to a
+        // new route.
+        props.route.track();
+        props.is_expanded.set(false);
+    });
+
     view! { cx,
         ({
-            let is_logged_in = use_logged_in(cx);
-            let logged_in = *is_logged_in.get();
-            let route_signal = props.route.get();
-            let route = route_signal.as_ref();
-
-            // Collapse the navbar whenever the user navigates to a
-            // new route.
-            props.is_expanded.set(false);
+            let logged_in = *is_logged_in.get_untracked();
+            // let logged_in = true;
 
             // Display the route.
-            match route {
+            match props.route.get().as_ref() {
                 // Home page.
                 Routes::Home => view! { cx, HomePage {} },
 
