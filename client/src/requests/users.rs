@@ -8,8 +8,6 @@ use crate::{
 use api::{auth::Token, routes::users::*};
 use reqwasm::http::Method;
 
-use super::req_no_body;
-
 /// POST /api/users/login
 pub async fn login(req: &Login) -> Result<(Token, UserDetails)> {
     let (token, user_details) = request("/users/login", Method::POST, Some(req), None).await?;
@@ -20,11 +18,6 @@ pub async fn login(req: &Login) -> Result<(Token, UserDetails)> {
 pub async fn sign_up(req: &SignUp) -> Result<(Token, UserDetails)> {
     let (token, user_details) = request("/users", Method::POST, Some(req), None).await?;
     Ok((token.unwrap(), user_details))
-}
-
-/// GET /api/users [+Auth]
-pub async fn profile(auth_signal: &AuthSignal) -> Result<UserDetails> {
-    req_no_body("/users", Method::GET, Some(auth_signal)).await
 }
 
 /// PUT /api/users [+Auth]
