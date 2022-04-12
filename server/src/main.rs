@@ -58,7 +58,8 @@ fn cors(is_https: bool) -> Result<Cors> {
 
     // CORS settings, which set allowed origins, headers and methods.
     let cors = warp::cors()
-        .allow_origin(origin.as_str())
+        // .allow_origin(origin.as_str())
+        .allow_any_origin()
         .allow_methods(&[
             Method::GET,
             Method::OPTIONS,

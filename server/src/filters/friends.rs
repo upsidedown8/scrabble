@@ -4,7 +4,13 @@ use warp::{filters::BoxedFilter, Filter, Reply};
 /// Combined filter for the friends route.
 pub fn all(db: &Db) -> BoxedFilter<(impl Reply,)> {
     warp::path("friends")
-        .and(add(db).or(remove(db)).or(list(db)).or(list_requests(db)))
+        .and(
+            add(db)
+                .or(remove(db))
+                .or(list(db))
+                .or(list_incoming(db))
+                .or(list_outgoing(db)),
+        )
         .boxed()
 }
 
@@ -38,12 +44,22 @@ fn list(db: &Db) -> BoxedFilter<(impl Reply,)> {
         .boxed()
 }
 
-/// List friend requests.
-fn list_requests(db: &Db) -> BoxedFilter<(impl Reply,)> {
-    warp::path!("requests")
+/// List incoming friend requests.
+fn list_incoming(db: &Db) -> BoxedFilter<(impl Reply,)> {
+    warp::path!("requests" / "incoming")
         .and(warp::get())
         .and(with(db))
         .and(authenticated_user())
-        .and_then(handlers::friends::list_requests)
+        .and_then(handlers::friends::list_incoming)
+        .boxed()
+}
+
+/// List outgoing friend requests.
+fn list_outgoing(db: &Db) -> BoxedFilter<(impl Reply,)> {
+    warp::path!("requests" / "outgoing")
+        .and(warp::get())
+        .and(with(db))
+        .and(authenticated_user())
+        .and_then(handlers::friends::list_outgoing)
         .boxed()
 }

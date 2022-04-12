@@ -46,9 +46,9 @@ pub async fn list(db: Db, jwt: Jwt) -> Result<impl Reply, Rejection> {
     }))
 }
 
-/// GET /api/friends/requests [+Auth]
-pub async fn list_requests(db: Db, jwt: Jwt) -> Result<impl Reply, Rejection> {
-    let requests = sqlx::query_file!("sql/friends/list_requests.sql", jwt.id_user())
+/// GET /api/friends/requests/incoming [+Auth]
+pub async fn list_incoming(db: Db, jwt: Jwt) -> Result<impl Reply, Rejection> {
+    let requests = sqlx::query_file!("sql/friends/list_incoming.sql", jwt.id_user())
         .fetch_all(&db)
         .await
         .map_err(Error::Sqlx)?
@@ -61,6 +61,25 @@ pub async fn list_requests(db: Db, jwt: Jwt) -> Result<impl Reply, Rejection> {
 
     Ok(warp::reply::json(&AuthWrapper {
         token: Some(jwt.token()?),
+        response: FriendRequestsResponse { requests },
+    }))
+}
+
+/// GET /api/friends/requests/outgoing [+Auth]
+pub async fn list_outgoing(db: Db, jwt: Jwt) -> Result<impl Reply, Rejection> {
+    let requests = sqlx::query_file!("sql/friends/list_outgoing.sql", jwt.id_user())
+        .fetch_all(&db)
+        .await
+        .map_err(Error::Sqlx)?
+        .into_iter()
+        .map(|row| Friend {
+            username: row.username,
+            since: row.date_sent,
+        })
+        .collect();
+
+    Ok(warp::reply::json(&AuthWrapper {
+        token: (Some(jwt.token()?)),
         response: FriendRequestsResponse { requests },
     }))
 }
