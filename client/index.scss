@@ -1,23 +1,45 @@
 // remove all padding and margin from html.
-html {
+html,
+body {
 	padding: 0;
 	margin: 0;
 }
 
-@media (min-width: 1024px) {
-	.page {
-		margin: auto 20%;
+// 100% of viewport height for the page class. 
+.page {
+	min-height: 100vh;
+}
+
+section {
+	padding: 75px 5%;
+	width: 100vw;
+}
+
+@media screen and (min-width: 1200px) {
+	section {
+		padding: auto 20%;
 	}
 }
 
-// 100% of viewport height for the page class. 
-.page {
-	height: 100vh;
-	// add a 20px top/bottom margin and a 5% left/right margin to
-	// `page` elements.
-	margin: 20px 5%;
+@media screen and (max-width: 1200px) {
+	section {
+		padding: auto 5%;
+	}
 }
 
+@media screen and (max-width: 576px) {
+	section {
+		padding: auto 0;
+	}
+}
+
+.page section:nth-of-type(odd) {
+	background-color: white;
+}
+
+.page section:nth-of-type(even) {
+	background-color: #fafafa;
+}
 
 .board {
 	// the background color of the board.
@@ -38,8 +60,8 @@ html {
 	$hover: #c9c9c9;
 
 	// fixed square dimensions, side length 60% of viewport height.
-	width: 60vh;
-	height: 60vh;
+	width: min(calc(90vh - 60px), 90vw);
+	height: min(calc(90vh - 60px), 90vw);
 
 	text-align: center;
 	margin: auto;
@@ -53,8 +75,16 @@ html {
 		width: calc(100% / 15);
 		// Add a 1px outline to each square.
 		outline: 1px solid $border;
-		// horizontally center elements in the square.
-		text-align: center;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+		user-select: none;
+	}
+
+	.square:hover,
+	.square:active {
+		background-color: $hover;
 	}
 
 	.start {
@@ -78,24 +108,52 @@ html {
 	}
 }
 
-.tile {
-	width: 80%;
-	height: 90%;
-	padding: 5%;
+@keyframes tile-fade-in {
+	0% {
+		opacity: 0;
+	}
+
+	100% {
+		opacity: 1;
+	}
+}
+
+.scrabble-tile {
+	height: 78%;
+	width: 72%;
 	background-color: white;
 	border-radius: 15%;
-	border-bottom: 5px solid black;
+	position: relative;
+	text-align: center;
+	box-shadow: 0 6px;
+	margin-bottom: 6px;
+	animation-name: tile-fade-in;
+	animation-duration: 2s;
 	display: inline-block;
 
 	.letter {
-		text-align: center;
-		font-size: 18px;
+		font-size: 3.5vw;
+		transform: translate(0, -12%);
 	}
 
 	.score {
-		font-size: 8px;
-		position: relative;
-		right: 0;
-		top: 5px;
+		font-size: 1.5vw;
+		position: absolute;
+		bottom: 0;
+		right: 4px;
 	}
+}
+
+.rack {
+	display: flex;
+	flex-wrap: nowrap;
+	justify-content: center;
+	column-gap: 20px;
+	padding: 20px;
+	background-color: black;
+}
+
+.rack>* {
+	width: 40px;
+	height: 48px;
 }
