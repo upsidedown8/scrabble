@@ -15,6 +15,9 @@ pub fn InvalidStatePage<G: Html>(cx: Scope) -> View<G> {
 
                 p {
                     "An error occured: the current page cannot be displayed in this state."
+
+                    br
+
                     "Perhaps you need to log in?"
                 }
             }
