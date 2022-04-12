@@ -4,4 +4,5 @@ SELECT $1 AS from_id_user,
     $3 AS date_sent
 FROM tbl_user
 WHERE tbl_user.username = $2
+    AND tbl_user.id_user != $1
 LIMIT 1;
