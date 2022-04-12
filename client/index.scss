@@ -4,15 +4,18 @@ html {
 	margin: 0;
 }
 
-// add a 20px top/bottom margin and a 5% left/right margin to
-// `section` elements.
-section {
-	margin: 20px 5%;
+@media (min-width: 1024px) {
+	.page {
+		margin: auto 20%;
+	}
 }
 
 // 100% of viewport height for the page class. 
 .page {
 	height: 100vh;
+	// add a 20px top/bottom margin and a 5% left/right margin to
+	// `page` elements.
+	margin: 20px 5%;
 }
 
 
