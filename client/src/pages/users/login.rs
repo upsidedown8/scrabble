@@ -24,6 +24,8 @@ pub fn LoginPage<G: Html>(cx: Scope) -> View<G> {
 
     // called when a user clicks the log in button.
     let on_log_in = move |_| {
+        log::trace!("logging in");
+
         is_loading.set(true);
         err.set(None);
 

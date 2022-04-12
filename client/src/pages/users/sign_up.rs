@@ -25,6 +25,8 @@ pub fn SignUpPage<G: Html>(cx: Scope) -> View<G> {
 
     // called when a user clicks the signup button.
     let on_sign_up = move |_| {
+        log::trace!("signing up");
+
         is_loading.set(true);
         err.set(None);
 

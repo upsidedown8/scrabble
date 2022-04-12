@@ -20,6 +20,8 @@ pub fn ResetPasswordPage<G: Html>(cx: Scope) -> View<G> {
 
     // called when a user clicks the reset button.
     let on_reset = move |_| {
+        log::trace!("resetting password");
+
         is_loading.set(true);
         err.set(None);
 

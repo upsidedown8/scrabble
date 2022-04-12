@@ -33,6 +33,8 @@ pub fn ResetWithSecretPage<G: Html>(cx: Scope, props: Props) -> View<G> {
 
     // called when the user resets their password.
     let on_reset = move |_| {
+        log::trace!("resetting password");
+
         is_loading.set(true);
         err.set(None);
 

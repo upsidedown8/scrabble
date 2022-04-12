@@ -33,6 +33,8 @@ pub fn AccountPage<G: Html>(cx: Scope) -> View<G> {
 
     // called when a user clicks the delete button.
     let on_delete = move |_| {
+        log::trace!("deleting account");
+
         is_loading.set(true);
         err.set(None);
 
@@ -55,6 +57,8 @@ pub fn AccountPage<G: Html>(cx: Scope) -> View<G> {
 
     // called when a user clicks the update button.
     let on_update = move |_| {
+        log::trace!("updating account");
+
         is_loading.set(true);
         err.set(None);
 
