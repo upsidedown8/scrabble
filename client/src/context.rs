@@ -88,6 +88,8 @@ pub fn use_token(cx: Scope) -> &ReadSignal<Option<Token>> {
 /// Sets the token, leaving the user_details field unchanged.
 pub fn set_token(auth: &AuthSignal, token: Token) {
     if let Some(ctx) = auth.modify().as_mut() {
+        log::debug!("updating token");
+
         *ctx = AuthCtx {
             token,
             ..ctx.clone()
@@ -98,6 +100,8 @@ pub fn set_token(auth: &AuthSignal, token: Token) {
 /// Sets the user details, leaving the auth field unchanged.
 pub fn set_user_details(auth: &AuthSignal, user_details: UserDetails) {
     if let Some(ctx) = auth.modify().as_mut() {
+        log::debug!("updating user details");
+
         *ctx = AuthCtx {
             user_details,
             ..ctx.clone()

@@ -34,17 +34,15 @@ where
     if let Some(data) = data {
         let body = serde_json::to_string(data)?;
         req = req.header("Content-Type", "Application/JSON").body(body);
-        log::info!("added json body");
+        log::debug!("added json body");
     }
 
     // Add the auth header
     if let Some(auth_signal) = auth {
-        let auth_ctx = auth_signal.get();
-
-        if let Some(AuthCtx { token, .. }) = auth_ctx.as_ref() {
+        if let Some(AuthCtx { token, .. }) = auth_signal.get().as_ref() {
             let Token(token) = token;
             req = req.header("Authorization", &format!("Bearer {token}"));
-            log::info!("added auth header");
+            log::debug!("added auth header");
         }
     }
 
@@ -65,6 +63,7 @@ where
             }
             // attempt to deserialize as `U`.
             else {
+                log::error!("failed to parse successful response");
                 (None, response.json().await?)
             }
         }),
@@ -72,6 +71,7 @@ where
             if let Ok(error_response) = response.json().await {
                 Err(Error::Api(error_response))
             } else {
+                log::error!("failed to parse error response");
                 Err(Error::HttpStatus(status))
             }
         }
