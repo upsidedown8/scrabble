@@ -13,40 +13,38 @@ use sycamore_router::navigate;
 pub fn FriendsPage<G: Html>(cx: Scope) -> View<G> {
     view! { cx,
         div(class="page is-centered") {
-            div {
-                div(class="m-3 has-text-centered") {
-                    h1(class="h1 is-size-5") { "Friends" }
+            section(class="has-text-centered p-3") {
+                h1(class="h1 is-size-5") { "Friends" }
+            }
+
+            section {
+                ManageFriend {}
+            }
+
+            section {
+                h1 { "Sent friend requests" }
+
+                Suspense {
+                    fallback: view! { cx, p { "Loading sent friend requests" } },
+                    SentFriendRequests {}
                 }
+            }
 
-                section {
-                    ManageFriend {}
+            section {
+                h1 { "Received friend requests" }
+
+                Suspense {
+                    fallback: view! { cx, p { "Loading received friend requests" } },
+                    ReceivedFriendRequests {}
                 }
+            }
 
-                section {
-                    h1 { "Sent friend requests" }
+            section {
+                h1 { "Friends" }
 
-                    Suspense {
-                        fallback: view! { cx, p { "Loading sent friend requests" } },
-                        SentFriendRequests {}
-                    }
-                }
-
-                section {
-                    h1 { "Received friend requests" }
-
-                    Suspense {
-                        fallback: view! { cx, p { "Loading received friend requests" } },
-                        ReceivedFriendRequests {}
-                    }
-                }
-
-                section {
-                    h1 { "Friends" }
-
-                    Suspense {
-                        fallback: view! { cx, p { "Loading friends" } },
-                        Friends {}
-                    }
+                Suspense {
+                    fallback: view! { cx, p { "Loading friends" } },
+                    Friends {}
                 }
             }
         }

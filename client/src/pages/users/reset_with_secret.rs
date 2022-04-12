@@ -63,30 +63,32 @@ pub fn ResetWithSecretPage<G: Html>(cx: Scope, props: Props) -> View<G> {
     };
 
     view! { cx,
-        div(class="page is-centered is-vcentered is-flex columns") {
-            div(class="box") {
-                h1 { "Reset password" }
+        div(class="page") {
+            section(class="is-centered is-vcentered is-flex columns") {
+                div(class="box") {
+                    h1 { "Reset password" }
 
-                hr
+                    hr
 
-                div(class="field") {
-                    label(class="label") {
-                        "New password"
+                    div(class="field") {
+                        label(class="label") {
+                            "New password"
+                        }
+                        div(class="control") {
+                            input(type="password", class="input", placeholder="**********", bind:value=password)
+                        }
                     }
-                    div(class="control") {
-                        input(type="password", class="input", placeholder="**********", bind:value=password)
+
+                    button(on:click=on_reset, disabled=*is_loading.get(), class="button is-primary") {
+                        "Update password"
                     }
-                }
 
-                button(on:click=on_reset, disabled=*is_loading.get(), class="button is-primary") {
-                    "Update password"
-                }
-
-                Progress {
-                    is_visible: is_loading,
-                }
-                ErrorMsg {
-                    err: err,
+                    Progress {
+                        is_visible: is_loading,
+                    }
+                    ErrorMsg {
+                        err: err,
+                    }
                 }
             }
         }

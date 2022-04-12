@@ -40,36 +40,38 @@ pub fn ResetPasswordPage<G: Html>(cx: Scope) -> View<G> {
     };
 
     view! { cx,
-        div(class="page is-centered is-vcentered is-flex columns") {
-            div(class="box") {
-                div(class="field") {
-                    label(class="label") {
-                        "Username"
-                    }
-                    div(class="control") {
-                        input(type="text", class="input", placeholder="Username", bind:value=username)
-                    }
-                }
-
-                button(on:click=on_reset, disabled=*is_loading.get(), class="button is-primary") {
-                    "Reset password"
-                }
-
-                Progress {
-                    is_visible: is_loading,
-                }
-                ErrorMsg {
-                    err: err,
-                }
-
-                (match *is_success.get() {
-                    false => view! { cx, },
-                    true => view! { cx,
-                        p {
-                            "Request succeeded. Check your email."
+        div(class="page") {
+            section(class="is-centered is-vcentered is-flex columns") {
+                div(class="box") {
+                    div(class="field") {
+                        label(class="label") {
+                            "Username"
                         }
-                    },
-                })
+                        div(class="control") {
+                            input(type="text", class="input", placeholder="Username", bind:value=username)
+                        }
+                    }
+
+                    button(on:click=on_reset, disabled=*is_loading.get(), class="button is-primary") {
+                        "Reset password"
+                    }
+
+                    Progress {
+                        is_visible: is_loading,
+                    }
+                    ErrorMsg {
+                        err: err,
+                    }
+
+                    (match *is_success.get() {
+                        false => view! { cx, },
+                        true => view! { cx,
+                            p {
+                                "Request succeeded. Check your email."
+                            }
+                        },
+                    })
+                }
             }
         }
     }

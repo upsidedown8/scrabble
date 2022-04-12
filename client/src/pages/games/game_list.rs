@@ -12,16 +12,22 @@ use sycamore::{prelude::*, suspense::Suspense};
 #[component]
 pub fn GameListPage<G: Html>(cx: Scope) -> View<G> {
     view! { cx,
-        div(class="page is-centered") {
-            div {
-                Suspense {
-                    fallback: view! { cx, p { "loading summary" } },
-                    FetchGameSummary {}
+        div(class="page") {
+            section {
+                div(class="is-centered") {
+                    Suspense {
+                        fallback: view! { cx, p { "loading summary" } },
+                        FetchGameSummary {}
+                    }
                 }
+            }
 
-                Suspense {
-                    fallback: view! { cx, p { "loading list" } },
-                    FetchGameList {}
+            section {
+                div(class="is-centered") {
+                    Suspense {
+                        fallback: view! { cx, p { "loading list" } },
+                        FetchGameList {}
+                    }
                 }
             }
         }
@@ -83,7 +89,7 @@ fn ViewList<G: Html>(cx: Scope, list: ListGamesResponse) -> View<G> {
     );
 
     view! { cx,
-        h1(class="h1 is-size-5", style="margin-top: 10%") { "Game list" }
+        h1(class="h1 is-size-5") { "Game list" }
 
         table(class="table") {
             thead {

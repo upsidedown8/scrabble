@@ -55,61 +55,63 @@ pub fn SignUpPage<G: Html>(cx: Scope) -> View<G> {
     };
 
     view! { cx,
-        div(class="page is-centered is-vcentered is-flex columns") {
-            div(class="box") {
-                div(class="has-text-centered") {
-                    a(href="/users/login") {
-                        "Already have an account?"
+        div(class="page") {
+            section(class="is-centered is-vcentered is-flex columns") {
+                div(class="box") {
+                    div(class="has-text-centered") {
+                        a(href="/users/login") {
+                            "Already have an account?"
+                        }
                     }
-                }
 
-                hr
+                    hr
 
-                div(class="field") {
-                    label(class="label") {
-                        "Username"
+                    div(class="field") {
+                        label(class="label") {
+                            "Username"
+                        }
+                        div(class="control") {
+                            input(type="text", class="input", placeholder="username", bind:value=username)
+                        }
                     }
-                    div(class="control") {
-                        input(type="text", class="input", placeholder="username", bind:value=username)
-                    }
-                }
 
-                div(class="field") {
-                    label(class="label") {
-                        "Email"
+                    div(class="field") {
+                        label(class="label") {
+                            "Email"
+                        }
+                        div(class="control") {
+                            input(type="email", class="input", placeholder="you@example.com", bind:value=email)
+                        }
                     }
-                    div(class="control") {
-                        input(type="email", class="input", placeholder="you@example.com", bind:value=email)
-                    }
-                }
 
-                div(class="field") {
-                    label(class="label") {
-                        "Password"
+                    div(class="field") {
+                        label(class="label") {
+                            "Password"
+                        }
+                        div(class="control") {
+                            input(type="password", class="input", placeholder="**********", bind:value=password)
+                        }
                     }
-                    div(class="control") {
-                        input(type="password", class="input", placeholder="**********", bind:value=password)
-                    }
-                }
 
-                div(class="field") {
-                    label(class="checkbox") {
-                        input(type="checkbox", bind:checked=is_private)
-                        "  Private account?"
+                    div(class="field") {
+                        label(class="checkbox") {
+                            input(type="checkbox", bind:checked=is_private)
+                            "  Private account?"
+                        }
                     }
-                }
 
-                div(class="field") {
-                    button(on:click=on_sign_up, disabled=*is_loading.get(), class="button is-primary") {
-                        "Sign up"
+                    div(class="field") {
+                        button(on:click=on_sign_up, disabled=*is_loading.get(), class="button is-primary") {
+                            "Sign up"
+                        }
                     }
-                }
 
-                Progress {
-                    is_visible: is_loading,
-                }
-                ErrorMsg {
-                    err: err,
+                    Progress {
+                        is_visible: is_loading,
+                    }
+                    ErrorMsg {
+                        err: err,
+                    }
                 }
             }
         }

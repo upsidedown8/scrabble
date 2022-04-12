@@ -11,15 +11,17 @@ use sycamore::{prelude::*, suspense::Suspense};
 #[component]
 pub fn FriendsLeaderboardPage<G: Html>(cx: Scope) -> View<G> {
     view! { cx,
-        div(class="page is-centered") {
-            div {
-                div(class="m-3 has-text-centered") {
-                    h1(class="h1 is-size-5") { "Friends Leaderboard" }
-                }
+        div(class="page") {
+            section(class="is-centered") {
+                div {
+                    div(class="m-3 has-text-centered") {
+                        h1(class="h1 is-size-5") { "Friends Leaderboard" }
+                    }
 
-                Suspense {
-                    fallback: view! { cx, p { "loading" } },
-                    FetchFriendsLeaderboard {}
+                    Suspense {
+                        fallback: view! { cx, p { "loading" } },
+                        FetchFriendsLeaderboard {}
+                    }
                 }
             }
         }

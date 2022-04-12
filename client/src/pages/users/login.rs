@@ -52,44 +52,46 @@ pub fn LoginPage<G: Html>(cx: Scope) -> View<G> {
     };
 
     view! { cx,
-        div(class="page is-centered is-vcentered is-flex columns") {
-            div(class="box") {
-                div(class="has-text-centered") {
-                    a(href="/users/signup") { "Need an account?" }
-                    br
-                    br
-                    a(href="/users/reset-password") { "Forgot password?" }
-                }
-
-                hr
-
-                div(class="field") {
-                    label(class="label") {
-                        "Username"
+        div(class="page") {
+            section(class="is-centered is-vcentered is-flex columns") {
+                div(class="box") {
+                    div(class="has-text-centered") {
+                        a(href="/users/signup") { "Need an account?" }
+                        br
+                        br
+                        a(href="/users/reset-password") { "Forgot password?" }
                     }
-                    div(class="control") {
-                        input(type="text", class="input", placeholder="username", bind:value=username)
-                    }
-                }
 
-                div(class="field") {
-                    label(class="label") {
-                        "Password"
-                    }
-                    div(class="control") {
-                        input(type="password", class="input", placeholder="**********", bind:value=password)
-                    }
-                }
+                    hr
 
-                button(on:click=on_log_in, disabled=*is_loading.get(), class="button is-primary") {
-                    "Log in"
-                }
+                    div(class="field") {
+                        label(class="label") {
+                            "Username"
+                        }
+                        div(class="control") {
+                            input(type="text", class="input", placeholder="username", bind:value=username)
+                        }
+                    }
 
-                Progress {
-                    is_visible: is_loading,
-                }
-                ErrorMsg {
-                    err: err,
+                    div(class="field") {
+                        label(class="label") {
+                            "Password"
+                        }
+                        div(class="control") {
+                            input(type="password", class="input", placeholder="**********", bind:value=password)
+                        }
+                    }
+
+                    button(on:click=on_log_in, disabled=*is_loading.get(), class="button is-primary") {
+                        "Log in"
+                    }
+
+                    Progress {
+                        is_visible: is_loading,
+                    }
+                    ErrorMsg {
+                        err: err,
+                    }
                 }
             }
         }

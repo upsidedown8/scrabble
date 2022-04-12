@@ -96,66 +96,68 @@ pub fn AccountPage<G: Html>(cx: Scope) -> View<G> {
     };
 
     view! { cx,
-        div(class="page is-flex is-centered is-vcentered columns") {
-            div(class="box") {
-                div(class="field") {
-                    label(class="label") {
-                        "Username"
-                    }
-                    div(class="control") {
-                        input(class="input", type="text", bind:value=username)
-                    }
-                }
-
-                div(class="field") {
-                    label(class="label") {
-                        "Email"
-                    }
-                    div(class="control") {
-                        input(class="input", type="email", bind:value=email)
-                    }
-                }
-
-                div(class="field") {
-                    label(class="label") {
-                        "New password"
-                    }
-                    div(class="control") {
-                        input(class="input", type="password", bind:value=password)
-                    }
-                }
-
-                hr
-
-                div(class="field") {
-                    label(class="label") {
-                        "Current password"
-                    }
-                    div(class="control") {
-                        input(class="input", type="password", bind:value=curr_password)
-                    }
-                }
-
-                hr
-
-                div(class="field is-grouped") {
-                    div(class="control") {
-                        button(on:click=on_update, disabled=*is_loading.get(), class="button is-primary") {
-                            "Update"
+        div(class="page") {
+            section(class="is-flex is-centered is-vcentered columns") {
+                div(class="box") {
+                    div(class="field") {
+                        label(class="label") {
+                            "Username"
+                        }
+                        div(class="control") {
+                            input(class="input", type="text", bind:value=username)
                         }
                     }
-                    div(class="control") {
-                        button(on:click=on_delete, disabled=*is_loading.get(), class="button is-danger") {
-                            "Delete"
+
+                    div(class="field") {
+                        label(class="label") {
+                            "Email"
+                        }
+                        div(class="control") {
+                            input(class="input", type="email", bind:value=email)
                         }
                     }
-                }
 
-                Progress {
-                    is_visible: is_loading
-                }
-                ErrorMsg {
-                    err: err,
+                    div(class="field") {
+                        label(class="label") {
+                            "New password"
+                        }
+                        div(class="control") {
+                            input(class="input", type="password", bind:value=password)
+                        }
+                    }
+
+                    hr
+
+                    div(class="field") {
+                        label(class="label") {
+                            "Current password"
+                        }
+                        div(class="control") {
+                            input(class="input", type="password", bind:value=curr_password)
+                        }
+                    }
+
+                    hr
+
+                    div(class="field is-grouped") {
+                        div(class="control") {
+                            button(on:click=on_update, disabled=*is_loading.get(), class="button is-primary") {
+                                "Update"
+                            }
+                        }
+                        div(class="control") {
+                            button(on:click=on_delete, disabled=*is_loading.get(), class="button is-danger") {
+                                "Delete"
+                            }
+                        }
+                    }
+
+                    Progress {
+                        is_visible: is_loading
+                    }
+                    ErrorMsg {
+                        err: err,
+                    }
                 }
             }
         }
