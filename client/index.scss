@@ -1,22 +1,40 @@
+// remove all padding and margin from html.
 html {
 	padding: 0;
 	margin: 0;
 }
 
+// add a 20px top/bottom margin and a 5% left/right margin to
+// `section` elements.
+section {
+	margin: 20px 5%;
+}
+
+// 100% of viewport height for the page class. 
 .page {
 	height: 100vh;
 }
 
+
 .board {
+	// the background color of the board.
 	$background: #e1d8c7;
+	// the boarder of the board.
 	$border: #666666;
+	// the color of the start square.
 	$start: #c86c03;
+	// the color of double letter squares.
 	$double-letter: #628e7c;
+	// the color of triple letter squares.
 	$triple-letter: #eb6c5d;
+	// the color of double word squares.
 	$double-word: #c76a00;
+	// the color of triple word squares.
 	$triple-word: #9b6464;
+	// the color hovered squares.
 	$hover: #c9c9c9;
 
+	// fixed square dimensions, side length 60% of viewport height.
 	width: 60vh;
 	height: 60vh;
 
@@ -25,10 +43,14 @@ html {
 
 	.square {
 		background-color: $background;
+		// displays squares on the same row.
 		float: left;
+		// height and width are (100/15)% of the height of the board.
 		height: calc(100% / 15);
 		width: calc(100% / 15);
+		// Add a 1px outline to each square.
 		outline: 1px solid $border;
+		// horizontally center elements in the square.
 		text-align: center;
 	}
 
