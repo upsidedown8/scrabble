@@ -14,18 +14,35 @@ pub struct Props {
 #[component]
 pub fn Tile<G: Html>(cx: Scope, props: Props) -> View<G> {
     match props.tile {
-        tile::Tile::Letter(letter) => view! { cx,
-            div(class="scrabble-tile") {
-                div(class="letter") {
-                    (letter)
-                }
-                div(class="score") {
-                    (props.tile.score())
+        tile::Tile::Letter(letter) => {
+            let score = props.tile.score();
+            let score_x = match score {
+                s if s >= 10 => "10",
+                _ => "14",
+            };
+
+            view! { cx,
+                svg(class="scrabble-tile", viewBox="0 0 20 28.6") {
+                    rect(width="20", height="25", y="3.6", fill="#333", ry="3.5")
+                    rect(width="20", height="25", fill="#fff", ry="3.5")
+                    text {
+                        tspan(x="4.2", y="18", font-family="monospace", font-size="20") {
+                            (letter)
+                        }
+                    }
+                    text {
+                        tspan(x=(score_x), y="23.5", font-family="sans-serif", font-size="6") {
+                            (score)
+                        }
+                    }
                 }
             }
-        },
+        }
         tile::Tile::Blank(_) => view! { cx,
-            div(class="scrabble-tile")
+            svg(class="scrabble-tile", viewBox="0 0 20 28.6") {
+                rect(width="20", height="25", y="3.6", fill="#333", ry="3.5")
+                rect(width="20", height="25", fill="#fff", ry="3.5")
+            }
         },
     }
 }

@@ -45,7 +45,7 @@ section {
 	// the background color of the board.
 	$background: #e1d8c7;
 	// the boarder of the board.
-	$border: #666666;
+	$square-border: white;
 	// the color of the start square.
 	$start: #c86c03;
 	// the color of double letter squares.
@@ -58,13 +58,15 @@ section {
 	$triple-word: #9b6464;
 	// the color hovered squares.
 	$hover: #c9c9c9;
+	// the outline of the board.
+	$border: black;
 
 	// fixed square dimensions, side length 60% of viewport height.
-	width: min(calc(90vh - 60px), 90vw);
-	height: min(calc(90vh - 60px), 90vw);
+	width: min(80vh, 95vw);
+	height: min(80vh, 95vw);
 
-	text-align: center;
-	margin: auto;
+	margin: 0 auto 5px;
+	outline: 5px solid black;
 
 	.square {
 		background-color: $background;
@@ -74,7 +76,7 @@ section {
 		height: calc(100% / 15);
 		width: calc(100% / 15);
 		// Add a 1px outline to each square.
-		outline: 1px solid $border;
+		outline: 1px solid $square-border;
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -119,41 +121,27 @@ section {
 }
 
 .scrabble-tile {
-	height: 78%;
-	width: 72%;
-	background-color: white;
-	border-radius: 15%;
-	position: relative;
-	text-align: center;
-	box-shadow: 0 6px;
-	margin-bottom: 6px;
-	animation-name: tile-fade-in;
-	animation-duration: 2s;
-	display: inline-block;
-
-	.letter {
-		font-size: 3.5vw;
-		transform: translate(0, -12%);
-	}
-
-	.score {
-		font-size: 1.5vw;
-		position: absolute;
-		bottom: 0;
-		right: 4px;
-	}
+	animation: tile-fade-in 0.5s;
 }
 
 .rack {
 	display: flex;
 	flex-wrap: nowrap;
 	justify-content: center;
-	column-gap: 20px;
-	padding: 20px;
-	background-color: black;
+	column-gap: min(3%, 40px);
+	padding: min(2%, 20px);
+	background-color: darkgreen;
+
+	svg {
+		width: 6%;
+		min-width: 45px;
+		max-width: 80px;
+
+		cursor: pointer;
+		user-select: none;
+	}
 }
 
-.rack>* {
-	width: 40px;
-	height: 48px;
+.live {
+	background-color: #383838;
 }
