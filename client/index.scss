@@ -62,11 +62,12 @@ section {
 	$border: black;
 
 	// fixed square dimensions, side length 60% of viewport height.
-	width: min(80vh, 95vw);
-	height: min(80vh, 95vw);
+	width: min(80vh, 98vw);
+	height: min(80vh, 98vw);
 
 	margin: 0 auto 5px;
 	outline: 5px solid black;
+	outline-offset: -1px;
 
 	.square {
 		background-color: $background;
@@ -75,8 +76,9 @@ section {
 		// height and width are (100/15)% of the height of the board.
 		height: calc(100% / 15);
 		width: calc(100% / 15);
-		// Add a 1px outline to each square.
-		outline: 1px solid $square-border;
+		// Add a 1px border to each square.
+		outline: 0.5px solid $square-border;
+		outline-offset: -0.5px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
