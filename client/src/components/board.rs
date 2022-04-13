@@ -6,20 +6,24 @@ use scrabble::{
 use sycamore::prelude::*;
 
 /// The class used to style squares with a bonus.
-fn premium_class(pos: Pos) -> &'static str {
+fn square_class(pos: Pos) -> &'static str {
     match pos.premium() {
-        None => "",
-        Some(Premium::DoubleLetter) => "double-letter",
-        Some(Premium::TripleLetter) => "triple-letter",
-        Some(Premium::DoubleWord) => "double-word",
-        Some(Premium::TripleWord) => "triple-word",
-        Some(Premium::Start) => "start",
+        None => "square",
+        Some(premium) => match premium {
+            Premium::DoubleLetter => "square double-letter",
+            Premium::DoubleWord => "square double-word",
+            Premium::TripleLetter => "square triple-letter",
+            Premium::TripleWord => "square triple-word",
+            Premium::Start => "square start",
+        },
     }
 }
 
 /// Props for `Board`.
 #[derive(Prop)]
-pub struct BoardProps<'a> {
+pub struct BoardProps<'a, F> {
+    /// A function of the position that was clicked.
+    pub on_click: F,
     /// The (Pos, Option<Tile>) array for the board.
     pub cells: &'a Signal<Vec<(Pos, Option<tile::Tile>)>>,
 }
@@ -27,24 +31,34 @@ pub struct BoardProps<'a> {
 /// View the scrabble board, providing a single dimensional array containing
 /// the 225 optional tiles.
 #[component]
-pub fn Board<'a, G: Html>(cx: Scope<'a>, props: BoardProps<'a>) -> View<G> {
+pub fn Board<'a, F, G: Html>(cx: Scope<'a>, props: BoardProps<'a, F>) -> View<G>
+where
+    F: Fn(Pos) + Copy + 'static,
+{
+    let on_click = move |pos| {
+        log::info!("board position clicked: {pos:?}");
+        (props.on_click)(pos);
+    };
+
     view! { cx,
         div(class="board") {
             Keyed {
+                key: |&pos| pos,
                 iterable: props.cells,
-                view: |cx, (pos, tile)| view! { cx,
-                    div(class=format!("square {}", premium_class(pos))) {
-                        (match tile {
-                            Some(tile) => view! { cx,
-                                Tile {
-                                    tile: tile,
-                                }
-                            },
-                            None => view! { cx, }
-                        })
+                view: move |cx, (pos, tile)| {
+                    view! { cx,
+                        div(class=square_class(pos), on:click=move |_| on_click(pos)) {
+                            (match tile {
+                                Some(tile) => view! { cx,
+                                    Tile {
+                                        tile: tile,
+                                    }
+                                },
+                                None => view! { cx, }
+                            })
+                        }
                     }
                 },
-                key: |&pos| pos
             }
         }
     }
