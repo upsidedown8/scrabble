@@ -19,8 +19,8 @@ fn connect(games: &GamesHandle) -> BoxedFilter<(impl Reply,)> {
         .and(warp::ws())
         .and(with(games))
         .map(|ws: Ws, games: GamesHandle| {
-            ws.on_upgrade(move |ws| handlers::live::connected(ws, games));
-            warp::reply()
+            log::info!("websocket request received");
+            ws.on_upgrade(move |ws| handlers::live::connected(ws, games))
         })
         .boxed()
 }
