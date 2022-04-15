@@ -27,18 +27,20 @@ pub fn Counter<'a, G: Html>(cx: Scope<'a>, props: Props<'a>) -> View<G> {
     });
 
     view! { cx,
-        div(class="counter tags has-addons are-medium") {
-            button(
-                class="button tag",
-                on:click=|_| *props.count.modify() -= 1,
-            ) { "-" }
-            span(class="tag") {
-                (props.count.get())
+        div(class="columns") {
+            div(class="column tags has-addons are-medium") {
+                button(
+                    class="button tag",
+                    on:click=|_| *props.count.modify() -= 1,
+                ) { "-" }
+                span(class="tag") {
+                    (props.count.get())
+                }
+                button(
+                    class="button tag",
+                    on:click=|_| *props.count.modify() += 1,
+                ) { "+" }
             }
-            button(
-                class="button tag",
-                on:click=|_| *props.count.modify() += 1,
-            ) { "+" }
         }
     }
 }
