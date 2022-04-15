@@ -36,7 +36,7 @@ pub enum Routes {
         secret: String,
     },
     /// Create a live game page, requires login.
-    #[to("/live/create")]
+    #[to("/live")]
     CreateLive,
     /// Play live games page, requires login
     #[to("/live/<id_game>")]
