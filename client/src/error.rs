@@ -18,6 +18,10 @@ pub enum Error {
     Api(ErrorResponse),
     /// Unexpected HTTP status code.
     HttpStatus(u16),
+    /// Error from JS code (for opening websocket communication).
+    Js(gloo_utils::errors::JsError),
+    /// Error from sending or receiving a websocket message.
+    WebSocket(reqwasm::websocket::WebSocketError),
 }
 
 impl std::error::Error for Error {}
@@ -38,10 +42,22 @@ impl fmt::Display for Error {
                 writeln!(f, "API error ({status}): {msg}")
             }
             Error::HttpStatus(status) => writeln!(f, "HTTP status: {status}"),
+            Error::Js(_) => writeln!(f, "WebSocket connection error"),
+            Error::WebSocket(_) => writeln!(f, "WebSocket communication error"),
         }
     }
 }
 
+impl From<reqwasm::websocket::WebSocketError> for Error {
+    fn from(err: reqwasm::websocket::WebSocketError) -> Self {
+        Error::WebSocket(err)
+    }
+}
+impl From<gloo_utils::errors::JsError> for Error {
+    fn from(err: gloo_utils::errors::JsError) -> Self {
+        Self::Js(err)
+    }
+}
 impl From<reqwasm::Error> for Error {
     fn from(err: reqwasm::Error) -> Self {
         Self::Reqwasm(err)
