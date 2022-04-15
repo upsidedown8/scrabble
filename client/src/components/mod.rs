@@ -1,6 +1,8 @@
 //! Reuseable components used across pages.
 
 mod board;
+mod chat;
+mod counter;
 mod error_msg;
 mod fa_icon;
 mod footer;
@@ -13,6 +15,8 @@ mod separator;
 mod tile;
 
 pub use board::Board;
+pub use chat::{Chat, Msg};
+pub use counter::{Counter, FixedCounter};
 pub use error_msg::{ErrorMsg, StaticErrorMsg};
 pub use fa_icon::FaIcon;
 pub use footer::Footer;
