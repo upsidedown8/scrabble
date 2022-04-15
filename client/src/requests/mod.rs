@@ -11,9 +11,11 @@ use serde::{de::DeserializeOwned, Serialize};
 pub mod friends;
 pub mod games;
 pub mod leaderboard;
+pub mod live;
 pub mod users;
 
-const API_URL: &str = "https://localhost/api";
+/// The domain name and path to the API, excluding the protocol.
+pub const API_HOST: &str = "localhost/api";
 
 /// Make a request to the path {API_URL}/{url}, with the provided
 /// method and data. Returns the optional auth from the server and
@@ -28,7 +30,7 @@ where
     T: Serialize,
     U: DeserializeOwned,
 {
-    let mut req = Request::new(&format!("{API_URL}{url}")).method(method);
+    let mut req = Request::new(&format!("https://{API_HOST}{url}")).method(method);
 
     // Add the JSON body.
     if let Some(data) = data {
