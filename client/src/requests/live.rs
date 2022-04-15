@@ -10,10 +10,13 @@ pub async fn connect_and_authenticate(token: Token) -> Result<WebSocket> {
     let mut ws = WebSocket::open(&url)?;
 
     // Send a `ClientMsg::Auth` to authenticate the connection.
-    let msg = ClientMsg::Auth(token);
-    let bytes = bincode::serialize(&msg).unwrap();
-    let ws_msg = Message::Bytes(bytes);
-    ws.send(ws_msg).await?;
+    ws.send(to_msg(&ClientMsg::Auth(token))).await?;
 
     Ok(ws)
+}
+
+/// Converts a `ClientMsg` to a websocket message.
+pub fn to_msg(msg: &ClientMsg) -> Message {
+    let bytes = bincode::serialize(msg).unwrap();
+    Message::Bytes(bytes)
 }
