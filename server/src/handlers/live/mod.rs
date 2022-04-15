@@ -23,6 +23,8 @@ pub async fn connected(mut ws: WebSocket, games: GamesHandle) {
 
         if let Ok(ClientMsg::Auth(Token(token))) = bincode::deserialize(bytes) {
             if let Ok(jwt) = Jwt::from_auth_token(&token, Role::User) {
+                log::info!("authenticated: {}", jwt.id_user());
+
                 authenticated(ws, jwt, games).await;
             } else {
                 log::error!("invalid token: {token}");
@@ -67,6 +69,8 @@ async fn authenticated(mut ws: WebSocket, jwt: Jwt, games: GamesHandle) {
 
 /// Joins a game.
 async fn join_game(id_game: i32, ws: WebSocket, jwt: Jwt, games: GamesHandle) {
+    log::info!("user ({}) is joining game ({id_game})", jwt.id_user());
+
     // attempt to get the game by id.
     let games_read = games.read().await;
     let game = games_read.get(id_game);
@@ -112,6 +116,8 @@ async fn create_game(
     }
     // otherwise create the game.
     else {
+        log::info!("creating game for user ({})", jwt.id_user());
+
         let mut games_write = games.write().await;
         // provide the user id if the game is set to friends only.
         let id_user = match friends_only {
