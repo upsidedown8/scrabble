@@ -35,15 +35,9 @@ pub enum Routes {
         /// Random secret from the server.
         secret: String,
     },
-    /// Create a live game page, requires login.
+    /// Create or join a live game, requires login.
     #[to("/live")]
-    CreateLive,
-    /// Play live games page, requires login
-    #[to("/live/<id_game>")]
-    Live {
-        /// Id of the live game.
-        id_game: i32,
-    },
+    Live,
     /// Leaderboard page.
     #[to("/leaderboard")]
     Leaderboard,
@@ -147,16 +141,7 @@ fn ViewRoute<'a, G: Html>(cx: Scope<'a>, props: ViewRouteProps<'a>) -> View<G> {
                 },
 
                 // Live game pages.
-                Routes::CreateLive if logged_in => view! { cx,
-                    LivePage {
-                        id_game: None,
-                    }
-                },
-                Routes::Live { id_game } if logged_in => view! { cx,
-                    LivePage {
-                        id_game: Some(*id_game)
-                    }
-                },
+                Routes::Live if logged_in => view! { cx, LivePage { } },
 
                 // Leaderboard pages.
                 Routes::Leaderboard => view! { cx, LeaderboardPage {} },
