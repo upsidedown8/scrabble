@@ -41,7 +41,7 @@ pub fn ResetPasswordPage<G: Html>(cx: Scope) -> View<G> {
 
     view! { cx,
         div(class="page") {
-            section(class="is-centered is-vcentered is-flex columns") {
+            section(class="is-fullheight is-centered is-vcentered is-flex columns") {
                 div(class="box") {
                     div(class="field") {
                         label(class="label") {

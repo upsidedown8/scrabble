@@ -46,12 +46,13 @@ pub fn AccountPage<G: Html>(cx: Scope) -> View<G> {
             match delete(auth, &req).await {
                 Ok(()) => {
                     auth.set(None);
-                    navigate("/");
+                    navigate("/users/account");
                 }
-                Err(e) => err.set(Some(e)),
+                Err(e) => {
+                    is_loading.set(false);
+                    err.set(Some(e))
+                }
             }
-
-            is_loading.set(false);
         });
     };
 
@@ -85,7 +86,7 @@ pub fn AccountPage<G: Html>(cx: Scope) -> View<G> {
                             is_private: *is_private.get(),
                         },
                     );
-                    navigate("/");
+                    navigate("/users/account");
                 }
                 Err(e) => {
                     is_loading.set(false);
@@ -97,7 +98,7 @@ pub fn AccountPage<G: Html>(cx: Scope) -> View<G> {
 
     view! { cx,
         div(class="page") {
-            section(class="is-flex is-centered is-vcentered columns") {
+            section(class="is-fullheight is-flex is-centered is-vcentered columns") {
                 div(class="box") {
                     div(class="field") {
                         label(class="label") {

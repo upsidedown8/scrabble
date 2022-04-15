@@ -53,7 +53,7 @@ pub fn LoginPage<G: Html>(cx: Scope) -> View<G> {
 
     view! { cx,
         div(class="page") {
-            section(class="is-centered is-vcentered is-flex columns") {
+            section(class="is-fullheight is-centered is-vcentered is-flex columns") {
                 div(class="box") {
                     div(class="has-text-centered") {
                         a(href="/users/signup") { "Need an account?" }

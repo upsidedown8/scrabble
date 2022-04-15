@@ -64,7 +64,7 @@ pub fn ResetWithSecretPage<G: Html>(cx: Scope, props: Props) -> View<G> {
 
     view! { cx,
         div(class="page") {
-            section(class="is-centered is-vcentered is-flex columns") {
+            section(class="is-fullheight is-centered is-vcentered is-flex columns") {
                 div(class="box") {
                     h1 { "Reset password" }
 

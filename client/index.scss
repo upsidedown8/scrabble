@@ -5,6 +5,15 @@ body {
 	margin: 0;
 }
 
+// display counter on the same line.
+.counter {
+	display: inline;
+}
+
+.create-game .box {
+	min-width: 250px;
+}
+
 // 100% of viewport height for the page class. 
 .page {
 	min-height: 100vh;
@@ -23,13 +32,15 @@ section {
 
 @media screen and (max-width: 1200px) {
 	section {
-		padding: auto 5%;
+		padding-left: 5%;
+		padding-right: 5%;
 	}
 }
 
 @media screen and (max-width: 576px) {
 	section {
-		padding: auto 0;
+		padding-left: 0;
+		padding-right: 0;
 	}
 }
 
@@ -144,6 +155,14 @@ section {
 	}
 }
 
+.is-fullheight {
+	height: 100vh;
+}
+
 .live {
 	background-color: #383838;
+}
+
+.live .box {
+	margin: 40px;
 }
