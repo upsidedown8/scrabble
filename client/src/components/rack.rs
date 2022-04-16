@@ -6,25 +6,23 @@ use sycamore::prelude::*;
 
 /// Props for `Rack`.
 #[derive(Prop)]
-pub struct Props<F> {
+pub struct Props<'a, F> {
     /// on:click callback.
     pub on_click: F,
     /// The tiles on the rack.
-    pub tiles: RcSignal<Vec<tile::Tile>>,
+    pub tiles: &'a ReadSignal<Vec<tile::Tile>>,
 }
 
 /// The Rack component.
 #[component]
-pub fn Rack<F, G: Html>(cx: Scope, props: Props<F>) -> View<G>
+pub fn Rack<'a, F, G: Html>(cx: Scope<'a>, props: Props<'a, F>) -> View<G>
 where
     F: Fn(tile::Tile) + Clone + 'static,
 {
-    let tiles = create_ref(cx, props.tiles);
-
     view! { cx,
         div(class="rack") {
             Indexed {
-                iterable: tiles,
+                iterable: props.tiles,
                 view: move |cx, tile| {
                     let on_click = props.on_click.clone();
                     let on_click = move |_| {
