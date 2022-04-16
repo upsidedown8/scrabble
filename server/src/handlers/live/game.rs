@@ -130,6 +130,11 @@ pub struct Game {
     sender: mpsc::UnboundedSender<GameMsg>,
 }
 impl Game {
+    /// Checks whether there are no players connected to the game.
+    pub fn is_empty(&self) -> bool {
+        self.slots.values().all(Slot::is_empty)
+    }
+
     /// Gets the game id.
     pub fn id_game(&self) -> i32 {
         self.id_game
@@ -577,6 +582,14 @@ pub struct Slot {
     game_player: GamePlayer,
 }
 impl Slot {
+    /// Checks whether there is no player connected.
+    pub fn is_empty(&self) -> bool {
+        matches!(
+            self.game_player,
+            GamePlayer::Ai { .. } | GamePlayer::User { sender: None, .. }
+        )
+    }
+
     /// Gets the player id.
     pub fn id_player(&self) -> i32 {
         self.id_player
