@@ -1,5 +1,6 @@
 //! Components for displaying a chat/message box.
 
+use crate::context::use_user_details;
 use sycamore::{prelude::*, rt::JsCast};
 use web_sys::{Event, KeyboardEvent};
 
@@ -27,6 +28,10 @@ pub fn Chat<'a, F, G: Html>(cx: Scope<'a>, props: Props<F>) -> View<G>
 where
     F: Fn(String) + Clone + 'a,
 {
+    let user_details = use_user_details(cx).get();
+    let username = (*user_details).clone().unwrap().username;
+    let username = create_ref(cx, username);
+
     let msg = create_signal(cx, String::new());
     let messages = create_ref(cx, props.messages);
 
@@ -63,8 +68,12 @@ where
             div(class="is-flex chatbox") {
                 Indexed {
                     iterable: messages,
-                    view: |cx, msg| view! { cx,
-                        Message((msg.sender, msg.content))
+                    view: move |cx, msg| view! { cx,
+                        Message {
+                            sender: msg.sender,
+                            content: msg.content,
+                            username: username,
+                        }
                     }
                 }
             }
@@ -72,15 +81,29 @@ where
     }
 }
 
+/// Props for `Message`.
+#[derive(Prop)]
+struct MessageProps<'a> {
+    pub username: &'a str,
+    pub sender: String,
+    pub content: String,
+}
+
 /// A chat message.
 #[component]
-fn Message<G: Html>(cx: Scope, (sender, content): (String, String)) -> View<G> {
+fn Message<'a, G: Html>(cx: Scope<'a>, props: MessageProps<'a>) -> View<G> {
+    let class = match props.sender.as_str() {
+        "server" => "is-black",
+        name if name == props.username => "is-success",
+        _ => "is-info",
+    };
+
     view! { cx,
         div(class="msg") {
-            span(class="tag is-info") {
-                (sender)
+            span(class=format!("tag {class}")) {
+                (props.sender)
             }
-            (content)
+            (props.content)
         }
     }
 }
