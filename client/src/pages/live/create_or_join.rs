@@ -87,7 +87,9 @@ fn CreateTab<G: Html>(cx: Scope, props: Props) -> View<G> {
             ws_write
                 .send(ClientMsg::Create {
                     ai_count,
-                    player_count,
+                    // `player_count` stores the total capacity, but the API expects
+                    // the number of human players, so subtract `ai_count`.
+                    player_count: player_count - ai_count,
                     friends_only,
                 })
                 .await
