@@ -21,26 +21,31 @@ fn square_class(pos: Pos) -> &'static str {
 
 /// Props for `Board`.
 #[derive(Prop)]
-pub struct BoardProps<F> {
+pub struct BoardProps<'a, F> {
     /// A function of the position that was clicked.
     pub on_click: F,
+    /// Whether to show the premium scores.
+    pub show_premiums: &'a ReadSignal<bool>,
     /// The Option<Tile> array for the board.
-    pub cells: RcSignal<Vec<Option<tile::Tile>>>,
+    pub cells: &'a ReadSignal<Vec<Option<tile::Tile>>>,
 }
 
 /// View the scrabble board, providing a single dimensional array containing
 /// the 225 optional tiles.
 #[component]
-pub fn Board<F, G: Html>(cx: Scope, props: BoardProps<F>) -> View<G>
+pub fn Board<'a, F, G: Html>(cx: Scope<'a>, props: BoardProps<'a, F>) -> View<G>
 where
     F: Fn(Pos) + Clone + 'static,
 {
     let cells = create_memo(cx, move || {
+        let cells = props.cells.get();
+        let cells = cells.as_ref();
         Pos::iter()
-            .zip(props.cells.get().as_ref())
+            .zip(cells)
             .map(|(p, t)| (p, *t))
             .collect::<Vec<_>>()
     });
+    let show_premiums = create_memo(cx, move || *props.show_premiums.get());
 
     view! { cx,
         div(class="board") {
@@ -62,7 +67,23 @@ where
                                         tile: tile,
                                     }
                                 },
-                                None => view! { cx, }
+                                None => view! { cx,
+                                    (match *show_premiums.get() {
+                                        false => view! { cx, },
+                                        true => view! { cx,
+                                            div(class="premium") {
+                                                (match pos.premium() {
+                                                    Some(Premium::Start) => "S",
+                                                    Some(Premium::DoubleLetter) => "2L",
+                                                    Some(Premium::TripleLetter) => "3L",
+                                                    Some(Premium::TripleWord) => "3W",
+                                                    Some(Premium::DoubleWord) => "2W",
+                                                    None => "",
+                                                })
+                                            }
+                                        }
+                                    })
+                                }
                             })
                         }
                     }
