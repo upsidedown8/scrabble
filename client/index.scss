@@ -92,6 +92,10 @@ section {
 		user-select: none;
 	}
 
+	.scrabble-tile {
+		animation: tile-fade-in 0.5s;
+	}
+
 	.square:hover,
 	.square:active {
 		background-color: $hover;
@@ -128,36 +132,46 @@ section {
 	}
 }
 
-.scrabble-tile {
-	animation: tile-fade-in 0.5s;
-}
-
-.rack {
-	display: flex;
-	flex-wrap: nowrap;
-	justify-content: center;
-	column-gap: min(3%, 40px);
-	padding: min(2%, 20px);
-	background-color: darkgreen;
-
-	svg {
-		width: 6%;
-		min-width: 45px;
-		max-width: 80px;
-
-		cursor: pointer;
-		user-select: none;
-	}
-}
-
 .is-fullheight {
 	height: 100vh;
 }
 
 .live {
 	background-color: #383838;
-}
 
-.live .box {
-	margin: 40px;
+	.chat {
+		background-color: white;
+		padding: 10px 2%;
+
+		.chatbox {
+			flex-direction: column-reverse;
+
+			.msg {
+				margin: 5px 10%;
+				display: block;
+
+				.tag {
+					margin-right: 5px;
+				}
+			}
+		}
+	}
+
+	.rack {
+		display: flex;
+		flex-wrap: nowrap;
+		justify-content: center;
+		column-gap: min(3%, 40px);
+		padding: min(2%, 20px);
+		background-color: darkgreen;
+
+		div {
+			width: 6%;
+			min-width: 45px;
+			max-width: 80px;
+
+			cursor: pointer;
+			user-select: none;
+		}
+	}
 }

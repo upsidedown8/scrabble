@@ -1,15 +1,29 @@
+use std::collections::HashMap;
+
 use api::routes::live::{Player, ServerMsg};
-use scrabble::game::tile::Tile;
+use scrabble::{
+    game::{play::Play, tile::Tile},
+    util::pos::Pos,
+};
+use sycamore::prelude::{create_rc_signal, RcSignal};
+
+use crate::components::Msg;
 
 /// An internal message received in the app.
+#[derive(Debug)]
 pub enum AppMsg {
     /// A message received from the server.
     ServerMsg(ServerMsg),
     /// The WebSocket has disconnected.
     WsDisconnect,
+    /// A board square was clicked.
+    SquareClicked(Pos),
+    /// A tile on the rack was clicked.
+    RackTileClicked(Tile),
 }
 
 /// The state of the app.
+#[derive(Clone)]
 pub enum AppState {
     /// The websocket is connected, but the user needs to create or join a game.
     Connected,
@@ -18,21 +32,130 @@ pub enum AppState {
 }
 
 /// The state of a live game.
+#[derive(Clone)]
 pub struct PlayingState {
     pub id_game: i32,
-    pub id_user: i32,
+    pub id_player: i32,
 
-    pub is_over: bool,
-    pub to_play: Player,
+    // -- shared state --
     pub players: Vec<Player>,
-
+    pub tiles: Vec<Option<Tile>>,
     pub rack: Vec<Tile>,
-    pub cells: Vec<Option<Tile>>,
+    pub scores: HashMap<Player, usize>,
+    pub next: Option<Player>,
+    pub letter_bag_len: usize,
+
+    // -- local state --
+    pub messages: RcSignal<Vec<Msg>>,
+    pub local_tiles: RcSignal<Vec<Option<Tile>>>,
+    pub local_rack: RcSignal<Vec<Tile>>,
+    pub placements: RcSignal<Vec<(Pos, Tile)>>,
 }
 
 impl AppState {
     /// Calculates the next state from the previous state and a message.
     pub fn reduce(&self, msg: AppMsg) -> Self {
-        todo!()
+        match self {
+            AppState::Connected => self.reduce_connected(msg),
+            AppState::Playing(playing) => self.reduce_playing(playing, msg),
+        }
+    }
+
+    /// Implementation of the reduce function when the `AppState` is connected.
+    fn reduce_connected(&self, msg: AppMsg) -> Self {
+        match msg {
+            AppMsg::ServerMsg(ServerMsg::Error(e)) => {
+                log::error!("failed to join/create: {e:?}");
+            }
+            AppMsg::ServerMsg(ServerMsg::Joined {
+                id_game,
+                id_player,
+                players,
+                tiles,
+                rack,
+                scores,
+                next,
+            }) => {
+                return AppState::Playing(PlayingState {
+                    // -- local state --
+                    messages: create_rc_signal(Vec::new()),
+                    local_tiles: create_rc_signal(tiles.clone()),
+                    local_rack: create_rc_signal(rack.clone()),
+                    placements: create_rc_signal(vec![]),
+
+                    // -- shared state --
+                    id_game,
+                    id_player,
+                    players,
+                    tiles,
+                    rack,
+                    scores,
+                    next,
+                    letter_bag_len: 100,
+                });
+            }
+            msg => log::error!("unexpected message: {msg:?}"),
+        }
+
+        self.clone()
+    }
+
+    /// Implementation of the reduce function when the `AppState` is playing,
+    fn reduce_playing(&self, playing: &PlayingState, msg: AppMsg) -> Self {
+        match msg {
+            AppMsg::ServerMsg(msg) => match msg {
+                ServerMsg::Play {
+                    player: _,
+                    prev_tiles,
+                    play,
+                    letter_bag_len,
+                    next,
+                    scores,
+                } => {
+                    // find the next set of tiles.
+                    let mut tiles = prev_tiles;
+                    if let Play::Place(tile_positions) = &play {
+                        for (pos, tile) in tile_positions {
+                            tiles[usize::from(*pos)] = Some(*tile);
+                        }
+                    }
+
+                    return AppState::Playing(PlayingState {
+                        letter_bag_len,
+                        tiles,
+                        next,
+                        scores,
+                        ..playing.clone()
+                    });
+                }
+                ServerMsg::Timeout(player) => log::info!("player has timed out: {player:?}"),
+                ServerMsg::Players(players) => {
+                    return AppState::Playing(PlayingState {
+                        players,
+                        ..playing.clone()
+                    })
+                }
+                ServerMsg::Chat(from, msg) => {
+                    log::info!("{from:?} said: {msg}");
+                    playing.messages.modify().push(Msg {
+                        sender: from.username,
+                        content: msg,
+                    });
+                }
+                ServerMsg::Rack(rack) => {
+                    return AppState::Playing(PlayingState {
+                        rack,
+                        ..playing.clone()
+                    })
+                }
+                ServerMsg::Error(e) => log::error!("play error: {e:?}"),
+                msg => log::error!("unexpected message: {msg:?}"),
+            },
+            AppMsg::WsDisconnect => return AppState::Connected,
+            AppMsg::SquareClicked(pos) => log::info!("square {pos} was clicked!!!"),
+            AppMsg::RackTileClicked(tile) => log::info!("tile {tile} was clicked!!!"),
+        }
+
+        self.clone()
     }
 }
