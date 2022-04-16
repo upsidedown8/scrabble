@@ -8,6 +8,7 @@ use crate::{
 };
 use api::routes::live::{ClientMsg, ServerMsg};
 use futures::{channel::mpsc, SinkExt, StreamExt};
+use gloo_timers::future::TimeoutFuture;
 use reqwasm::websocket::{futures::WebSocket, Message};
 use sycamore::{futures::spawn_local_scoped, prelude::*, suspense::Suspense};
 
@@ -17,6 +18,7 @@ mod playing;
 
 use create_or_join::CreateOrJoin;
 use playing::Playing;
+use sycamore_router::navigate;
 
 /// Page for playing live games.
 #[component]
@@ -65,7 +67,7 @@ fn Live<G: Html>(cx: Scope, ws: WebSocket) -> View<G> {
 
     view! { cx,
         (match state.get().as_ref() {
-            AppState::Connected => view! { cx,
+            AppState::Connected(..) => view! { cx,
                 CreateOrJoin {
                     ws_write: ws_write.clone(),
                 }
@@ -98,7 +100,7 @@ struct Setup<'a> {
 fn setup(cx: Scope, ws: WebSocket) -> Setup {
     // Create a state signal and a function that takes an
     // `AppMsg` to incrementally update the state (dispatch).
-    let (state, dispatch) = create_reducer(cx, AppState::Connected, AppState::reduce);
+    let (state, dispatch) = create_reducer(cx, AppState::default(), AppState::reduce);
 
     // split the websocket into a read/write pair.
     let (mut socket_write, mut socket_read) = ws.split();
@@ -134,12 +136,19 @@ fn setup(cx: Scope, ws: WebSocket) -> Setup {
                     Ok(Message::Text(txt)) => {
                         log::error!("text message received: {txt:?}");
                     }
-                    Err(e) => log::error!("websocket error: {e:?}"),
+                    Err(e) => {
+                        log::error!("websocket error: {e:?}");
+                        break;
+                    }
                 }
             }
 
             // Send a websocket disconnect event to the dispatch queue.
             dispatch_write.send(AppMsg::WsDisconnect).await.unwrap();
+
+            // Wait half a second, then reload the page.
+            TimeoutFuture::new(500).await;
+            navigate("/live");
         }
     });
 
