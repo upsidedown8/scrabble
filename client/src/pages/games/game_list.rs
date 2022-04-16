@@ -3,6 +3,7 @@
 use crate::{
     components::StaticErrorMsg,
     context::use_auth,
+    pages::TIME_FORMAT,
     requests::games::{list, overall_stats},
 };
 use api::routes::games::{GameMetadata, ListGamesResponse, OverallStatsResponse};
@@ -67,9 +68,17 @@ fn ViewList<G: Html>(cx: Scope, list: ListGamesResponse) -> View<G> {
                     is_over,
                 } = *meta;
 
-                let start_time = start_time.map(|date| date.to_string()).unwrap_or_default();
-                let end_time = end_time.map(|date| date.to_string()).unwrap_or_default();
+                let start_time = start_time
+                    .map(|date| date.format(TIME_FORMAT).to_string())
+                    .unwrap_or_default();
+                let end_time = end_time
+                    .map(|date| date.format(TIME_FORMAT).to_string())
+                    .unwrap_or_default();
                 let game_link = format!("/games/{id_game}/stats");
+                let is_over = match is_over {
+                    true => "Yes",
+                    false => "No",
+                };
 
                 view! { cx,
                     tr {

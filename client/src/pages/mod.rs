@@ -15,3 +15,6 @@ pub use leaderboards::{FriendsLeaderboardPage, LeaderboardPage};
 pub use live::LivePage;
 pub use not_found::NotFoundPage;
 pub use users::{AccountPage, LoginPage, ResetPasswordPage, ResetWithSecretPage, SignUpPage};
+
+/// The format string used for date/time.
+pub const TIME_FORMAT: &str = "%a %d %b %Y (%H:%M:%S)";

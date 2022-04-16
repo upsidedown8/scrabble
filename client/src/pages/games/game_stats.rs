@@ -1,6 +1,8 @@
 //! Implementation of the [`GameStatsPage`].
 
-use crate::{components::StaticErrorMsg, context::use_auth, requests::games::stats};
+use crate::{
+    components::StaticErrorMsg, context::use_auth, pages::TIME_FORMAT, requests::games::stats,
+};
 use api::routes::games::{GameMetadata, GameStatsResponse};
 use sycamore::{prelude::*, suspense::Suspense};
 
@@ -72,8 +74,12 @@ fn ViewStats<G: Html>(cx: Scope<'_>, response: GameStatsResponse) -> View<G> {
         is_win,
     } = response;
 
-    let start_time = start_time.map(|date| date.to_string()).unwrap_or_default();
-    let end_time = end_time.map(|date| date.to_string()).unwrap_or_default();
+    let start_time = start_time
+        .map(|date| date.format(TIME_FORMAT).to_string())
+        .unwrap_or_default();
+    let end_time = end_time
+        .map(|date| date.format(TIME_FORMAT).to_string())
+        .unwrap_or_default();
 
     view! { cx,
         hr
@@ -110,13 +116,13 @@ fn ViewStats<G: Html>(cx: Scope<'_>, response: GameStatsResponse) -> View<G> {
         table(class="table") {
             thead {
                 tr {
-                    th {abbr(title="score/play") { "Average score" }}
-                    th {abbr(title="wlen/play") { "Average word length" }}
-                    th {abbr(title="words/play") { "Average words per play" }}
-                    th {abbr(title="tiles/play") { "Average tiles per play" }}
-                    th {abbr(title="longest") { "Longest word length" }}
-                    th {abbr(title="best") { "Best score" }}
-                    th {abbr(title="score/tile") { "Average score per tile" }}
+                    th {abbr(title="Average score") { "score/play" }}
+                    th {abbr(title="Average word length") { "wlen/play" }}
+                    th {abbr(title="Average words per play") { "words/play" }}
+                    th {abbr(title="Average tiles per play") { "tiles/play" }}
+                    th {abbr(title="Longest word length") { "longest" }}
+                    th {abbr(title="Best score") { "best" }}
+                    th {abbr(title="Average score per tile") { "score/tile" }}
                 }
             }
             tbody {
