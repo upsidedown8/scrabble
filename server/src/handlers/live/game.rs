@@ -58,7 +58,11 @@ impl GameHandle {
         let id_game = models::Game::insert(&db).await.ok()?;
         // create database records for the ai players.
         let mut slots = HashMap::default();
-        for player_num in PlayerNum::iter(total_count).take(ai_count) {
+        // add the ai players at the end of the slots, to allow the human players to go first.
+        for player_num in PlayerNum::iter(total_count)
+            .skip(player_count)
+            .take(ai_count)
+        {
             let difficulty = AiDifficulty::Medium;
 
             log::trace!("inserting ai player");
@@ -242,7 +246,7 @@ impl Game {
             let slot = &self.slots[&player_num];
             let player = slot.player();
 
-            slot.send_msg(ServerMsg::Chat(player, chat));
+            self.send_all(ServerMsg::Chat(player, chat));
         }
     }
     /// Called when a disconnect message is received.
