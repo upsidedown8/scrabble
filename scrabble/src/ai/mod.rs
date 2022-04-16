@@ -14,9 +14,9 @@ pub mod movegen;
 /// The number of top scoring moves to look ahead from.
 const LOOK_AHEAD_LIMIT: usize = 15;
 /// The weighting of the proportional length difference in the score.
-const LEN_WEIGHT: f32 = 0.2;
+const LEN_WEIGHT: f32 = 7.0;
 /// The weighting of the proportional tile count difference in the score.
-const TILES_WEIGHT: f32 = 0.2;
+const TILES_WEIGHT: f32 = 2.0;
 /// The weighting of the score in the final score calculation.
 const SCORE_WEIGHT: f32 = 10.0;
 /// If there are no plays, tiles with fewer than
@@ -64,7 +64,7 @@ impl Ai {
             random_factor: 0.2,
             preferred_len: Some(6),
             preferred_tiles: Some(5),
-            preferred_score: 25,
+            preferred_score: 20,
             cross_word_range: 0..=1,
             tile_range: 1..=6,
             len_range: 3..=15,
@@ -76,7 +76,7 @@ impl Ai {
             random_factor: 0.15,
             preferred_len: Some(7),
             preferred_tiles: None,
-            preferred_score: 40,
+            preferred_score: 30,
             cross_word_range: 0..=2,
             tile_range: 1..=7,
             len_range: 2..=10,
@@ -88,7 +88,7 @@ impl Ai {
             random_factor: 0.05,
             preferred_len: None,
             preferred_tiles: None,
-            preferred_score: 100,
+            preferred_score: 50,
             cross_word_range: 0..=4,
             tile_range: 1..=7,
             len_range: 2..=15,
