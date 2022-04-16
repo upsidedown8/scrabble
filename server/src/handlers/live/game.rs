@@ -212,11 +212,6 @@ impl Game {
             }
         }
 
-        // send a message saying that joining failed.
-        if let Err(e) = tx.send(ServerMsg::Error(LiveError::FailedToJoin)) {
-            log::error!("failed to send message to user: {e:?}");
-        }
-
         false
     }
     /// Sends a join message to the player that joined and notifies
@@ -562,6 +557,11 @@ impl Game {
     /// Gets the board tiles for the API.
     fn api_tiles(&self) -> Vec<Option<Tile>> {
         Vec::from(self.game.board().grid_h().tiles())
+    }
+}
+impl Drop for Game {
+    fn drop(&mut self) {
+        log::info!("dropping game: {}", self.id_game);
     }
 }
 

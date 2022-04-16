@@ -71,7 +71,7 @@ async fn authenticated(mut ws: WebSocket, jwt: Jwt, games: GamesHandle) {
 }
 
 /// Joins a game.
-async fn join_game(id_game: i32, ws: WebSocket, jwt: Jwt, games: GamesHandle) {
+async fn join_game(id_game: i32, mut ws: WebSocket, jwt: Jwt, games: GamesHandle) {
     log::info!("user ({}) is joining game ({id_game})", jwt.id_user());
 
     // attempt to get the game by id.
@@ -84,6 +84,7 @@ async fn join_game(id_game: i32, ws: WebSocket, jwt: Jwt, games: GamesHandle) {
         Some(game_handle) => playing(ws, jwt, game_handle).await,
         None => {
             log::error!("game not found: {id_game}");
+            send_msg(&mut ws, &ServerMsg::Error(LiveError::FailedToJoin)).await;
         }
     }
 }
