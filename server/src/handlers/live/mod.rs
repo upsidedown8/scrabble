@@ -153,7 +153,7 @@ async fn playing(ws: WebSocket, jwt: Jwt, game: GameHandle) {
             match msg {
                 Ok(msg) => match bincode::deserialize(msg.as_bytes()) {
                     Ok(msg) => {
-                        let msg = GameMsg::new(id_user, msg);
+                        let msg = GameMsg::client_msg(id_user, msg);
                         game_sender.send(msg).unwrap()
                     }
                     Err(e) => log::error!("failed to deserialize: {e:?}"),
@@ -165,7 +165,7 @@ async fn playing(ws: WebSocket, jwt: Jwt, game: GameHandle) {
         // Ensure the user is disconnected by this point by sending a disconnect
         // message to the game room.
         game_sender
-            .send(GameMsg::new(id_user, ClientMsg::Disconnect))
+            .send(GameMsg::client_msg(id_user, ClientMsg::Disconnect))
             .unwrap();
     });
 

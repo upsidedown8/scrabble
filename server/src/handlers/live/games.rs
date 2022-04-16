@@ -1,4 +1,8 @@
-use crate::{db::Db, fsm::FsmHandle, handlers::live::game::GameHandle};
+use crate::{
+    db::Db,
+    fsm::FsmHandle,
+    handlers::live::game::{GameHandle, GameMsg},
+};
 use std::{collections::HashMap, ops::Deref, sync::Arc, time::Duration};
 use tokio::{sync::RwLock, time::interval};
 
@@ -35,11 +39,14 @@ impl GamesHandle {
                     for (&id_game, game_handle) in games.games.iter() {
                         let game = game_handle.lock().await;
                         if game.is_empty() {
+                            // send a close message to the game, which stops the async task
+                            // that is listening for messages.
+                            game.sender().send(GameMsg::Close).unwrap();
                             to_remove.push(id_game);
                         }
                     }
 
-                    // remove all games with ids in the list.
+                    // remove the games from the hashmap.
                     for id_game in to_remove {
                         log::info!("removing empty game: {id_game}");
                         games.games.remove(&id_game);

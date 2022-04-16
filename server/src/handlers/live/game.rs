@@ -101,9 +101,16 @@ impl GameHandle {
             async move {
                 while let Some(msg) = receiver.recv().await {
                     log::debug!("game message received: {msg:?}");
-                    // lock the game and handle the message.
-                    let mut game_lock = game_handle.lock().await;
-                    game_lock.on_msg(msg, game_handle.clone()).await;
+
+                    match msg {
+                        // An internal message to close the game, exit this loop.
+                        GameMsg::Close => break,
+                        GameMsg::ClientMsg { id_user, msg } => {
+                            // lock the game and handle the message.
+                            let mut game_lock = game_handle.lock().await;
+                            game_lock.on_msg(id_user, msg, game_handle.clone()).await;
+                        }
+                    }
                 }
 
                 log::info!("closing game: {id_game}");
@@ -240,9 +247,7 @@ impl Game {
     }
 
     /// Called when a message is received from a user.
-    async fn on_msg(&mut self, msg: GameMsg, game_handle: GameHandle) {
-        let GameMsg { msg, id_user } = msg;
-
+    async fn on_msg(&mut self, id_user: i32, msg: ClientMsg, game_handle: GameHandle) {
         match msg {
             ClientMsg::Disconnect => self.on_disconnect(id_user),
             ClientMsg::Chat(chat) => self.on_chat(id_user, chat),
@@ -562,14 +567,16 @@ impl Game {
 
 /// A message sent to a game. (ClientMsg + user id).
 #[derive(Debug)]
-pub struct GameMsg {
-    pub id_user: i32,
-    pub msg: ClientMsg,
+pub enum GameMsg {
+    /// Close the game.
+    Close,
+    /// A message from a user.
+    ClientMsg { id_user: i32, msg: ClientMsg },
 }
 impl GameMsg {
-    /// Creates a new [`GameMsg`].
-    pub fn new(id_user: i32, msg: ClientMsg) -> GameMsg {
-        GameMsg { id_user, msg }
+    /// Creates a new [`GameMsg::ClientMsg`].
+    pub fn client_msg(id_user: i32, msg: ClientMsg) -> GameMsg {
+        GameMsg::ClientMsg { id_user, msg }
     }
 }
 
