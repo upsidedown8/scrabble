@@ -71,6 +71,8 @@ pub enum ServerMsg {
         /// The next player (None if the game is over).
         next: Option<Player>,
     },
+    /// All users have connected. The game can start.
+    Starting,
     /// A user has connected to the game.
     UserConnected(Player),
     /// A user has disconnected from the game.

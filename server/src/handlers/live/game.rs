@@ -226,6 +226,12 @@ impl Game {
         // send a message to update the players.
         self.send_all(ServerMsg::Players(self.api_players()));
         self.send_all(ServerMsg::UserConnected(slot.player()));
+
+        // check whether there are enough players to start and
+        // no plays have been made yet.
+        if self.play_count == 0 && self.is_full() {
+            self.send_all(ServerMsg::Starting);
+        }
     }
 
     /// Called when a message is received from a user.
