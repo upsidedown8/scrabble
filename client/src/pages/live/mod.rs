@@ -123,7 +123,10 @@ fn setup(cx: Scope, ws: WebSocket) -> Setup {
                     Ok(Message::Bytes(bytes)) => {
                         match bincode::deserialize::<ServerMsg>(&bytes) {
                             // Forward the message to the dispatch queue.
-                            Ok(msg) => dispatch_write.send(AppMsg::ServerMsg(msg)).await.unwrap(),
+                            Ok(msg) => {
+                                log::info!("message recieved: {msg:?}");
+                                dispatch_write.send(AppMsg::ServerMsg(msg)).await.unwrap()
+                            }
                             Err(e) => log::error!("failed to deserialize: {e:?}"),
                         }
                     }
@@ -145,6 +148,8 @@ fn setup(cx: Scope, ws: WebSocket) -> Setup {
     spawn_local_scoped(cx, async move {
         // read from `ws_read`.
         while let Some(msg) = ws_read.next().await {
+            log::info!("sending message: {msg:?}");
+
             if let Err(e) = socket_write.send(to_msg(&msg)).await {
                 log::error!("failed to send message: {e:?}");
             }
