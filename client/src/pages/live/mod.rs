@@ -59,11 +59,7 @@ async fn ConnectAndAuthenticate<G: Html>(cx: Scope<'_>) -> View<G> {
 fn Live<G: Html>(cx: Scope, ws: WebSocket) -> View<G> {
     // Setup the `AppState`, a writer for the dispatch function,
     // and a writer that sends messages to the server.
-    let Setup {
-        state,
-        dispatch_write,
-        ws_write,
-    } = setup(cx, ws);
+    let Setup { state, ws_write } = setup(cx, ws);
 
     view! { cx,
         (match state.get().as_ref() {
@@ -76,7 +72,6 @@ fn Live<G: Html>(cx: Scope, ws: WebSocket) -> View<G> {
             AppState::Playing(..) => view! { cx,
                 Playing {
                     state: state,
-                    dispatch_write: dispatch_write.clone(),
                     ws_write: ws_write.clone(),
                 }
             }
@@ -88,9 +83,6 @@ fn Live<G: Html>(cx: Scope, ws: WebSocket) -> View<G> {
 struct Setup<'a> {
     /// A read-only `AppState` signal.
     pub state: &'a ReadSignal<AppState>,
-    /// Messages sent to this queue are forwarded to the
-    /// dispatch function (to update the state).
-    pub dispatch_write: &'a mpsc::UnboundedSender<AppMsg>,
     /// Messages sent to this queue are forwarded to the
     /// server.
     pub ws_write: &'a mpsc::UnboundedSender<ClientMsg>,
@@ -111,46 +103,42 @@ fn setup(cx: Scope, ws: WebSocket) -> Setup {
 
     // create a queue for dispatch messages. Any messages sent to `dispatch_write`
     // will be forwarded to the dispatch function on the `AppState`.
-    let (dispatch_write, mut dispatch_read) = mpsc::unbounded();
+    let (mut dispatch_write, mut dispatch_read) = mpsc::unbounded();
 
     // spawn a task that reads from `socket_read` (messages from server)
     // to forward messages to the dispatch queue (writes to `dispatch_write`).
-    spawn_local_scoped(cx, {
-        let mut dispatch_write = dispatch_write.clone();
-
-        async move {
-            // read from `socket_read`.
-            while let Some(msg) = socket_read.next().await {
-                match msg {
-                    // If a message is received, parse it as a `ServerMsg`.
-                    Ok(Message::Bytes(bytes)) => {
-                        match bincode::deserialize::<ServerMsg>(&bytes) {
-                            // Forward the message to the dispatch queue.
-                            Ok(msg) => {
-                                log::info!("message recieved: {msg:?}");
-                                dispatch_write.send(AppMsg::ServerMsg(msg)).await.unwrap()
-                            }
-                            Err(e) => log::error!("failed to deserialize: {e:?}"),
+    spawn_local_scoped(cx, async move {
+        // read from `socket_read`.
+        while let Some(msg) = socket_read.next().await {
+            match msg {
+                // If a message is received, parse it as a `ServerMsg`.
+                Ok(Message::Bytes(bytes)) => {
+                    match bincode::deserialize::<ServerMsg>(&bytes) {
+                        // Forward the message to the dispatch queue.
+                        Ok(msg) => {
+                            log::info!("message recieved: {msg:?}");
+                            dispatch_write.send(AppMsg::ServerMsg(msg)).await.unwrap()
                         }
-                    }
-                    // Only binary messages should be received.
-                    Ok(Message::Text(txt)) => {
-                        log::error!("text message received: {txt:?}");
-                    }
-                    Err(e) => {
-                        log::error!("websocket error: {e:?}");
-                        break;
+                        Err(e) => log::error!("failed to deserialize: {e:?}"),
                     }
                 }
+                // Only binary messages should be received.
+                Ok(Message::Text(txt)) => {
+                    log::error!("text message received: {txt:?}");
+                }
+                Err(e) => {
+                    log::error!("websocket error: {e:?}");
+                    break;
+                }
             }
-
-            // Send a websocket disconnect event to the dispatch queue.
-            dispatch_write.send(AppMsg::WsDisconnect).await.unwrap();
-
-            // Wait 5 seconds, then reload the page.
-            TimeoutFuture::new(5000).await;
-            navigate("/live");
         }
+
+        // Send a websocket disconnect event to the dispatch queue.
+        dispatch_write.send(AppMsg::WsDisconnect).await.unwrap();
+
+        // Wait 5 seconds, then reload the page.
+        TimeoutFuture::new(5000).await;
+        navigate("/live");
     });
 
     // spawn a task that reads from `ws_read` (messages that need to be sent
@@ -178,7 +166,6 @@ fn setup(cx: Scope, ws: WebSocket) -> Setup {
 
     Setup {
         state,
-        dispatch_write: create_ref(cx, dispatch_write),
         ws_write: create_ref(cx, ws_write),
     }
 }

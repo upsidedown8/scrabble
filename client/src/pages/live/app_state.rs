@@ -1,9 +1,6 @@
 use crate::components::Msg;
 use api::routes::live::{LiveError, Player, ServerMsg};
-use scrabble::{
-    game::{play::Play, tile::Tile, GameOverReason},
-    util::pos::Pos,
-};
+use scrabble::game::{play::Play, tile::Tile, GameOverReason};
 use std::collections::HashMap;
 use sycamore::prelude::{create_rc_signal, RcSignal};
 
@@ -17,10 +14,6 @@ pub enum AppMsg {
     ServerMsg(ServerMsg),
     /// The WebSocket has disconnected.
     WsDisconnect,
-    /// A board square was clicked.
-    SquareClicked(Pos),
-    /// A tile on the rack was clicked.
-    RackTileClicked(Tile),
 }
 
 /// The state of the app.
@@ -220,8 +213,6 @@ impl AppState {
             AppMsg::WsDisconnect => {
                 return AppState::default();
             }
-            AppMsg::SquareClicked(pos) => log::info!("square {pos} was clicked!!!"),
-            AppMsg::RackTileClicked(tile) => log::info!("tile {tile} was clicked!!!"),
         }
 
         self.clone()

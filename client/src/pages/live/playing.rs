@@ -1,22 +1,16 @@
 use crate::{
     components::{Board, Chat, Rack, Scoreboard},
-    pages::live::app_state::{AppMsg, AppState},
+    pages::live::app_state::AppState,
 };
-use api::routes::live::ClientMsg;
+use api::routes::live::{ClientMsg, Player};
 use futures::{channel::mpsc, SinkExt};
-use scrabble::game::play::Play;
-use sycamore::{
-    futures::{spawn_local, spawn_local_scoped},
-    prelude::*,
-};
+use sycamore::{futures::spawn_local_scoped, prelude::*};
 
 /// Props for `Playing`.
 #[derive(Prop)]
 pub struct Props<'a> {
     /// A read-only signal for the current state.
     pub state: &'a ReadSignal<AppState>,
-    /// Writing to this queue sends a message to the dispatch function.
-    pub dispatch_write: mpsc::UnboundedSender<AppMsg>,
     /// Writing to this queue sends a message to the server.
     pub ws_write: mpsc::UnboundedSender<ClientMsg>,
 }
@@ -28,7 +22,9 @@ pub fn Playing<'a, G: Html>(cx: Scope<'a>, props: Props<'a>) -> View<G> {
         AppState::Playing(playing_state) => playing_state.clone(),
         AppState::Connected(..) => unreachable!(),
     });
+    let ws_write = create_ref(cx, props.ws_write);
 
+    // -- LOCAL STATE --
     let rack = create_memo(cx, || {
         let state = state.get();
         let state = state.as_ref().as_ref();
@@ -42,72 +38,42 @@ pub fn Playing<'a, G: Html>(cx: Scope<'a>, props: Props<'a>) -> View<G> {
     let messages = state.get().messages.clone();
     let scores = create_memo(cx, || state.get().scores.clone());
 
-    let send_app_msg = {
-        let dispatch_write = props.dispatch_write.clone();
-        move |msg| {
-            let mut dispatch_write = dispatch_write.clone();
-            spawn_local(async move {
-                dispatch_write.send(msg).await.unwrap();
-            });
-        }
-    };
-
-    // called when a board square is clicked.
-    let on_click_square = {
-        let send_msg = send_app_msg.clone();
-        move |pos| send_msg(AppMsg::SquareClicked(pos))
-    };
-
-    // called when a rack tile is clicked.
-    let on_click_rack_tile = {
-        let send_msg = send_app_msg;
-        move |tile| send_msg(AppMsg::RackTileClicked(tile))
-    };
-
-    // called when the pass button is clicked.
-    let on_pass = {
-        let ws_write = props.ws_write.clone();
-        move |_| {
-            let mut ws_write = ws_write.clone();
-            spawn_local_scoped(cx, async move {
-                ws_write.send(ClientMsg::Play(Play::Pass)).await.unwrap();
-            });
-        }
-    };
-
     // called when a message is sent.
     let on_msg = move |msg| {
-        let mut ws_write = props.ws_write.clone();
         spawn_local_scoped(cx, async move {
+            let mut ws_write = ws_write.clone();
             ws_write.send(ClientMsg::Chat(msg)).await.unwrap();
         });
     };
 
+    // whether it is the connected player's turn.
+    let is_my_turn = create_memo(cx, || {
+        let state = state.get();
+        let state = state.as_ref().as_ref();
+
+        matches!(state.next, Some(Player { id_player, .. }) if id_player == state.id_player)
+    });
+
     view! { cx,
         div(class="live") {
             Board {
-                on_click: on_click_square,
+                on_click: |_| (),
                 cells: tiles,
             }
 
             Rack {
-                on_click: on_click_rack_tile,
+                on_click: |_| (),
                 tiles: rack,
             }
 
-            div(class="controls") {
-                div(class="buttons") {
-                    button(class="button is-dark") {
-                        "Redraw"
+            (match *is_my_turn.get() {
+                false => view! { cx, },
+                true => view! { cx,
+                    Controls {
+                        ws_write: ws_write.clone(),
                     }
-                    button(class="button is-dark") {
-                        "Place"
-                    }
-                    button(class="button is-dark", on:click=on_pass) {
-                        "Pass"
-                    }
-                }
-            }
+                },
+            })
 
             Scoreboard {
                 scores: scores,
@@ -117,6 +83,54 @@ pub fn Playing<'a, G: Html>(cx: Scope<'a>, props: Props<'a>) -> View<G> {
                 on_msg: on_msg,
                 messages: messages,
             }
+        }
+    }
+}
+
+/// The tab of the controls menu.
+#[derive(PartialEq)]
+enum ControlTab {
+    Redraw,
+    Place,
+    Pass,
+}
+
+/// Props for `Controls`
+#[derive(Prop)]
+struct ControlsProps {
+    /// Write half of the mpsc queue.
+    pub ws_write: mpsc::UnboundedSender<ClientMsg>,
+}
+
+#[component]
+fn Controls<G: Html>(cx: Scope, props: ControlsProps) -> View<G> {
+    // -- TABS --
+    let active_tab = create_signal(cx, ControlTab::Place);
+    let tab_class = |tab| {
+        create_memo(cx, move || match *active_tab.get() == tab {
+            true => "is-active",
+            false => "",
+        })
+    };
+    let redraw_class = tab_class(ControlTab::Redraw);
+    let place_class = tab_class(ControlTab::Place);
+    let pass_class = tab_class(ControlTab::Pass);
+
+    view! { cx,
+        div(class="controls") {
+            div(class="tabs") {
+                ul {
+                    li(class=(redraw_class.get()), on:click=|_| active_tab.set(ControlTab::Redraw)) { a { "Redraw" } }
+                    li(class=(place_class.get()), on:click=|_| active_tab.set(ControlTab::Place)) { a { "Place" } }
+                    li(class=(pass_class.get()), on:click=|_| active_tab.set(ControlTab::Pass)) { a { "Pass" } }
+                }
+            }
+
+            (match *active_tab.get() {
+                ControlTab::Redraw => view! { cx, "Redraw" },
+                ControlTab::Place => view! { cx, "Place" },
+                ControlTab::Pass => view! { cx, "Pass" },
+            })
         }
     }
 }
