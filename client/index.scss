@@ -198,9 +198,16 @@ section {
 	}
 
 	.controls {
-		background-color: grey;
-		display: flex;
-		flex-wrap: nowrap;
+		background-color: white;
+		text-align: center;
+
+		.tabs {
+			margin: 0;
+		}
+
+		section {
+			user-select: none;
+		}
 
 		.tiles {
 			background-color: darkgreen;
@@ -209,5 +216,9 @@ section {
 
 	.scoreboard {
 		background-color: black;
+
+		th {
+			color: white;
+		}
 	}
 }
