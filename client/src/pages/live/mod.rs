@@ -67,9 +67,10 @@ fn Live<G: Html>(cx: Scope, ws: WebSocket) -> View<G> {
 
     view! { cx,
         (match state.get().as_ref() {
-            AppState::Connected(..) => view! { cx,
+            AppState::Connected(connected) => view! { cx,
                 CreateOrJoin {
                     ws_write: ws_write.clone(),
+                    msg: connected.toast.clone(),
                 }
             },
             AppState::Playing(..) => view! { cx,
@@ -146,8 +147,8 @@ fn setup(cx: Scope, ws: WebSocket) -> Setup {
             // Send a websocket disconnect event to the dispatch queue.
             dispatch_write.send(AppMsg::WsDisconnect).await.unwrap();
 
-            // Wait half a second, then reload the page.
-            TimeoutFuture::new(500).await;
+            // Wait 5 seconds, then reload the page.
+            TimeoutFuture::new(5000).await;
             navigate("/live");
         }
     });
