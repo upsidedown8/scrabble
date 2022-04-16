@@ -24,8 +24,6 @@ fn square_class(pos: Pos) -> &'static str {
 pub struct BoardProps<'a, F> {
     /// A function of the position that was clicked.
     pub on_click: F,
-    /// Whether to show the premium scores.
-    pub show_premiums: &'a ReadSignal<bool>,
     /// The Option<Tile> array for the board.
     pub cells: &'a ReadSignal<Vec<Option<tile::Tile>>>,
 }
@@ -45,7 +43,6 @@ where
             .map(|(p, t)| (p, *t))
             .collect::<Vec<_>>()
     });
-    let show_premiums = create_memo(cx, move || *props.show_premiums.get());
 
     view! { cx,
         div(class="board") {
@@ -68,21 +65,16 @@ where
                                     }
                                 },
                                 None => view! { cx,
-                                    (match *show_premiums.get() {
-                                        false => view! { cx, },
-                                        true => view! { cx,
-                                            div(class="premium") {
-                                                (match pos.premium() {
-                                                    Some(Premium::Start) => "S",
-                                                    Some(Premium::DoubleLetter) => "2L",
-                                                    Some(Premium::TripleLetter) => "3L",
-                                                    Some(Premium::TripleWord) => "3W",
-                                                    Some(Premium::DoubleWord) => "2W",
-                                                    None => "",
-                                                })
-                                            }
-                                        }
-                                    })
+                                    div(class="premium") {
+                                        (match pos.premium() {
+                                            Some(Premium::Start) => "S",
+                                            Some(Premium::DoubleLetter) => "2L",
+                                            Some(Premium::TripleLetter) => "3L",
+                                            Some(Premium::TripleWord) => "3W",
+                                            Some(Premium::DoubleWord) => "2W",
+                                            None => "",
+                                        })
+                                    }
                                 }
                             })
                         }

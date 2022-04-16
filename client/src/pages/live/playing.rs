@@ -41,7 +41,6 @@ pub fn Playing<'a, G: Html>(cx: Scope<'a>, props: Props<'a>) -> View<G> {
     });
     let messages = state.get().messages.clone();
     let scores = create_memo(cx, || state.get().scores.clone());
-    let show_premiums = create_signal(cx, false);
 
     let send_app_msg = {
         let dispatch_write = props.dispatch_write.clone();
@@ -87,7 +86,6 @@ pub fn Playing<'a, G: Html>(cx: Scope<'a>, props: Props<'a>) -> View<G> {
     view! { cx,
         div(class="live") {
             Board {
-                show_premiums: show_premiums,
                 on_click: on_click_square,
                 cells: tiles,
             }

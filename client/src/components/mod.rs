@@ -14,6 +14,7 @@ mod rack;
 mod scoreboard;
 mod separator;
 mod tile;
+mod toast;
 
 pub use board::Board;
 pub use chat::{Chat, Msg};
@@ -29,3 +30,4 @@ pub use rack::Rack;
 pub use scoreboard::Scoreboard;
 pub use separator::Separator;
 pub use tile::Tile;
+pub use toast::Toast;
