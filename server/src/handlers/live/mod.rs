@@ -7,7 +7,8 @@ use api::{
     auth::Token,
     routes::live::{ClientMsg, LiveError, ServerMsg},
 };
-use futures::{SinkExt, StreamExt};
+use futures::{Sink, SinkExt, StreamExt};
+use std::fmt::Debug;
 use tokio::sync::mpsc;
 use warp::ws::{Message, WebSocket};
 
@@ -98,21 +99,11 @@ async fn create_game(
 
     // send an error if there are no players.
     if player_count == 0 {
-        let msg = ServerMsg::Error(LiveError::ZeroPlayers);
-        let msg = Message::binary(bincode::serialize(&msg).unwrap());
-
-        if let Err(e) = ws.send(msg).await {
-            log::error!("failed to send message: {e:?}");
-        }
+        send_msg(&mut ws, &ServerMsg::Error(LiveError::ZeroPlayers)).await;
     }
     // send an error for too few or too many players.
     else if !(2..=4).contains(&count) {
-        let msg = ServerMsg::Error(LiveError::IllegalPlayerCount);
-        let msg = Message::binary(bincode::serialize(&msg).unwrap());
-
-        if let Err(e) = ws.send(msg).await {
-            log::error!("failed to send message: {e:?}");
-        }
+        send_msg(&mut ws, &ServerMsg::Error(LiveError::IllegalPlayerCount)).await;
     }
     // otherwise create the game.
     else {
@@ -148,6 +139,7 @@ async fn playing(ws: WebSocket, jwt: Jwt, game: GameHandle) {
     let game_sender = game.sender();
     if !game.add_player(id_user, tx).await {
         // stop execution if adding the player failed.
+        send_msg(&mut sender, &ServerMsg::Error(LiveError::FailedToJoin)).await;
         return;
     }
     drop(game);
@@ -178,12 +170,7 @@ async fn playing(ws: WebSocket, jwt: Jwt, game: GameHandle) {
     // Forward messages from `rx` -> `sender`
     // (Messages from game to the client)
     while let Some(msg) = rx.recv().await {
-        let bytes = bincode::serialize(&msg).expect("failed to serialize message");
-        let msg = Message::binary(bytes);
-
-        if let Err(e) = sender.send(msg).await {
-            log::error!("failed to send message: {e:?}");
-        }
+        send_msg(&mut sender, &msg).await;
     }
 
     // Ensure that both async tasks complete.
@@ -192,4 +179,18 @@ async fn playing(ws: WebSocket, jwt: Jwt, game: GameHandle) {
     }
 
     log::info!("user disconnecting: {id_user}");
+}
+
+/// Attempts to sends a message to the client.
+async fn send_msg<T>(ws: &mut T, msg: &ServerMsg)
+where
+    T: SinkExt<Message> + Unpin,
+    <T as Sink<Message>>::Error: Debug,
+{
+    let bytes = bincode::serialize(msg).unwrap();
+    let msg = Message::binary(bytes);
+
+    if let Err(e) = ws.send(msg).await {
+        log::error!("failed to send message: {e:?}");
+    }
 }
