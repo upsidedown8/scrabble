@@ -113,4 +113,6 @@ pub enum LiveError {
     IllegalPlayerCount,
     /// Failed to join a game.
     FailedToJoin,
+    /// The Auth token provided was invalid or expired.
+    InvalidToken,
 }

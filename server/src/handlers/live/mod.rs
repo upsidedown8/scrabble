@@ -28,6 +28,8 @@ pub async fn connected(mut ws: WebSocket, games: GamesHandle) {
 
                 authenticated(ws, jwt, games).await;
             } else {
+                send_msg(&mut ws, &ServerMsg::Error(LiveError::InvalidToken)).await;
+
                 log::error!("invalid token: {token}");
             }
         } else {
