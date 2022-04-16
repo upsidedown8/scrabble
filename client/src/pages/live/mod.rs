@@ -2,11 +2,11 @@
 
 use crate::{
     components::StaticErrorMsg,
-    context::use_token,
+    context::{use_auth, use_token},
     pages::live::app_state::{AppMsg, AppState},
     requests::live::{connect_and_authenticate, to_msg},
 };
-use api::routes::live::{ClientMsg, ServerMsg};
+use api::routes::live::{ClientMsg, LiveError, ServerMsg};
 use futures::{channel::mpsc, SinkExt, StreamExt};
 use gloo_timers::future::TimeoutFuture;
 use reqwasm::websocket::{futures::WebSocket, Message};
@@ -108,6 +108,8 @@ fn setup(cx: Scope, ws: WebSocket) -> Setup {
     // spawn a task that reads from `socket_read` (messages from server)
     // to forward messages to the dispatch queue (writes to `dispatch_write`).
     spawn_local_scoped(cx, async move {
+        let auth = use_auth(cx);
+
         // read from `socket_read`.
         while let Some(msg) = socket_read.next().await {
             match msg {
@@ -117,7 +119,16 @@ fn setup(cx: Scope, ws: WebSocket) -> Setup {
                         // Forward the message to the dispatch queue.
                         Ok(msg) => {
                             log::info!("message recieved: {msg:?}");
-                            dispatch_write.send(AppMsg::ServerMsg(msg)).await.unwrap()
+
+                            match msg {
+                                // If the message content states that the user's token
+                                // has expired, log the user out.
+                                ServerMsg::Error(LiveError::InvalidToken) => {
+                                    auth.set(None);
+                                    navigate("/live");
+                                }
+                                msg => dispatch_write.send(AppMsg::ServerMsg(msg)).await.unwrap(),
+                            }
                         }
                         Err(e) => log::error!("failed to deserialize: {e:?}"),
                     }
@@ -132,9 +143,6 @@ fn setup(cx: Scope, ws: WebSocket) -> Setup {
                 }
             }
         }
-
-        // Send a websocket disconnect event to the dispatch queue.
-        dispatch_write.send(AppMsg::WsDisconnect).await.unwrap();
 
         // Wait 5 seconds, then reload the page.
         TimeoutFuture::new(5000).await;
