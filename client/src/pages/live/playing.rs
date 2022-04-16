@@ -1,5 +1,5 @@
 use crate::{
-    components::{Board, Chat, Rack},
+    components::{Board, Chat, Rack, Scoreboard},
     pages::live::app_state::{AppMsg, AppState},
 };
 use api::routes::live::ClientMsg;
@@ -31,6 +31,7 @@ pub fn Playing<'a, G: Html>(cx: Scope<'a>, props: Props<'a>) -> View<G> {
     let rack = state.get().local_rack.clone();
     let tiles = state.get().local_tiles.clone();
     let messages = state.get().messages.clone();
+    let scores = create_memo(cx, || state.get().scores.clone());
 
     // called when a board square is clicked.
     let on_click_square = {
@@ -84,14 +85,14 @@ pub fn Playing<'a, G: Html>(cx: Scope<'a>, props: Props<'a>) -> View<G> {
 
             // }
 
+            Scoreboard {
+                scores: scores,
+            }
+
             Chat {
                 on_msg: on_msg,
                 messages: messages,
             }
-
-            // Scoreboard {
-
-            // }
         }
     }
 }

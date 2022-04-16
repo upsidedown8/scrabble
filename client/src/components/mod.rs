@@ -11,6 +11,7 @@ mod leaderboard;
 mod navbar;
 mod progress;
 mod rack;
+mod scoreboard;
 mod separator;
 mod tile;
 
@@ -25,5 +26,6 @@ pub use leaderboard::Leaderboard;
 pub use navbar::Navbar;
 pub use progress::Progress;
 pub use rack::Rack;
+pub use scoreboard::Scoreboard;
 pub use separator::Separator;
 pub use tile::Tile;
