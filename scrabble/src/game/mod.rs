@@ -86,14 +86,16 @@ impl GameOver {
             overall_rack_sum += rack_sum;
         }
 
-        // Then calculate the final score for the player that ended the game,
-        // by adding `overall_rack_total` to their score.
-        scores[usize::from(last_player)] += overall_rack_sum;
-
-        let &max_score = scores.iter().max().unwrap_or(&0);
+        // If the last player has no remaining tiles, add the sum of the
+        // other players' scores.
+        if players[usize::from(last_player)].rack.is_empty() {
+            // Then calculate the final score for the player that ended the game,
+            // by adding `overall_rack_total` to their score.
+            scores[usize::from(last_player)] += overall_rack_sum;
+        }
 
         Self {
-            max_score,
+            max_score: scores.iter().max().copied().unwrap_or_default(),
             scores,
             reason,
         }
