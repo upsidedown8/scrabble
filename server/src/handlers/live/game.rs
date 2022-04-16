@@ -212,9 +212,13 @@ impl Game {
     fn send_join_msg(&self, player_num: PlayerNum) {
         // send a join game message.
         let slot = &self.slots[&player_num];
+        let player_count = self.slots.values().filter(|s| s.is_player()).count();
+        let ai_count = self.slots.values().filter(|s| s.is_ai()).count();
         slot.send_msg(ServerMsg::Joined {
             id_game: self.id_game(),
             id_player: slot.id_player(),
+            player_count,
+            ai_count,
             players: self.api_players(),
             tiles: self.api_tiles(),
             rack: self.api_rack(player_num),
@@ -224,6 +228,7 @@ impl Game {
 
         // send a message to update the players.
         self.send_all(ServerMsg::Players(self.api_players()));
+        self.send_all(ServerMsg::UserConnected(slot.player()));
     }
 
     /// Called when a message is received from a user.
@@ -252,10 +257,16 @@ impl Game {
     /// Called when a disconnect message is received.
     fn on_disconnect(&mut self, id_user: i32) {
         if let Some(player_num) = self.id_user_to_player_num(id_user) {
-            self.slots.get_mut(&player_num).unwrap().disconnect();
+            // send a disconnect message.
+            let slot = self.slots.get_mut(&player_num).unwrap();
+            let player = slot.player();
+
+            // disconnect the user.
+            slot.disconnect();
 
             // send a message containing the new players.
             self.send_all(ServerMsg::Players(self.api_players()));
+            self.send_all(ServerMsg::UserDisconnected(player));
         }
     }
     /// Called when a play message is received.
@@ -555,6 +566,15 @@ impl Slot {
             GamePlayer::User { id_user, .. } => Some(id_user),
             _ => None,
         }
+    }
+
+    /// Is the player an ai?
+    pub fn is_ai(&self) -> bool {
+        matches!(self.game_player, GamePlayer::Ai { .. })
+    }
+    /// Is the player a human?
+    pub fn is_player(&self) -> bool {
+        matches!(self.game_player, GamePlayer::User { .. })
     }
 
     /// Gets the the Ai for the player if the player is an Ai or

@@ -58,6 +58,10 @@ pub enum ServerMsg {
         id_game: i32,
         /// Id of the player that joined.
         id_player: i32,
+        /// The required number of ai players.
+        ai_count: usize,
+        /// The required number of human players.
+        player_count: usize,
         /// The players in the game.
         players: Vec<Player>,
         /// The tile positions.
@@ -69,6 +73,10 @@ pub enum ServerMsg {
         /// The next player (None if the game is over).
         next: Option<Player>,
     },
+    /// A user has connected to the game.
+    UserConnected(Player),
+    /// A user has disconnected from the game.
+    UserDisconnected(Player),
     /// The player has timed out so will disconnect.
     Timeout(Player),
     /// The players have updated.
