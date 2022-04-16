@@ -90,10 +90,17 @@ section {
 		justify-content: center;
 		cursor: pointer;
 		user-select: none;
-	}
 
-	.scrabble-tile {
-		animation: tile-fade-in 0.5s;
+		svg {
+			height: 90%;
+		}
+
+		.premium {
+			font-family: monospace;
+			color: white;
+			font-weight: 400;
+			font-size: calc(min(80vh, 98vw) / 30);
+		}
 	}
 
 	.square:hover,
@@ -154,6 +161,7 @@ section {
 
 				.tag {
 					margin-right: 5px;
+					user-select: none;
 				}
 			}
 		}

@@ -26,7 +26,7 @@ pub fn Tile<G: Html>(cx: Scope, props: Props) -> View<G> {
                     rect(width="20", height="25", y="3.6", fill="#333", ry="3.5")
                     rect(width="20", height="25", fill="#fff", ry="3.5")
                     text {
-                        tspan(x="4.2", y="18", font-family="monospace", font-size="20") {
+                        tspan(x="4.5", y="17", font-family="'Roboto Mono', monospace", font-size="18") {
                             (letter)
                         }
                     }
