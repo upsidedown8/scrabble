@@ -21,7 +21,7 @@ pub fn GameStatsPage<G: Html>(cx: Scope, props: Props) -> View<G> {
             section {
                 div(class="is-centered") {
                     div(class="m-3 has-text-centered") {
-                        h1(class="h1 is-size-5") { "Game stats (for id_game =" (props.id_game) ")" }
+                        h1(class="h1 is-size-5") { "Game stats (id_game=" (props.id_game) ")" }
                     }
 
                     Suspense {
