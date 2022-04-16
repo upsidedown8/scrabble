@@ -86,7 +86,7 @@ fn ViewStats<G: Html>(cx: Scope<'_>, response: GameStatsResponse) -> View<G> {
 
         h1(class="h1 is-size-5") { "Meta" }
 
-        table {
+        table(class="table") {
             thead {
                 tr {
                     th { "Start time" }
