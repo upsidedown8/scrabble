@@ -2,7 +2,7 @@
 //! with a single letter placed in each column.
 
 use crate::{
-    game::tile::Tile,
+    game::{board::CELLS, tile::Tile},
     util::{
         bitboard::BitBoard,
         fsm::{Fsm, StateId},
@@ -28,7 +28,7 @@ impl Lookup {
     pub fn new<'a, F: Fsm<'a>>(fsm: &'a F, counts: &TileCounts, grid: &Grid) -> Self {
         let mut lookup = Lookup {
             above_or_below: grid.occ().above_or_below(),
-            lookup: vec![],
+            lookup: (0..CELLS).map(|_| HashMap::new()).collect(),
         };
 
         lookup.init(fsm, counts, grid);
