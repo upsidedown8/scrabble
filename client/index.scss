@@ -96,6 +96,7 @@ section {
 		}
 
 		.premium {
+			display: none;
 			font-family: monospace;
 			color: white;
 			font-weight: 400;
@@ -106,6 +107,10 @@ section {
 	.square:hover,
 	.square:active {
 		background-color: $hover;
+
+		.premium {
+			display: block;
+		}
 	}
 
 	.start {
@@ -141,6 +146,19 @@ section {
 
 .is-fullheight {
 	height: 100vh;
+}
+
+.toast {
+	position: absolute;
+	top: 80px;
+	width: 100%;
+	display: flex;
+	justify-content: center;
+
+	.message {
+		width: 80%;
+		max-width: 400px;
+	}
 }
 
 .live {

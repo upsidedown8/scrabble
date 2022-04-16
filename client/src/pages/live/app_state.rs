@@ -1,7 +1,7 @@
 use crate::components::Msg;
 use api::routes::live::{LiveError, Player, ServerMsg};
 use scrabble::{
-    game::{play::Play, tile::Tile},
+    game::{play::Play, tile::Tile, GameOverReason},
     util::pos::Pos,
 };
 use std::collections::HashMap;
@@ -27,9 +27,23 @@ pub enum AppMsg {
 #[derive(Clone)]
 pub enum AppState {
     /// The websocket is connected, but the user needs to create or join a game.
-    Connected,
+    Connected(Box<ConnectedState>),
     /// The user is playing a game.
     Playing(Box<PlayingState>),
+}
+
+impl Default for AppState {
+    fn default() -> Self {
+        Self::Connected(Box::new(ConnectedState {
+            toast: create_rc_signal(None),
+        }))
+    }
+}
+
+/// The state whilst joining or creating a game.
+#[derive(Clone)]
+pub struct ConnectedState {
+    pub toast: RcSignal<Option<String>>,
 }
 
 /// The state of a live game.
@@ -49,25 +63,28 @@ pub struct PlayingState {
 
     // -- local state --
     pub messages: RcSignal<Vec<Msg>>,
-    pub local_tiles: RcSignal<Vec<Option<Tile>>>,
-    pub local_rack: RcSignal<Vec<Tile>>,
-    pub placements: RcSignal<Vec<(Pos, Tile)>>,
 }
 
 impl AppState {
     /// Calculates the next state from the previous state and a message.
     pub fn reduce(&self, msg: AppMsg) -> Self {
         match self {
-            AppState::Connected => self.reduce_connected(msg),
+            AppState::Connected(connected) => self.reduce_connected(connected, msg),
             AppState::Playing(playing) => self.reduce_playing(playing, msg),
         }
     }
 
     /// Implementation of the reduce function when the `AppState` is connected.
-    fn reduce_connected(&self, msg: AppMsg) -> Self {
+    fn reduce_connected(&self, connected: &ConnectedState, msg: AppMsg) -> Self {
         match msg {
             AppMsg::ServerMsg(ServerMsg::Error(e)) => {
                 log::error!("failed to join/create: {e:?}");
+                connected.toast.set(Some(String::from(match e {
+                    LiveError::ZeroPlayers => "No players added",
+                    LiveError::IllegalPlayerCount => "Incorrect number of players specified",
+                    LiveError::FailedToJoin => "Failed to join",
+                    _ => "Unexpected message",
+                })));
             }
             AppMsg::ServerMsg(ServerMsg::Joined {
                 id_game,
@@ -93,9 +110,6 @@ impl AppState {
                             players.len()
                         ),
                     }]),
-                    local_tiles: create_rc_signal(tiles.clone()),
-                    local_rack: create_rc_signal(rack.clone()),
-                    placements: create_rc_signal(vec![]),
                     capacity,
 
                     // -- shared state --
@@ -128,11 +142,11 @@ impl AppState {
                     scores,
                 } => {
                     self.add_server_msg(format!(
-                        "{} has made a play.{}",
+                        "{} has made a play. {}",
                         player.username,
                         match &next {
                             Some(player) => format!("It's {} next!", player.username),
-                            None => String::new(),
+                            None => "Game over!".to_string(),
                         }
                     ));
 
@@ -178,7 +192,7 @@ impl AppState {
                     return AppState::Playing(Box::new(PlayingState {
                         rack,
                         ..playing.clone()
-                    }))
+                    }));
                 }
                 ServerMsg::Error(e) => {
                     log::error!("play error: {e:?}");
@@ -190,13 +204,22 @@ impl AppState {
                         _ => (),
                     }
                 }
+                ServerMsg::Over(reason) => self.add_server_msg(format!(
+                    "Game over: {}.",
+                    match reason {
+                        GameOverReason::TwoPasses => "A player has passed twice",
+                        GameOverReason::EmptyRack => "A player has emptied their rack",
+                    }
+                )),
                 ServerMsg::Starting => self.add_server_msg(format!(
                     "The game is starting. It's {} next.",
                     playing.next.as_ref().unwrap().username
                 )),
                 msg => log::error!("unexpected message: {msg:?}"),
             },
-            AppMsg::WsDisconnect => return AppState::Connected,
+            AppMsg::WsDisconnect => {
+                return AppState::default();
+            }
             AppMsg::SquareClicked(pos) => log::info!("square {pos} was clicked!!!"),
             AppMsg::RackTileClicked(tile) => log::info!("tile {tile} was clicked!!!"),
         }

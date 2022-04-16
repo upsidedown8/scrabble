@@ -1,6 +1,6 @@
 //! Component that handles game creation.
 
-use crate::components::{Counter, FixedCounter};
+use crate::components::{Counter, FixedCounter, Toast};
 use api::routes::live::ClientMsg;
 use futures::{channel::mpsc, SinkExt};
 use sycamore::{futures::spawn_local_scoped, prelude::*};
@@ -20,6 +20,8 @@ pub struct Props {
     /// The write half of an unbounded mpsc queue. Messages sent
     /// here will be forwarded to the server.
     pub ws_write: mpsc::UnboundedSender<ClientMsg>,
+    /// The pop-up message to display.
+    pub msg: RcSignal<Option<String>>,
 }
 
 /// Allows a user to create or join a game.
@@ -39,7 +41,14 @@ pub fn CreateOrJoin<G: Html>(cx: Scope, props: Props) -> View<G> {
     let join_class = tab_class(Tab::Join);
     let create_class = tab_class(Tab::Create);
 
+    // the signal for the toast pop-up.
+    let msg = props.msg.clone();
+
     view! { cx,
+        Toast {
+            msg: msg,
+        }
+
         div(class="page create-game") {
             section(class="is-fullheight columns is-centered is-vcentered is-flex") {
                 div(class="box has-text-centered") {
