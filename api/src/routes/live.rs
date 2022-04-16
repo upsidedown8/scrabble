@@ -58,10 +58,8 @@ pub enum ServerMsg {
         id_game: i32,
         /// Id of the player that joined.
         id_player: i32,
-        /// The required number of ai players.
-        ai_count: usize,
-        /// The required number of human players.
-        player_count: usize,
+        /// The required number of players.
+        capacity: usize,
         /// The players in the game.
         players: Vec<Player>,
         /// The tile positions.
