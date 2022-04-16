@@ -64,6 +64,9 @@ fn NavbarStart<G: Html>(cx: Scope) -> View<G> {
             (match *is_logged_in.get() {
                 false => view! { cx, },
                 true => view! { cx,
+                    a(class="navbar-item is-primary", href="/live") {
+                        "Play"
+                    }
                     a(class="navbar-item is-primary", href="/games") {
                         "Game list"
                     }
