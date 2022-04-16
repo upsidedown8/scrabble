@@ -14,9 +14,9 @@ pub mod movegen;
 /// The number of top scoring moves to look ahead from.
 const LOOK_AHEAD_LIMIT: usize = 15;
 /// The weighting of the proportional length difference in the score.
-const LEN_WEIGHT: f32 = 7.0;
+const LEN_WEIGHT: f32 = 12.0;
 /// The weighting of the proportional tile count difference in the score.
-const TILES_WEIGHT: f32 = 2.0;
+const TILES_WEIGHT: f32 = 8.0;
 /// The weighting of the score in the final score calculation.
 const SCORE_WEIGHT: f32 = 10.0;
 /// If there are no plays, tiles with fewer than
