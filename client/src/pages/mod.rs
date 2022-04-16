@@ -2,7 +2,6 @@
 
 mod friends;
 mod games;
-mod home;
 mod invalid_state;
 mod leaderboards;
 mod live;
@@ -11,7 +10,6 @@ mod users;
 
 pub use friends::FriendsPage;
 pub use games::{GameListPage, GameStatsPage};
-pub use home::HomePage;
 pub use invalid_state::InvalidStatePage;
 pub use leaderboards::{FriendsLeaderboardPage, LeaderboardPage};
 pub use live::LivePage;

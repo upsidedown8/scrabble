@@ -55,9 +55,6 @@ fn NavbarStart<G: Html>(cx: Scope) -> View<G> {
 
     view! { cx,
         div(class="navbar-start") {
-            a(class="navbar-item is-primary", href="/") {
-                "Home"
-            }
             a(class="navbar-item is-primary", href="/leaderboard") {
                 "Leaderboard"
             }

@@ -12,9 +12,9 @@ use crate::{
 /// Represents the pages of the app.
 #[derive(Route)]
 pub enum Routes {
-    /// Home page
+    /// Index page, redirects to leaderboard.
     #[to("/")]
-    Home,
+    Index,
     /// Account page, requires login
     #[to("/users/account")]
     Account,
@@ -123,7 +123,7 @@ fn ViewRoute<'a, G: Html>(cx: Scope<'a>, props: ViewRouteProps<'a>) -> View<G> {
             // Display the route.
             match props.route.get().as_ref() {
                 // Home page.
-                Routes::Home => view! { cx, HomePage {} },
+                Routes::Index => view! { cx, LeaderboardPage {} },
 
                 // User pages.
                 Routes::Account if logged_in => view! { cx, AccountPage {} },
