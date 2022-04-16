@@ -137,6 +137,8 @@ async fn create_game(
 /// Forwards messages from the user to the game, and from the
 /// game to the user, until the user disconnects.
 async fn playing(ws: WebSocket, jwt: Jwt, game: GameHandle) {
+    log::info!("playing game: id_user={}", jwt.id_user());
+
     let (mut sender, mut receiver) = ws.split();
     let (tx, mut rx) = mpsc::unbounded_channel();
     let id_user = jwt.id_user();
@@ -165,6 +167,12 @@ async fn playing(ws: WebSocket, jwt: Jwt, game: GameHandle) {
                 Err(e) => log::error!("error receiving message: {e:?}"),
             }
         }
+
+        // Ensure the user is disconnected by this point by sending a disconnect
+        // message to the game room.
+        game_sender
+            .send(GameMsg::new(id_user, ClientMsg::Disconnect))
+            .unwrap();
     });
 
     // Forward messages from `rx` -> `sender`

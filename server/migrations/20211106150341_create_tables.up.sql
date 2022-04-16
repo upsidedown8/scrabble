@@ -28,16 +28,23 @@ CREATE TABLE tbl_game(
 CREATE TABLE tbl_player(
   id_player SERIAL,
   id_game SERIAL NOT NULL,
-  id_user SERIAL,
-  ai_difficulty TEXT,
   is_winner BOOLEAN,
   PRIMARY KEY (id_player),
-  FOREIGN KEY (id_game) REFERENCES tbl_game(id_game) ON DELETE CASCADE,
-  FOREIGN KEY (id_user) REFERENCES tbl_user(id_user) ON DELETE CASCADE,
-  CONSTRAINT ai_xor_human CHECK (
-    (id_user IS NULL) != (ai_difficulty IS NULL)
-  ),
+  FOREIGN KEY (id_game) REFERENCES tbl_game(id_game) ON DELETE CASCADE
+);
+CREATE TABLE tbl_ai_player(
+  id_player SERIAL,
+  ai_difficulty TEXT NOT NULL,
+  PRIMARY KEY (id_player),
+  FOREIGN KEY (id_player) REFERENCES tbl_player(id_player) ON DELETE CASCADE,
   CONSTRAINT valid_difficulty CHECK(ai_difficulty IN ('easy', 'medium', 'hard'))
+);
+CREATE TABLE tbl_human_player(
+  id_player SERIAL,
+  id_user SERIAL,
+  PRIMARY KEY (id_player),
+  FOREIGN KEY (id_user) REFERENCES tbl_user(id_user) ON DELETE CASCADE,
+  FOREIGN KEY (id_player) REFERENCES tbl_player(id_player) ON DELETE CASCADE
 );
 CREATE TABLE tbl_play(
   id_play SERIAL,

@@ -61,6 +61,8 @@ impl GameHandle {
         for player_num in PlayerNum::iter(total_count).take(ai_count) {
             let difficulty = AiDifficulty::Medium;
 
+            log::trace!("inserting ai player");
+
             // insert a record for each ai player.
             let id_player = models::Player::insert_ai(&db, id_game, difficulty)
                 .await

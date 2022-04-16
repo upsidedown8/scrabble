@@ -18,7 +18,8 @@ SELECT tbl_user.username,
     SUM(play_summary.win_count) / COUNT(tbl_game.id_game) * 100
   )::REAL AS win_percentage
 FROM tbl_user
-  JOIN tbl_player ON tbl_player.id_user = tbl_user.id_user
+  JOIN tbl_human_player ON tbl_human_player.id_user = tbl_user.id_user
+  JOIN tbl_player ON tbl_player.id_player = tbl_human_player.id_player
   JOIN tbl_game ON tbl_game.id_game = tbl_player.id_game,
   (
     SELECT tbl_player.id_player AS id_player,

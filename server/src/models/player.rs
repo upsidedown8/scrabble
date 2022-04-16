@@ -22,13 +22,15 @@ impl Player {
     pub async fn insert_ai(db: &Db, id_game: i32, ai_difficulty: AiDifficulty) -> Result<i32> {
         let ai_difficulty = ai_difficulty.to_string();
 
-        let id_player = sqlx::query_file_scalar!(
-            "sql/live/insert_ai_player.sql",
-            id_game,
-            Some(ai_difficulty)
-        )
-        .fetch_one(db)
-        .await?;
+        // insert a `tbl_player` record.
+        let id_player = sqlx::query_file_scalar!("sql/live/insert_player.sql", id_game,)
+            .fetch_one(db)
+            .await?;
+        // insert a `tbl_ai_player` record.
+        sqlx::query_file!("sql/live/insert_ai_player.sql", id_player, ai_difficulty)
+            .execute(db)
+            .await?;
+
         Ok(id_player)
     }
     /// Inserts a user player, returning (id, username).
@@ -60,11 +62,16 @@ impl Player {
             }
             // Don't check that the user is the owner.
             None => {
-                sqlx::query_file_scalar!("sql/live/insert_player.sql", id_game, id_user)
+                sqlx::query_file_scalar!("sql/live/insert_player.sql", id_game)
                     .fetch_one(db)
                     .await?
             }
         };
+
+        // insert a record into `tbl_human_player`
+        sqlx::query_file!("sql/live/insert_human_player.sql", id_player, id_user)
+            .execute(db)
+            .await?;
 
         Ok((id_player, username))
     }

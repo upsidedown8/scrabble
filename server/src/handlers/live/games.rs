@@ -49,6 +49,8 @@ impl Games {
         player_count: usize,
         id_owner: Option<i32>,
     ) -> Option<GameHandle> {
+        log::info!("inserting game");
+
         let db = self.db();
         let fsm = self.fsm();
         let created = GameHandle::create(db, fsm, ai_count, player_count, id_owner).await;

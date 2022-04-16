@@ -1,3 +1,4 @@
-INSERT INTO tbl_player (id_game, id_user)
-VALUES ($1, $2)
-RETURNING id_player;
+-- $1: id_game
+INSERT INTO tbl_player (id_game)
+VALUES ($1)
+RETURNING id_player

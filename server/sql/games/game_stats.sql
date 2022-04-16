@@ -14,7 +14,8 @@ SELECT tbl_game.id_game,
     )::REAL AS avg_score_per_tile,
     tbl_player.is_winner AS is_win
 FROM tbl_user
-    JOIN tbl_player ON tbl_player.id_user = $1
+    JOIN tbl_human_player ON tbl_human_player.id_user = $1
+    JOIN tbl_player ON tbl_player.id_player = tbl_human_player.id_player
     JOIN tbl_game ON tbl_game.id_game = tbl_player.id_game,
     (
         SELECT tbl_play.id_play AS id_play,
@@ -32,9 +33,10 @@ FROM tbl_user
             END AS win_count
         FROM tbl_play
             JOIN tbl_player ON tbl_play.id_player = tbl_player.id_player
+            JOIN tbl_human_player ON tbl_human_player.id_player = tbl_player.id_player
             LEFT JOIN tbl_word ON tbl_word.id_play = tbl_play.id_play
             LEFT JOIN tbl_tile ON tbl_tile.id_play = tbl_play.id_play
-        WHERE tbl_player.id_user = $1
+        WHERE tbl_human_player.id_user = $1
             AND tbl_player.id_game = $2
         GROUP BY tbl_play.id_play,
             tbl_player.id_player
