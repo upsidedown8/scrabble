@@ -20,9 +20,9 @@ pub fn Toast<G: Html>(cx: Scope, props: Props) -> View<G> {
                 None => view! { cx, },
                 Some(msg) => view! { cx,
                     div(class="toast") {
-                        article(class="message") {
+                        article(class="message is-danger") {
                             div(class="message-header") {
-                                p { "Message" }
+                                p { "Error" }
                                 button(class="delete", on:click=move |_| msg_rc.set(None))
                             }
 
