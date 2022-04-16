@@ -232,8 +232,9 @@ impl Game {
         }
 
         // update current player & status
+        let previous = self.to_play;
         self.to_play = self.to_play.next(self.player_count());
-        self.status = self.next_status();
+        self.status = self.next_status(previous);
 
         Ok(())
     }
@@ -277,17 +278,17 @@ impl Game {
     }
 
     /// Determines the next game status.
-    fn next_status(&self) -> GameStatus {
-        let player = &self.players[usize::from(self.to_play)];
+    fn next_status(&self, previous: PlayerNum) -> GameStatus {
+        let previous_player = &self.players[usize::from(previous)];
 
-        if player.pass_count >= 2 {
+        if previous_player.pass_count >= 2 {
             // The game ends if the most recent player has passed twice
             // in a row.
-            let game_over = GameOver::new(GameOverReason::TwoPasses, &self.players, self.to_play);
+            let game_over = GameOver::new(GameOverReason::TwoPasses, &self.players, previous);
             GameStatus::Over(game_over)
-        } else if player.rack.is_empty() {
+        } else if previous_player.rack.is_empty() {
             // The game ends if the most recent player has emptied their rack.
-            let game_over = GameOver::new(GameOverReason::EmptyRack, &self.players, self.to_play);
+            let game_over = GameOver::new(GameOverReason::EmptyRack, &self.players, previous);
             GameStatus::Over(game_over)
         } else {
             // Otherwise the game is ongoing.
