@@ -15,7 +15,7 @@ pub mod live;
 pub mod users;
 
 /// The domain name and path to the API, excluding the protocol.
-pub const API_HOST: &str = "localhost/api";
+pub const API_HOST: &str = "thrgd.uk/api";
 
 /// Make a request to the path {API_URL}/{url}, with the provided
 /// method and data. Returns the optional auth from the server and
