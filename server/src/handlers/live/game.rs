@@ -295,6 +295,8 @@ impl Game {
             // make plays for any ai players.
             self.make_ai_plays().await;
 
+            log::trace!("finished AI plays");
+
             match self.game.status() {
                 // start a move timer if the game is ongoing.
                 &GameStatus::ToPlay(to_play) => self.start_timer(to_play, game_handle),
@@ -330,6 +332,8 @@ impl Game {
                 .await
                 .unwrap();
         }
+
+        self.send_all(ServerMsg::Over(game_over.reason()));
     }
     /// Continues to make plays for Ai players until a connected
     /// player is encountered or the game ends.
@@ -338,20 +342,30 @@ impl Game {
         while let Some(to_play) = self.game.to_play() {
             if let Some(ai) = &self.slots[&to_play].ai() {
                 let fsm: &FastFsm = &self.fsm;
+                log::trace!("finding next play");
                 let play = ai.next_play(fsm, &self.game);
                 let is_success = self.try_play(play, to_play).await;
 
+                log::trace!("made ai play");
+
                 assert!(is_success, "Ai move should always be valid");
+            } else {
+                // No more ai plays need to be made.
+                break;
             }
         }
     }
     /// Attempts to make a play. Return value indicates success.
     async fn try_play(&mut self, play: Play, player_num: PlayerNum) -> bool {
+        log::info!("attempting to make play: {play:?}");
+
         // store the current tile positions.
         let prev_tiles = self.api_tiles();
         let fsm: &FastFsm = &self.fsm;
         match self.game.make_play(&play, fsm) {
             Ok(()) => {
+                log::trace!("legal play");
+
                 self.play_count += 1;
 
                 // add the play to the database.
@@ -372,6 +386,8 @@ impl Game {
                 true
             }
             Err(e) => {
+                log::debug!("illegal play");
+
                 // send a message for an illegal play.
                 self.slots[&player_num].send_msg(ServerMsg::Error(LiveError::Play(e)));
                 false
@@ -384,6 +400,7 @@ impl Game {
         let id_player = slot.id_player;
 
         // insert a play record.
+        log::trace!("inserting play");
         let id_play = models::Play::insert(&self.db, id_player).await.unwrap();
 
         // insert records for each of the placed tiles.
@@ -465,6 +482,7 @@ impl Game {
 
     /// Sends a message to all users.
     fn send_all(&self, msg: ServerMsg) {
+        log::trace!("sending message to all: {msg:?}");
         for slot in self.slots.values() {
             slot.send_msg(msg.clone());
         }
@@ -599,6 +617,7 @@ impl Slot {
             ..
         } = &self.game_player
         {
+            log::trace!("send message: {msg:?}");
             if let Err(e) = sender.send(msg) {
                 log::error!("failed to send message: {e:?}");
             }

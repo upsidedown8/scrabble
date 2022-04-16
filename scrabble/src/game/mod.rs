@@ -127,7 +127,7 @@ impl GameOver {
 }
 
 /// The reason that the game has ended.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum GameOverReason {
     /// A player has emptied their rack with no letters remaining in the bag.
     EmptyRack,

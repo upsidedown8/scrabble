@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use crate::auth::Token;
 use scrabble::{
     error::GameError,
-    game::{play::Play, tile::Tile},
+    game::{play::Play, tile::Tile, GameOverReason},
 };
 use serde::{Deserialize, Serialize};
 
@@ -71,6 +71,8 @@ pub enum ServerMsg {
         /// The next player (None if the game is over).
         next: Option<Player>,
     },
+    /// Contains the reason that the game ended.
+    Over(GameOverReason),
     /// All users have connected. The game can start.
     Starting,
     /// A user has connected to the game.

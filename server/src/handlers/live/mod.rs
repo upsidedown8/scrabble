@@ -187,6 +187,8 @@ where
     T: SinkExt<Message> + Unpin,
     <T as Sink<Message>>::Error: Debug,
 {
+    log::trace!("sending message: {msg:?}");
+
     let bytes = bincode::serialize(msg).unwrap();
     let msg = Message::binary(bytes);
 
