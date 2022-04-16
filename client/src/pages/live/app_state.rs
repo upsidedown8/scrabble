@@ -76,6 +76,7 @@ impl AppState {
                     LiveError::ZeroPlayers => "No players added",
                     LiveError::IllegalPlayerCount => "Incorrect number of players specified",
                     LiveError::FailedToJoin => "Failed to join",
+                    LiveError::InvalidToken => "Provided token was invalid",
                     _ => "Unexpected message",
                 })));
             }
