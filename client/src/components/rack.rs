@@ -20,7 +20,7 @@ where
     F: Fn(tile::Tile) + Clone + 'static,
 {
     view! { cx,
-        div(class="rack") {
+        div(class="rack tiles") {
             Indexed {
                 iterable: props.tiles,
                 view: move |cx, tile| {

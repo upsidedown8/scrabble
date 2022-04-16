@@ -5,15 +5,6 @@ body {
 	margin: 0;
 }
 
-.create-game .box {
-	min-width: 250px;
-}
-
-// 100% of viewport height for the page class. 
-.page {
-	min-height: 100vh;
-}
-
 section {
 	padding: 75px 5%;
 	width: 100vw;
@@ -39,12 +30,34 @@ section {
 	}
 }
 
+// 100% of viewport height for the page class. 
+.page {
+	min-height: 100vh;
+}
+
 .page section:nth-of-type(odd) {
 	background-color: white;
 }
 
 .page section:nth-of-type(even) {
 	background-color: #fafafa;
+}
+
+.tiles {
+	display: flex;
+	flex-wrap: nowrap;
+	justify-content: center;
+	column-gap: min(3%, 40px);
+	padding: min(2%, 20px);
+
+	div {
+		width: 6%;
+		min-width: 45px;
+		max-width: 80px;
+
+		cursor: pointer;
+		user-select: none;
+	}
 }
 
 .board {
@@ -134,16 +147,6 @@ section {
 	}
 }
 
-@keyframes tile-fade-in {
-	0% {
-		opacity: 0;
-	}
-
-	100% {
-		opacity: 1;
-	}
-}
-
 .is-fullheight {
 	height: 100vh;
 }
@@ -159,6 +162,10 @@ section {
 		width: 80%;
 		max-width: 400px;
 	}
+}
+
+.create-game .box {
+	min-width: 250px;
 }
 
 .live {
@@ -185,25 +192,22 @@ section {
 		}
 	}
 
-	.scoreboard {
-		background-color: black;
-	}
 
 	.rack {
+		background-color: darkgreen;
+	}
+
+	.controls {
+		background-color: grey;
 		display: flex;
 		flex-wrap: nowrap;
-		justify-content: center;
-		column-gap: min(3%, 40px);
-		padding: min(2%, 20px);
-		background-color: darkgreen;
 
-		div {
-			width: 6%;
-			min-width: 45px;
-			max-width: 80px;
-
-			cursor: pointer;
-			user-select: none;
+		.tiles {
+			background-color: darkgreen;
 		}
+	}
+
+	.scoreboard {
+		background-color: black;
 	}
 }
