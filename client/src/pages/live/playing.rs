@@ -96,37 +96,40 @@ pub fn Playing<'a, G: Html>(cx: Scope<'a>, props: Props<'a>) -> View<G> {
     let on_square_clicked = |pos| {
         log::info!("{pos} clicked");
 
-        // only handle square clicks if the place tab is selected.
-        if *active_tab.get() == ControlTab::Place {
-            if let Some((idx, tile)) = *selected_tile.get() {
-                selected_tile.set(None);
+        // only handle square clicks when it is the player's turn.
+        if *is_my_turn.get() {
+            // only handle square clicks if the place tab is selected.
+            if *active_tab.get() == ControlTab::Place {
+                if let Some((idx, tile)) = *selected_tile.get() {
+                    selected_tile.set(None);
 
-                // if the board position is empty, place the tile.
-                let mut local_tiles = local_tiles.modify();
-                if local_tiles[usize::from(pos)].is_none() {
-                    match tile {
-                        // if the tile is a letter, place it on the board.
-                        Tile::Letter(_) => {
-                            local_tiles[usize::from(pos)] = Some(tile);
-                            local_rack.modify().remove(idx);
-                            placed_tiles.modify().push((pos, tile));
-                        }
-                        // if the tile is blank, show a modal to determine which letter
-                        // it should be.
-                        Tile::Blank(_) => blank_tile.set(Some((idx, pos))),
-                    }
-                }
-            } else {
-                // if no tile is selected, and the position clicked was
-                // newly placed, return that tile to the rack.
-                let placed = placed_tiles.get();
-                let newly_placed = placed.iter().find(|(p, _)| *p == pos);
-
-                if let Some((_, tile)) = newly_placed {
+                    // if the board position is empty, place the tile.
                     let mut local_tiles = local_tiles.modify();
-                    local_tiles[usize::from(pos)] = None;
-                    placed_tiles.modify().retain(|(p, _)| *p != pos);
-                    local_rack.modify().push(*tile);
+                    if local_tiles[usize::from(pos)].is_none() {
+                        match tile {
+                            // if the tile is a letter, place it on the board.
+                            Tile::Letter(_) => {
+                                local_tiles[usize::from(pos)] = Some(tile);
+                                local_rack.modify().remove(idx);
+                                placed_tiles.modify().push((pos, tile));
+                            }
+                            // if the tile is blank, show a modal to determine which letter
+                            // it should be.
+                            Tile::Blank(_) => blank_tile.set(Some((idx, pos))),
+                        }
+                    }
+                } else {
+                    // if no tile is selected, and the position clicked was
+                    // newly placed, return that tile to the rack.
+                    let placed = placed_tiles.get();
+                    let newly_placed = placed.iter().find(|(p, _)| *p == pos);
+
+                    if let Some((_, tile)) = newly_placed {
+                        let mut local_tiles = local_tiles.modify();
+                        local_tiles[usize::from(pos)] = None;
+                        placed_tiles.modify().retain(|(p, _)| *p != pos);
+                        local_rack.modify().push(*tile);
+                    }
                 }
             }
         }
@@ -171,7 +174,6 @@ pub fn Playing<'a, G: Html>(cx: Scope<'a>, props: Props<'a>) -> View<G> {
     let on_redraw_tile_clicked = |idx, tile| {
         redraw_tiles.modify().remove(idx);
         local_rack.modify().push(tile);
-        log::info!("tile clicked {idx} {tile}")
     };
     // called when a key is pressed in the modal.
     let on_modal_keydown = |evt: Event| {
@@ -207,6 +209,15 @@ pub fn Playing<'a, G: Html>(cx: Scope<'a>, props: Props<'a>) -> View<G> {
     let on_place = move |_| {
         let tiles = (*placed_tiles.get()).clone();
         ws_write.send(ClientMsg::Play(Play::Place(tiles))).unwrap();
+    };
+    // redraws all tiles.
+    let on_redraw_all = move |_| {
+        // remove all tiles from the rack.
+        selected_tile.set(None);
+        let mut redraw_tiles = redraw_tiles.modify();
+        for tile in local_rack.modify().drain(..) {
+            redraw_tiles.push(tile);
+        }
     };
 
     view! { cx,
@@ -267,6 +278,10 @@ pub fn Playing<'a, G: Html>(cx: Scope<'a>, props: Props<'a>) -> View<G> {
                                     (match redraw_tiles.get().len() {
                                         0 => view! { cx,
                                             p { "Select tiles from your rack to redraw" }
+
+                                            button(class="button mt-4 is-dark", on:click=on_redraw_all) {
+                                                "Select all tiles"
+                                            }
                                         },
                                         _ => view! { cx,
                                             div(class="redraw") {
