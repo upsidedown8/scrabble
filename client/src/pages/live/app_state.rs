@@ -1,6 +1,9 @@
 use crate::components::Msg;
 use api::routes::live::{LiveError, Player, ServerMsg};
-use scrabble::game::{play::Play, tile::Tile, GameOverReason};
+use scrabble::{
+    game::{play::Play, tile::Tile, GameOverReason},
+    util::pos::Pos,
+};
 use std::collections::HashMap;
 use sycamore::prelude::{create_rc_signal, RcSignal};
 
@@ -39,7 +42,6 @@ pub struct PlayingState {
 
     // -- shared state --
     pub tiles: RcSignal<Vec<Option<Tile>>>,
-    pub rack: RcSignal<Vec<Tile>>,
     pub scores: RcSignal<HashMap<Player, usize>>,
     pub next: RcSignal<Option<Player>>,
     pub letter_bag_len: RcSignal<usize>,
@@ -47,6 +49,9 @@ pub struct PlayingState {
 
     // -- local state --
     pub messages: RcSignal<Vec<Msg>>,
+    pub rack: RcSignal<Vec<Tile>>,
+    pub placed_tiles: RcSignal<Vec<(Pos, Tile)>>,
+    pub redraw_tiles: RcSignal<Vec<Tile>>,
 }
 
 impl AppState {
@@ -94,11 +99,13 @@ impl AppState {
                             scores.len()
                         ),
                     }]),
-                    capacity,
+                    placed_tiles: create_rc_signal(vec![]),
+                    redraw_tiles: create_rc_signal(vec![]),
 
                     // -- shared state --
                     id_game,
                     id_player,
+                    capacity,
                     tiles: create_rc_signal(tiles),
                     rack: create_rc_signal(rack),
                     scores: create_rc_signal(scores),
@@ -170,7 +177,37 @@ impl AppState {
                     content: msg,
                 });
             }
-            ServerMsg::Rack(rack) => {
+            ServerMsg::Rack(mut new_rack) => {
+                // try to rebuild the previous rack.
+                let mut prev_rack = (*playing.rack.get()).clone();
+                // take all tiles from `placed_tiles`
+                for (_, tile) in playing.placed_tiles.modify().drain(..) {
+                    prev_rack.push(tile);
+                }
+                // take all tiles from `redraw_tiles`
+                for tile in playing.redraw_tiles.modify().drain(..) {
+                    prev_rack.push(tile);
+                }
+
+                // store the next rack.
+                let mut rack = vec![];
+
+                // first iterate over the previous rack to find tiles
+                // that are the same.
+                for tile in prev_rack {
+                    // if the tile is in the new rack, add it to the final rack.
+                    if let Some(idx) = new_rack.iter().position(|t| match t {
+                        t @ Tile::Letter(_) => t == &tile,
+                        Tile::Blank(_) => tile.is_blank(),
+                    }) {
+                        rack.push(new_rack.remove(idx));
+                    }
+                }
+
+                // add any remaining new tiles to the end of the rack.
+                rack.append(&mut new_rack);
+
+                // update the rack.
                 playing.rack.set(rack);
             }
             ServerMsg::Error(e) => {

@@ -39,7 +39,9 @@ pub fn Playing<'a, G: Html>(cx: Scope<'a>, props: Props<'a>) -> View<G> {
 
     // -- SHARED STATE --
     let tiles = create_ref(cx, state.tiles.clone());
-    let rack = create_ref(cx, state.rack.clone());
+    let local_rack = create_ref(cx, state.rack.clone());
+    let placed_tiles = create_ref(cx, state.placed_tiles.clone());
+    let redraw_tiles = create_ref(cx, state.redraw_tiles.clone());
     let messages = create_ref(cx, state.messages.clone());
     let scores = create_ref(cx, state.scores.clone());
 
@@ -70,8 +72,6 @@ pub fn Playing<'a, G: Html>(cx: Scope<'a>, props: Props<'a>) -> View<G> {
     // -- LOCAL STATE --
     let local_tiles = create_signal(cx, vec![]);
     create_effect(cx, || local_tiles.set((*tiles.get()).clone()));
-    let local_rack = create_signal(cx, vec![]);
-    create_effect(cx, || local_rack.set((*rack.get()).clone()));
     let selected_tile = create_ref(cx, create_rc_signal(None));
 
     let blank_tile = create_signal(cx, None);
@@ -83,9 +83,7 @@ pub fn Playing<'a, G: Html>(cx: Scope<'a>, props: Props<'a>) -> View<G> {
     let modal_letter = create_signal(cx, String::new());
 
     // -- STATE FOR PLAYS --
-    let redraw_tiles = create_signal(cx, vec![]);
     let redraw_selected = create_signal(cx, None);
-    let placed_tiles = create_signal(cx, vec![]);
 
     // -- CALLBACKS --
     // called when a chat message is sent.
@@ -203,11 +201,13 @@ pub fn Playing<'a, G: Html>(cx: Scope<'a>, props: Props<'a>) -> View<G> {
     // called when the user clicks the redraw button.
     let on_redraw = move |_| {
         let tiles = (*redraw_tiles.get()).clone();
+        redraw_tiles.modify().clear();
         ws_write.send(ClientMsg::Play(Play::Redraw(tiles))).unwrap();
     };
     // called when the user clicks the place button.
     let on_place = move |_| {
         let tiles = (*placed_tiles.get()).clone();
+        placed_tiles.modify().clear();
         ws_write.send(ClientMsg::Play(Play::Place(tiles))).unwrap();
     };
     // redraws all tiles.
