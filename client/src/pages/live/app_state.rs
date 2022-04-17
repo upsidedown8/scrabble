@@ -85,10 +85,10 @@ impl AppState {
                 scores,
                 next,
             } => {
-                let is_playing = scores.len() < capacity;
+                let is_playing = scores.len() >= capacity;
                 let status = match is_playing {
-                    true => "Waiting for players",
-                    false => "Playing",
+                    true => "Playing",
+                    false => "Waiting for players",
                 };
 
                 return AppState::Playing(Box::new(PlayingState {
