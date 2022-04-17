@@ -60,8 +60,6 @@ pub enum ServerMsg {
         id_player: i32,
         /// The required number of players.
         capacity: usize,
-        /// The players in the game.
-        players: Vec<Player>,
         /// The tile positions.
         tiles: Vec<Option<Tile>>,
         /// Your rack tiles.
@@ -82,7 +80,7 @@ pub enum ServerMsg {
     /// The player has timed out so will disconnect.
     Timeout(Player),
     /// The players have updated.
-    Players(Vec<Player>),
+    Players(HashMap<Player, usize>),
     /// A chat message.
     Chat(Player, String),
     /// The player's rack has updated.

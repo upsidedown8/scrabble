@@ -223,7 +223,6 @@ impl Game {
             id_game: self.id_game(),
             id_player: slot.id_player(),
             capacity: self.game.player_count(),
-            players: self.api_players(),
             tiles: self.api_tiles(),
             rack: self.api_rack(player_num),
             scores: self.api_scores(),
@@ -231,7 +230,7 @@ impl Game {
         });
 
         // send a message to update the players.
-        self.send_all(ServerMsg::Players(self.api_players()));
+        self.send_all(ServerMsg::Players(self.api_scores()));
         self.send_all(ServerMsg::UserConnected(slot.player()));
 
         // check whether there are enough players to start and
@@ -273,7 +272,7 @@ impl Game {
             slot.disconnect();
 
             // send a message containing the new players.
-            self.send_all(ServerMsg::Players(self.api_players()));
+            self.send_all(ServerMsg::Players(self.api_scores()));
             self.send_all(ServerMsg::UserDisconnected(player));
         }
     }
@@ -536,13 +535,6 @@ impl Game {
     /// Gets a struct representing a player for the API.
     fn api_player(&self, player_num: PlayerNum) -> Option<Player> {
         self.slots.get(&player_num).map(|slot| slot.player())
-    }
-    /// Gets a list of players for the API.
-    fn api_players(&self) -> Vec<Player> {
-        self.game
-            .player_nums()
-            .flat_map(|player_num| self.api_player(player_num))
-            .collect()
     }
     /// Gets a HashMap storing scores for the API.
     fn api_scores(&self) -> HashMap<Player, usize> {

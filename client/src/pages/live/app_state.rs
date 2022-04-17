@@ -38,7 +38,6 @@ pub struct PlayingState {
     pub capacity: usize,
 
     // -- shared state --
-    pub players: RcSignal<Vec<Player>>,
     pub tiles: RcSignal<Vec<Option<Tile>>>,
     pub rack: RcSignal<Vec<Tile>>,
     pub scores: RcSignal<HashMap<Player, usize>>,
@@ -76,13 +75,12 @@ impl AppState {
                 id_game,
                 id_player,
                 capacity,
-                players,
                 tiles,
                 rack,
                 scores,
                 next,
             } => {
-                let status = match players.len() < capacity {
+                let status = match scores.len() < capacity {
                     true => "Waiting for players",
                     false => "Playing",
                 };
@@ -93,7 +91,7 @@ impl AppState {
                         sender: String::from("server"),
                         content: format!(
                             "Joined! (id_game={id_game}, {status} [{}/{capacity}])",
-                            players.len()
+                            scores.len()
                         ),
                     }]),
                     capacity,
@@ -101,7 +99,6 @@ impl AppState {
                     // -- shared state --
                     id_game,
                     id_player,
-                    players: create_rc_signal(players),
                     tiles: create_rc_signal(tiles),
                     rack: create_rc_signal(rack),
                     scores: create_rc_signal(scores),
@@ -163,8 +160,8 @@ impl AppState {
             ServerMsg::Timeout(player) => {
                 self.add_server_msg(format!("{} has timed out", player.username));
             }
-            ServerMsg::Players(players) => {
-                playing.players.set(players);
+            ServerMsg::Players(scores) => {
+                playing.scores.set(scores);
             }
             ServerMsg::Chat(from, msg) => {
                 log::info!("{from:?} said: {msg}");
