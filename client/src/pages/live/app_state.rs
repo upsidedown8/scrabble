@@ -85,7 +85,8 @@ impl AppState {
                 scores,
                 next,
             } => {
-                let status = match scores.len() < capacity {
+                let is_playing = scores.len() < capacity;
+                let status = match is_playing {
                     true => "Waiting for players",
                     false => "Playing",
                 };
@@ -111,7 +112,7 @@ impl AppState {
                     scores: create_rc_signal(scores),
                     next: create_rc_signal(next),
                     letter_bag_len: create_rc_signal(100),
-                    is_playing: create_rc_signal(false),
+                    is_playing: create_rc_signal(is_playing),
                 }));
             }
             msg => log::error!("unexpected message: {msg:?}"),
