@@ -73,7 +73,7 @@ impl Ai {
     /// A preset medium difficulty.
     pub fn medium() -> Self {
         Self {
-            random_factor: 0.15,
+            random_factor: 0.05,
             preferred_len: Some(7),
             preferred_tiles: None,
             preferred_score: 30,
