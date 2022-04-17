@@ -128,8 +128,13 @@ impl AppState {
                 scores,
             } => {
                 self.add_server_msg(format!(
-                    "{} has made a play. {}",
+                    "{} has made a play ({}). {}",
                     player.username,
+                    match play {
+                        Play::Pass => "Passed",
+                        Play::Redraw(..) => "Redraw tiles",
+                        Play::Place(..) => "Placed tiles",
+                    },
                     match &next {
                         Some(player) => format!("It's {} next!", player.username),
                         None => "Game over!".to_string(),

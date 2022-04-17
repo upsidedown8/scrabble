@@ -58,6 +58,10 @@ section {
 		cursor: pointer;
 		user-select: none;
 	}
+
+	.is-selected {
+		background-color: red;
+	}
 }
 
 .board {
@@ -207,10 +211,6 @@ section {
 
 		section {
 			user-select: none;
-		}
-
-		.tiles {
-			background-color: darkgreen;
 		}
 	}
 

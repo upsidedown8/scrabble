@@ -33,24 +33,19 @@ pub struct BoardProps<'a, F> {
 #[component]
 pub fn Board<'a, F, G: Html>(cx: Scope<'a>, props: BoardProps<'a, F>) -> View<G>
 where
-    F: Fn(Pos) + Clone + 'static,
+    F: Fn(Pos) + Clone + 'a,
 {
-    let cells = create_memo(cx, move || {
+    let on_click = create_ref(cx, props.on_click);
+    let squares = create_memo(cx, move || {
         let cells = props.cells.get();
         let cells = cells.as_ref();
-        Pos::iter()
-            .zip(cells)
-            .map(|(p, t)| (p, *t))
-            .collect::<Vec<_>>()
-    });
 
-    view! { cx,
-        div(class="board") {
-            Keyed {
-                key: |&pos| pos,
-                iterable: cells,
-                view: move |cx, (pos, tile)| {
-                    let on_click = props.on_click.clone();
+        View::new_fragment(
+            Pos::iter()
+                .zip(cells)
+                .map(|(p, t)| (p, *t))
+                .map(|(pos, tile)| {
+                    let on_click = on_click.clone();
                     let on_click = move |_| {
                         let on_click = on_click.clone();
                         on_click(pos);
@@ -79,8 +74,14 @@ where
                             })
                         }
                     }
-                },
-            }
+                })
+                .collect(),
+        )
+    });
+
+    view! { cx,
+        div(class="board") {
+            (*squares.get())
         }
     }
 }
