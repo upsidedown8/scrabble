@@ -243,7 +243,7 @@ impl Game {
     /// Called when a message is received from a user.
     async fn on_msg(&mut self, id_user: i32, msg: ClientMsg, game_handle: GameHandle) {
         match msg {
-            ClientMsg::Disconnect => self.on_disconnect(id_user),
+            ClientMsg::Disconnect => self.on_disconnect(id_user).await,
             ClientMsg::Chat(chat) => self.on_chat(id_user, chat),
             // Require the game to be full before a play can be made.
             ClientMsg::Play(play) if self.is_full() => {
@@ -262,7 +262,7 @@ impl Game {
         }
     }
     /// Called when a disconnect message is received.
-    fn on_disconnect(&mut self, id_user: i32) {
+    async fn on_disconnect(&mut self, id_user: i32) {
         if let Some(player_num) = self.id_user_to_player_num(id_user) {
             // send a disconnect message.
             let slot = self.slots.get_mut(&player_num).unwrap();
@@ -274,6 +274,9 @@ impl Game {
             // send a message containing the new players.
             self.send_all(ServerMsg::Players(self.api_scores()));
             self.send_all(ServerMsg::UserDisconnected(player));
+
+            // make ai plays for the user.
+            self.make_ai_plays().await;
         }
     }
     /// Called when a play message is received.
@@ -462,26 +465,31 @@ impl Game {
     /// Starts a move timer for the specified player.
     fn start_timer(&self, player_num: PlayerNum, game_handle: GameHandle) {
         let curr_count = self.play_count;
-        let id_user = self.slots[&player_num].id_user().unwrap();
+        let slot = &self.slots[&player_num];
 
-        tokio::spawn(async move {
-            // wait `USER_TIMEOUT` seconds for the next player to make a play.
-            tokio::time::sleep(*USER_TIMEOUT).await;
+        // only start a timer if the slot is occupied by a player.
+        if slot.ai().is_none() {
+            let id_user = slot.id_user().unwrap();
 
-            let mut game = game_handle.lock().await;
-            // if the play count has not advanced, disconnect the user.
-            if game.play_count == curr_count {
-                // send a timeout message to all users.
-                let player = game
-                    .id_user_to_player_num(id_user)
-                    .and_then(|player_num| game.api_player(player_num))
-                    .expect("player to exist");
-                game.send_all(ServerMsg::Timeout(player));
+            tokio::spawn(async move {
+                // wait `USER_TIMEOUT` seconds for the next player to make a play.
+                tokio::time::sleep(*USER_TIMEOUT).await;
 
-                // disconnect the user.
-                game.on_disconnect(id_user);
-            }
-        });
+                let mut game = game_handle.lock().await;
+                // if the play count has not advanced, disconnect the user.
+                if game.play_count == curr_count {
+                    // send a timeout message to all users.
+                    let player = game
+                        .id_user_to_player_num(id_user)
+                        .and_then(|player_num| game.api_player(player_num))
+                        .expect("player to exist");
+                    game.send_all(ServerMsg::Timeout(player));
+
+                    // disconnect the user.
+                    game.on_disconnect(id_user).await;
+                }
+            });
+        }
     }
 
     /// Sends a message to all users.
