@@ -14,7 +14,7 @@ pub mod movegen;
 /// The number of top scoring moves to look ahead from.
 const LOOK_AHEAD_LIMIT: usize = 15;
 /// The weighting of the proportional length difference in the score.
-const LEN_WEIGHT: f32 = 12.0;
+const LEN_WEIGHT: f32 = 20.0;
 /// The weighting of the proportional tile count difference in the score.
 const TILES_WEIGHT: f32 = 8.0;
 /// The weighting of the score in the final score calculation.
@@ -73,11 +73,11 @@ impl Ai {
     /// A preset medium difficulty.
     pub fn medium() -> Self {
         Self {
-            random_factor: 0.05,
-            preferred_len: Some(7),
+            random_factor: 0.025,
+            preferred_len: Some(15),
             preferred_tiles: None,
             preferred_score: 30,
-            cross_word_range: 0..=2,
+            cross_word_range: 0..=1,
             tile_range: 1..=7,
             len_range: 2..=10,
         }
@@ -121,7 +121,7 @@ impl Ai {
         let best_play = scored
             .into_iter()
             .max_by(|(first_score, _), (second_score, _)| {
-                first_score.partial_cmp(second_score).unwrap()
+                second_score.partial_cmp(first_score).unwrap()
             })
             .map(|(_, gen_play)| gen_play)
             .map(Play::from);
@@ -184,19 +184,20 @@ impl Ai {
     /// * `random_factor`
     /// * `preferred_len`
     /// * `preferred_tiles`
-    /// and the score of the word to calculate a new score.
+    /// and the score of the word to calculate a new score, which
+    /// should be minimised.
     fn score(&self, gen_play: &GeneratedPlay) -> f32 {
         // find the difference between the word length and preferred length
         let len_score = self
             .preferred_len
             .map(|pl| util::abs_diff(pl, gen_play.len))
-            .map(|diff| LEN_WEIGHT / (diff as f32 + 1.0))
+            .map(|diff| LEN_WEIGHT * (diff as f32))
             .unwrap_or(0.0);
         // find the difference between the tile count and preferred count
         let tiles_score = self
             .preferred_tiles
             .map(|pt| util::abs_diff(pt, gen_play.tile_positions.len()))
-            .map(|diff| TILES_WEIGHT / (diff as f32 + 1.0))
+            .map(|diff| TILES_WEIGHT * (diff as f32))
             .unwrap_or(0.0);
         // find the difference between the actual score and the preferred score.
         let score_diff = util::abs_diff(self.preferred_score, gen_play.score) as f32;
@@ -205,7 +206,7 @@ impl Ai {
         // combine them by taking the reciprocal of each. (1.0 is added to each
         // to avoid a zero division error). Each reciprocal is multiplied by a
         // constant weight factor to fine tune the evaulation function.
-        let combined_score = len_score + tiles_score + (SCORE_WEIGHT / (score_diff + 1.0));
+        let combined_score = len_score + tiles_score + SCORE_WEIGHT * score_diff;
 
         // apply a final random factor to the score.
         let multiplier = rand::thread_rng().gen_range(-1.0..1.0);
@@ -235,7 +236,7 @@ impl Ai {
         // Sort by highest score.
         scored.sort_unstable_by(|(first_score, _), (second_score, _)| {
             // Have to use `partial_cmp` as `f32` could be `NaN`.
-            first_score.partial_cmp(second_score).unwrap()
+            second_score.partial_cmp(first_score).unwrap()
         });
         // Keep a fixed number for further evaluation
         scored.truncate(LOOK_AHEAD_LIMIT);
