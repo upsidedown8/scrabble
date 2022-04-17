@@ -1,5 +1,6 @@
 //! Module for displaying a leaderboard.
 
+use crate::pages::format_f32;
 use api::routes::leaderboard::LeaderboardRow as ApiLeaderboardRow;
 use sycamore::prelude::*;
 
@@ -37,14 +38,14 @@ pub fn Leaderboard<'a, G: Html>(cx: Scope<'a>, props: Props<'a>) -> View<G> {
                         view: |cx, row| view! { cx,
                             tr {
                                 td { (row.username) }
-                                td { (row.avg_score_per_play) }
-                                td { (row.avg_word_length) }
-                                td { (row.avg_tiles_per_play) }
+                                td { (format_f32(row.avg_score_per_play)) }
+                                td { (format_f32(row.avg_word_length)) }
+                                td { (format_f32(row.avg_tiles_per_play)) }
                                 td { (row.longest_word_length) }
                                 td { (row.best_word_score) }
-                                td { (row.avg_score_per_game) }
-                                td { (row.avg_score_per_tile) }
-                                td { (row.win_percentage) }
+                                td { (format_f32(row.avg_score_per_game)) }
+                                td { (format_f32(row.avg_score_per_tile)) }
+                                td { (format_f32(row.win_percentage)) "%" }
                             }
                         }
                     }
