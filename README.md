@@ -18,7 +18,7 @@ the server using a REST API.
 The server: runs on a seperate machine and persists user/game
 data, manages multiplayer games etc. Serves as a trustworthy
 party to ensure that every move played is legal. Provides the
-static build files for the client. An sqlite3 database is used
+static build files for the client. A PostgreSQL database is used
 (with [sqlx](https://crates.io/crates/sqlx)),
 to store user and game data. A REST API is provided with
 [Warp](https://crates.io/crates/warp) using the types from the `api`
@@ -36,4 +36,3 @@ Using a single crate for the API ensures that the client and
 server are always up to date (since the entire project is
 developed with the same language). The API and interactions
 with its types can therefore be type checked at compile time.
-
