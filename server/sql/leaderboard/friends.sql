@@ -79,5 +79,5 @@ WHERE tbl_game.is_over = TRUE
   AND tbl_friend_request.from_id_user = $1
   AND game_summary.id_player = tbl_player.id_player
 GROUP BY tbl_user.id_user
-ORDER BY win_percentage ASC
+ORDER BY win_percentage DESC
 LIMIT 20;
