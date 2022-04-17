@@ -3,7 +3,7 @@
 use crate::{
     components::StaticErrorMsg,
     context::{use_auth, use_token},
-    pages::live::app_state::{AppMsg, AppState},
+    pages::live::app_state::AppState,
     requests::live::{connect_and_authenticate, to_msg},
 };
 use api::routes::live::{ClientMsg, LiveError, ServerMsg};
@@ -104,7 +104,7 @@ fn setup(cx: Scope, ws: WebSocket) -> Setup {
 
     // create a queue for dispatch messages. Any messages sent to `dispatch_write`
     // will be forwarded to the dispatch function on the `AppState`.
-    let (mut dispatch_write, mut dispatch_read) = mpsc::unbounded_channel();
+    let (dispatch_write, mut dispatch_read) = mpsc::unbounded_channel();
 
     // spawn a task that reads from `socket_read` (messages from server)
     // to forward messages to the dispatch queue (writes to `dispatch_write`).
@@ -128,7 +128,7 @@ fn setup(cx: Scope, ws: WebSocket) -> Setup {
                                     auth.set(None);
                                     navigate("/live");
                                 }
-                                msg => dispatch_write.send(AppMsg::ServerMsg(msg)).unwrap(),
+                                msg => dispatch_write.send(msg).unwrap(),
                             }
                         }
                         Err(e) => log::error!("failed to deserialize: {e:?}"),
