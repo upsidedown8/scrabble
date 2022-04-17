@@ -3,18 +3,9 @@ use crate::{
     pages::live::app_state::AppState,
 };
 use api::routes::live::{ClientMsg, Player};
-use scrabble::{game::tile, util::pos::Pos};
+use scrabble::game::play::Play;
 use sycamore::prelude::*;
 use tokio::sync::mpsc;
-
-/// a rack tile or board square that has been selected.
-#[derive(Clone, Copy)]
-pub enum Selected {
-    /// A tile on the rack has been selected.
-    RackTile(tile::Tile),
-    /// A board position has been selected.
-    Square(Pos),
-}
 
 /// Props for `Playing`.
 #[derive(Prop)]
@@ -28,51 +19,65 @@ pub struct Props<'a> {
 /// Component for playing a live game.
 #[component]
 pub fn Playing<'a, G: Html>(cx: Scope<'a>, props: Props<'a>) -> View<G> {
-    let state = create_memo(cx, || match props.state.get().as_ref() {
+    let ws_write = create_ref(cx, props.ws_write);
+    let state = match props.state.get().as_ref() {
         AppState::Playing(playing_state) => playing_state.clone(),
         AppState::Connected(..) => unreachable!(),
-    });
-    let ws_write = create_ref(cx, props.ws_write);
-
-    // -- LOCAL STATE --
-    let rack = create_memo(cx, || {
-        let state = state.get();
-        let state = state.as_ref().as_ref();
-        state.rack.clone()
-    });
-    let tiles = create_memo(cx, || {
-        let state = state.get();
-        let state = state.as_ref().as_ref();
-        state.tiles.clone()
-    });
-    let messages = state.get().messages.clone();
-    let scores = create_memo(cx, || state.get().scores.clone());
-
-    // called when a message is sent.
-    let on_msg = move |msg| {
-        ws_write.send(ClientMsg::Chat(msg)).unwrap();
     };
 
-    // whether it is the connected player's turn.
-    let is_my_turn = create_memo(cx, || {
-        let state = state.get();
-        let state = state.as_ref().as_ref();
+    // -- SHARED STATE --
+    let tiles = create_ref(cx, state.tiles.clone());
+    let rack = create_ref(cx, state.rack.clone());
+    let messages = create_ref(cx, state.messages.clone());
+    let scores = create_ref(cx, state.scores.clone());
 
-        matches!(state.next, Some(Player { id_player, .. }) if id_player == state.id_player)
+    // whether the game has started.
+    let is_playing = create_ref(cx, state.is_playing.clone());
+    let next = state.next.clone();
+    // whether it is the connected player's turn.
+    let is_my_turn = create_memo(cx, move || {
+        let next = next.get();
+        let is_playing = *is_playing.get();
+
+        is_playing
+            && matches!(next.as_ref(), Some(Player { id_player, .. }) if *id_player == state.id_player)
     });
 
-    // the rack or board tile that is selected.
-    let selected: &Signal<Option<Selected>> = create_signal(cx, None);
+    // -- LOCAL STATE --
+    let local_tiles = create_signal(cx, vec![]);
+    create_effect(cx, || local_tiles.set((*tiles.get()).clone()));
+    let local_rack = create_signal(cx, vec![]);
+    create_effect(cx, || local_rack.set((*rack.get()).clone()));
+    // let selected_tile = create_signal(cx, None);
+    // create_effect(cx, || {
+    //     // whenever the rack changes, reset the selected tile to None.
+    //     rack.track();
+    //     selected_tile.set(None);
+    // });
+
+    // -- CALLBACKS --
+    // called when a chat message is sent.
+    let on_chat_msg = move |msg| {
+        ws_write.send(ClientMsg::Chat(msg)).unwrap();
+    };
+    // called when a board square is clicked.
+    let on_square_clicked = |pos| {
+        log::info!("{pos} clicked");
+    };
+    // called when a rack tile is clicked.
+    let on_rack_tile_clicked = |idx, tile| {
+        log::info!("rack tile {tile} at {idx} clicked");
+    };
 
     view! { cx,
         div(class="live") {
             Board {
-                on_click: |_| (),
+                on_click: on_square_clicked,
                 cells: tiles,
             }
 
             Rack {
-                on_click: |_| (),
+                on_click: on_rack_tile_clicked,
                 tiles: rack,
             }
 
@@ -90,7 +95,7 @@ pub fn Playing<'a, G: Html>(cx: Scope<'a>, props: Props<'a>) -> View<G> {
             }
 
             Chat {
-                on_msg: on_msg,
+                on_msg: on_chat_msg,
                 messages: messages,
             }
         }
@@ -114,6 +119,8 @@ struct ControlsProps {
 
 #[component]
 fn Controls<G: Html>(cx: Scope, props: ControlsProps) -> View<G> {
+    let ws_write = create_ref(cx, props.ws_write);
+
     // -- TABS --
     let active_tab = create_signal(cx, ControlTab::Place);
     let tab_class = |tab| {
@@ -127,7 +134,10 @@ fn Controls<G: Html>(cx: Scope, props: ControlsProps) -> View<G> {
     let pass_class = tab_class(ControlTab::Pass);
 
     // -- CALLBACKS --
-    let on_pass = |_| {};
+    // called when the user clicks the pass button.
+    let on_pass = move |_| {
+        ws_write.send(ClientMsg::Play(Play::Pass)).unwrap();
+    };
     let on_redraw = |_| {};
 
     view! { cx,

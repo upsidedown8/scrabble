@@ -38,12 +38,13 @@ pub struct PlayingState {
     pub capacity: usize,
 
     // -- shared state --
-    pub players: Vec<Player>,
-    pub tiles: Vec<Option<Tile>>,
-    pub rack: Vec<Tile>,
-    pub scores: HashMap<Player, usize>,
-    pub next: Option<Player>,
-    pub letter_bag_len: usize,
+    pub players: RcSignal<Vec<Player>>,
+    pub tiles: RcSignal<Vec<Option<Tile>>>,
+    pub rack: RcSignal<Vec<Tile>>,
+    pub scores: RcSignal<HashMap<Player, usize>>,
+    pub next: RcSignal<Option<Player>>,
+    pub letter_bag_len: RcSignal<usize>,
+    pub is_playing: RcSignal<bool>,
 
     // -- local state --
     pub messages: RcSignal<Vec<Msg>>,
@@ -100,12 +101,13 @@ impl AppState {
                     // -- shared state --
                     id_game,
                     id_player,
-                    players,
-                    tiles,
-                    rack,
-                    scores,
-                    next,
-                    letter_bag_len: 100,
+                    players: create_rc_signal(players),
+                    tiles: create_rc_signal(tiles),
+                    rack: create_rc_signal(rack),
+                    scores: create_rc_signal(scores),
+                    next: create_rc_signal(next),
+                    letter_bag_len: create_rc_signal(100),
+                    is_playing: create_rc_signal(false),
                 }));
             }
             msg => log::error!("unexpected message: {msg:?}"),
@@ -142,13 +144,10 @@ impl AppState {
                     }
                 }
 
-                return AppState::Playing(Box::new(PlayingState {
-                    letter_bag_len,
-                    tiles,
-                    next,
-                    scores,
-                    ..playing.clone()
-                }));
+                playing.letter_bag_len.set(letter_bag_len);
+                playing.tiles.set(tiles);
+                playing.next.set(next);
+                playing.scores.set(scores);
             }
             ServerMsg::UserConnected(player) => {
                 self.add_server_msg(format!("{} has joined", player.username));
@@ -160,10 +159,7 @@ impl AppState {
                 self.add_server_msg(format!("{} has timed out", player.username));
             }
             ServerMsg::Players(players) => {
-                return AppState::Playing(Box::new(PlayingState {
-                    players,
-                    ..playing.clone()
-                }))
+                playing.players.set(players);
             }
             ServerMsg::Chat(from, msg) => {
                 log::info!("{from:?} said: {msg}");
@@ -173,10 +169,7 @@ impl AppState {
                 });
             }
             ServerMsg::Rack(rack) => {
-                return AppState::Playing(Box::new(PlayingState {
-                    rack,
-                    ..playing.clone()
-                }));
+                playing.rack.set(rack);
             }
             ServerMsg::Error(e) => {
                 log::error!("play error: {e:?}");
@@ -188,17 +181,26 @@ impl AppState {
                     _ => (),
                 }
             }
-            ServerMsg::Over(reason) => self.add_server_msg(format!(
-                "Game over: {}.",
-                match reason {
-                    GameOverReason::TwoPasses => "A player has passed twice",
-                    GameOverReason::EmptyRack => "A player has emptied their rack",
+            ServerMsg::Over(reason) => {
+                playing.is_playing.set(false);
+                self.add_server_msg(format!(
+                    "Game over: {}.",
+                    match reason {
+                        GameOverReason::TwoPasses => "A player has passed twice",
+                        GameOverReason::EmptyRack => "A player has emptied their rack",
+                    }
+                ))
+            }
+            ServerMsg::Starting => {
+                playing.is_playing.set(true);
+
+                match playing.next.get().as_ref() {
+                    Some(Player { username, .. }) => {
+                        self.add_server_msg(format!("The game is starting. It's {username} next.",))
+                    }
+                    None => log::error!("next player was not specified"),
                 }
-            )),
-            ServerMsg::Starting => self.add_server_msg(format!(
-                "The game is starting. It's {} next.",
-                playing.next.as_ref().unwrap().username
-            )),
+            }
             msg => log::error!("unexpected message: {msg:?}"),
         }
 
