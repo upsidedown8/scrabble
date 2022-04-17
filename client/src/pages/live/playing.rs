@@ -201,13 +201,11 @@ pub fn Playing<'a, G: Html>(cx: Scope<'a>, props: Props<'a>) -> View<G> {
     // called when the user clicks the redraw button.
     let on_redraw = move |_| {
         let tiles = (*redraw_tiles.get()).clone();
-        redraw_tiles.modify().clear();
         ws_write.send(ClientMsg::Play(Play::Redraw(tiles))).unwrap();
     };
     // called when the user clicks the place button.
     let on_place = move |_| {
         let tiles = (*placed_tiles.get()).clone();
-        placed_tiles.modify().clear();
         ws_write.send(ClientMsg::Play(Play::Place(tiles))).unwrap();
     };
     // redraws all tiles.

@@ -213,6 +213,17 @@ impl AppState {
             }
             ServerMsg::Error(e) => {
                 log::error!("play error: {e:?}");
+
+                let mut rack = playing.rack.modify();
+
+                // add any redraw/place tiles back to the rack.
+                for tile in playing.redraw_tiles.modify().drain(..) {
+                    rack.push(tile);
+                }
+                for (_, tile) in playing.placed_tiles.modify().drain(..) {
+                    rack.push(tile);
+                }
+
                 match e {
                     LiveError::Play(e) => self.add_server_msg(format!("Illegal play: {e}")),
                     LiveError::NotYourTurn => {
