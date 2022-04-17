@@ -1,6 +1,5 @@
+use crate::pages::format_datetime;
 use sycamore::prelude::*;
-
-use crate::pages::TIME_FORMAT;
 
 /// Props for `FriendsTable`.
 #[derive(Prop)]
@@ -40,12 +39,10 @@ pub fn FriendsTable<G: Html>(cx: Scope, props: FriendsTableProps) -> View<G> {
 /// Component that displays the table row for a friend record.
 #[component]
 fn Friend<G: Html>(cx: Scope, friend: api::routes::friends::Friend) -> View<G> {
-    let since = friend.since.format(TIME_FORMAT);
-
     view! { cx,
         tr {
             td { (friend.username) }
-            td { (since) }
+            td { (format_datetime(friend.since)) }
         }
     }
 }

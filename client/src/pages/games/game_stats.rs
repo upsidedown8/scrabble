@@ -1,7 +1,10 @@
 //! Implementation of the [`GameStatsPage`].
 
 use crate::{
-    components::StaticErrorMsg, context::use_auth, pages::TIME_FORMAT, requests::games::stats,
+    components::StaticErrorMsg,
+    context::use_auth,
+    pages::{format_bool, format_datetime, format_f32},
+    requests::games::stats,
 };
 use api::routes::games::{GameMetadata, GameStatsResponse};
 use sycamore::{prelude::*, suspense::Suspense};
@@ -74,12 +77,8 @@ fn ViewStats<G: Html>(cx: Scope<'_>, response: GameStatsResponse) -> View<G> {
         is_win,
     } = response;
 
-    let start_time = start_time
-        .map(|date| date.format(TIME_FORMAT).to_string())
-        .unwrap_or_default();
-    let end_time = end_time
-        .map(|date| date.format(TIME_FORMAT).to_string())
-        .unwrap_or_default();
+    let start_time = start_time.map(format_datetime).unwrap_or_default();
+    let end_time = end_time.map(format_datetime).unwrap_or_default();
 
     view! { cx,
         hr
@@ -99,12 +98,8 @@ fn ViewStats<G: Html>(cx: Scope<'_>, response: GameStatsResponse) -> View<G> {
                 tr {
                     td { (start_time) }
                     td { (end_time) }
-                    td { (is_over) }
-                    td { (if is_win {
-                        "Yes"
-                    } else {
-                        "No"
-                    }) }
+                    td { (format_bool(is_over)) }
+                    td { (format_bool(is_win)) }
                 }
             }
         }
@@ -127,13 +122,13 @@ fn ViewStats<G: Html>(cx: Scope<'_>, response: GameStatsResponse) -> View<G> {
             }
             tbody {
                 tr {
-                    td { (avg_score_per_play) }
-                    td { (avg_word_length) }
-                    td { (avg_words_per_play) }
-                    td { (avg_tiles_per_play) }
+                    td { (format_f32(avg_score_per_play)) }
+                    td { (format_f32(avg_word_length)) }
+                    td { (format_f32(avg_words_per_play)) }
+                    td { (format_f32(avg_tiles_per_play)) }
                     td { (longest_word_length) }
                     td { (best_word_score) }
-                    td { (avg_score_per_tile) }
+                    td { (format_f32(avg_score_per_tile)) }
                 }
             }
         }

@@ -3,7 +3,7 @@
 use crate::{
     components::StaticErrorMsg,
     context::use_auth,
-    pages::TIME_FORMAT,
+    pages::{format_bool, format_datetime, format_f32},
     requests::games::{list, overall_stats},
 };
 use api::routes::games::{GameMetadata, ListGamesResponse, OverallStatsResponse};
@@ -68,17 +68,9 @@ fn ViewList<G: Html>(cx: Scope, list: ListGamesResponse) -> View<G> {
                     is_over,
                 } = *meta;
 
-                let start_time = start_time
-                    .map(|date| date.format(TIME_FORMAT).to_string())
-                    .unwrap_or_default();
-                let end_time = end_time
-                    .map(|date| date.format(TIME_FORMAT).to_string())
-                    .unwrap_or_default();
+                let start_time = start_time.map(format_datetime).unwrap_or_default();
+                let end_time = end_time.map(format_datetime).unwrap_or_default();
                 let game_link = format!("/games/{id_game}/stats");
-                let is_over = match is_over {
-                    true => "Yes",
-                    false => "No",
-                };
 
                 view! { cx,
                     tr {
@@ -90,7 +82,7 @@ fn ViewList<G: Html>(cx: Scope, list: ListGamesResponse) -> View<G> {
                         }
                         td { (start_time) }
                         td { (end_time) }
-                        td { (is_over) }
+                        td { (format_bool(is_over)) }
                     }
                 }
             })
@@ -158,14 +150,14 @@ fn ViewSummary<G: Html>(cx: Scope, summary: OverallStatsResponse) -> View<G> {
             // define the body of the table.
             tbody {
                 tr {
-                    td { (row.avg_score_per_play) }
-                    td { (row.avg_word_length) }
-                    td { (row.avg_tiles_per_play) }
+                    td { (format_f32(row.avg_score_per_play)) }
+                    td { (format_f32(row.avg_word_length)) }
+                    td { (format_f32(row.avg_tiles_per_play)) }
                     td { (row.longest_word_length) }
                     td { (row.best_word_score) }
-                    td { (row.avg_score_per_game) }
-                    td { (row.avg_score_per_tile) }
-                    td { (row.win_percentage) }
+                    td { (format_f32(row.avg_score_per_game)) }
+                    td { (format_f32(row.avg_score_per_tile)) }
+                    td { (format_f32(row.win_percentage)) "%" }
                 }
             }
         }

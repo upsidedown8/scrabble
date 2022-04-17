@@ -75,6 +75,7 @@ version = "0.1.0"
 dependencies = [
  "api",
  "bincode",
+ "chrono",
  "console_error_panic_hook",
  "futures",
  "gloo-timers",
