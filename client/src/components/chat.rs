@@ -15,16 +15,16 @@ pub struct Msg {
 }
 
 #[derive(Prop)]
-pub struct Props<F> {
+pub struct Props<'a, F> {
     /// A callback function to send a message.
     pub on_msg: F,
     /// The messages to display.
-    pub messages: RcSignal<Vec<Msg>>,
+    pub messages: &'a ReadSignal<Vec<Msg>>,
 }
 
 /// A Chat box.
 #[component]
-pub fn Chat<'a, F, G: Html>(cx: Scope<'a>, props: Props<F>) -> View<G>
+pub fn Chat<'a, F, G: Html>(cx: Scope<'a>, props: Props<'a, F>) -> View<G>
 where
     F: Fn(String) + Clone + 'a,
 {

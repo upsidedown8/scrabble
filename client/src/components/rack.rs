@@ -17,28 +17,34 @@ pub struct Props<'a, F> {
 #[component]
 pub fn Rack<'a, F, G: Html>(cx: Scope<'a>, props: Props<'a, F>) -> View<G>
 where
-    F: Fn(tile::Tile) + Clone + 'static,
+    F: Fn(usize, tile::Tile) + Clone + 'static,
 {
     view! { cx,
         div(class="rack tiles") {
-            Indexed {
-                iterable: props.tiles,
-                view: move |cx, tile| {
-                    let on_click = props.on_click.clone();
-                    let on_click = move |_| {
-                        let on_click = on_click.clone();
-                        on_click(tile);
-                    };
+            (View::new_fragment(
+                props.tiles
+                    .get()
+                    .iter()
+                    .copied()
+                    .enumerate()
+                    .map({
+                        let on_click = props.on_click.clone();
 
-                    view! { cx,
-                        div(on:click=on_click) {
-                            Tile {
-                                tile: tile,
+                        move |(idx, tile)| {
+                            let on_click = on_click.clone();
+                            let on_click = move |_| on_click(idx, tile);
+
+                            view! { cx,
+                                div(on:click=on_click) {
+                                    Tile {
+                                        tile: tile,
+                                    }
+                                }
                             }
                         }
-                    }
-                }
-            }
+                    })
+                    .collect()
+            ))
         }
     }
 }
