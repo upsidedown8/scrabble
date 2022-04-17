@@ -22,7 +22,7 @@ pub fn Tile<G: Html>(cx: Scope, props: Props) -> View<G> {
             };
 
             view! { cx,
-                svg(class="scrabble-tile", viewBox="0 0 20 28.6") {
+                svg(viewBox="0 0 20 28.6") {
                     rect(width="20", height="25", y="3.6", fill="#333", ry="3.5")
                     rect(width="20", height="25", fill="#fff", ry="3.5")
                     text {
@@ -39,7 +39,7 @@ pub fn Tile<G: Html>(cx: Scope, props: Props) -> View<G> {
             }
         }
         tile::Tile::Blank(_) => view! { cx,
-            svg(class="scrabble-tile", viewBox="0 0 20 28.6") {
+            svg(class="is-blank", viewBox="0 0 20 28.6") {
                 rect(width="20", height="25", y="3.6", fill="#333", ry="3.5")
                 rect(width="20", height="25", fill="#fff", ry="3.5")
             }

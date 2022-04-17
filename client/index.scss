@@ -60,7 +60,7 @@ section {
 	}
 
 	.is-selected {
-		background-color: red;
+		transform: translate(0, -8%);
 	}
 }
 
@@ -112,12 +112,23 @@ section {
 			height: 90%;
 		}
 
-		.premium {
+		.premium,
+		.blank-letter {
 			display: none;
 			font-family: monospace;
 			color: white;
 			font-weight: 400;
 			font-size: calc(min(80vh, 98vw) / 30);
+		}
+
+		&:hover {
+			.is-blank {
+				display: none;
+			}
+
+			.blank-letter {
+				display: block;
+			}
 		}
 	}
 

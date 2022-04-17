@@ -54,12 +54,21 @@ where
                     view! { cx,
                         div(class=square_class(pos), on:click=on_click) {
                             (match tile {
-                                Some(tile) => view! { cx,
+                                Some(tile @ tile::Tile::Letter { .. }) => view! { cx,
                                     Tile {
                                         tile: tile,
                                     }
                                 },
-                                None => view! { cx,
+                                Some(tile @ tile::Tile::Blank(Some(letter))) => view! { cx,
+                                    Tile {
+                                        tile: tile,
+                                    }
+
+                                    div(class="blank-letter") {
+                                        (letter)
+                                    }
+                                },
+                                _ => view! { cx,
                                     div(class="premium") {
                                         (match pos.premium() {
                                             Some(Premium::Start) => "S",

@@ -3,9 +3,13 @@ use crate::{
     pages::live::app_state::AppState,
 };
 use api::routes::live::{ClientMsg, Player};
-use scrabble::game::play::Play;
-use sycamore::prelude::*;
+use scrabble::game::{
+    play::Play,
+    tile::{Letter, Tile},
+};
+use sycamore::{prelude::*, rt::JsCast};
 use tokio::sync::mpsc;
+use web_sys::{Event, KeyboardEvent};
 
 /// The tab of the controls menu.
 #[derive(PartialEq)]
@@ -70,6 +74,14 @@ pub fn Playing<'a, G: Html>(cx: Scope<'a>, props: Props<'a>) -> View<G> {
     create_effect(cx, || local_rack.set((*rack.get()).clone()));
     let selected_tile = create_ref(cx, create_rc_signal(None));
 
+    let blank_tile = create_signal(cx, None);
+    let show_modal = create_memo(cx, || blank_tile.get().is_some());
+    let modal_class = create_memo(cx, || match *show_modal.get() {
+        true => "modal is-active",
+        false => "modal",
+    });
+    let modal_letter = create_signal(cx, String::new());
+
     // -- STATE FOR PLAYS --
     let redraw_tiles = create_signal(cx, vec![]);
     let redraw_selected = create_signal(cx, None);
@@ -92,9 +104,17 @@ pub fn Playing<'a, G: Html>(cx: Scope<'a>, props: Props<'a>) -> View<G> {
                 // if the board position is empty, place the tile.
                 let mut local_tiles = local_tiles.modify();
                 if local_tiles[usize::from(pos)].is_none() {
-                    local_tiles[usize::from(pos)] = Some(tile);
-                    local_rack.modify().remove(idx);
-                    placed_tiles.modify().push((pos, tile));
+                    match tile {
+                        // if the tile is a letter, place it on the board.
+                        Tile::Letter(_) => {
+                            local_tiles[usize::from(pos)] = Some(tile);
+                            local_rack.modify().remove(idx);
+                            placed_tiles.modify().push((pos, tile));
+                        }
+                        // if the tile is blank, show a modal to determine which letter
+                        // it should be.
+                        Tile::Blank(_) => blank_tile.set(Some((idx, pos))),
+                    }
                 }
             } else {
                 // if no tile is selected, and the position clicked was
@@ -118,6 +138,7 @@ pub fn Playing<'a, G: Html>(cx: Scope<'a>, props: Props<'a>) -> View<G> {
         match *active_tab.get() {
             // When redrawing, sent tiles directly to the redraw list.
             ControlTab::Redraw => {
+                selected_tile.set(None);
                 local_rack.modify().remove(idx);
                 redraw_tiles.modify().push(tile);
             }
@@ -152,6 +173,27 @@ pub fn Playing<'a, G: Html>(cx: Scope<'a>, props: Props<'a>) -> View<G> {
         local_rack.modify().push(tile);
         log::info!("tile clicked {idx} {tile}")
     };
+    // called when a key is pressed in the modal.
+    let on_modal_keydown = |evt: Event| {
+        let keyboard_event: KeyboardEvent = evt.unchecked_into();
+        let key = keyboard_event.key();
+
+        if key.len() == 1 {
+            if let Some(ch) = key.chars().next() {
+                if let Some(letter) = Letter::new(ch) {
+                    // get the tile, rack position (idx) and board position (pos).
+                    let tile = Tile::Blank(Some(letter));
+                    let (idx, pos) = (*blank_tile.get()).unwrap();
+                    blank_tile.set(None);
+
+                    let mut local_tiles = local_tiles.modify();
+                    local_rack.modify().remove(idx);
+                    local_tiles[usize::from(pos)] = Some(tile);
+                    placed_tiles.modify().push((pos, tile));
+                }
+            }
+        }
+    };
     // called when the user clicks the pass button.
     let on_pass = move |_| {
         ws_write.send(ClientMsg::Play(Play::Pass)).unwrap();
@@ -168,6 +210,31 @@ pub fn Playing<'a, G: Html>(cx: Scope<'a>, props: Props<'a>) -> View<G> {
     };
 
     view! { cx,
+        // This modal will display when a blank tile is placed on the board.
+        div(class=(modal_class.get())) {
+            div(class="modal-background")
+            div(class="modal-content") {
+                div(class="box") {
+                    div(class="field") {
+                        label(class="label") {
+                            "Enter a letter for the blank tile"
+                        }
+                        div(class="control") {
+                            input(
+                                class="input",
+                                type="text",
+                                maxlength="1",
+                                placeholder="Letter",
+                                bind:value=modal_letter,
+                                on:keydown=on_modal_keydown,
+                            )
+                        }
+                    }
+                }
+            }
+            button(class="modal-close is-large", on:click=|_| blank_tile.set(None))
+        }
+
         div(class="live") {
             Board {
                 on_click: on_square_clicked,
