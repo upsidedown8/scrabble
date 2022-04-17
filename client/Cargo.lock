@@ -86,6 +86,7 @@ dependencies = [
  "serde_json",
  "sycamore",
  "sycamore-router",
+ "tokio",
  "wasm-logger",
  "web-sys",
  "wee_alloc",

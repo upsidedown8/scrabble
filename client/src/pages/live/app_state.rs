@@ -117,6 +117,12 @@ impl AppState {
                     letter_bag_len: 100,
                 }));
             }
+            AppMsg::WsDisconnect => {
+                log::error!("websocket disconnected");
+                connected
+                    .toast
+                    .set(Some(String::from("Failed to connect to websocket")));
+            }
             msg => log::error!("unexpected message: {msg:?}"),
         }
 

@@ -2,8 +2,8 @@
 
 use crate::components::{Counter, FixedCounter, Toast};
 use api::routes::live::ClientMsg;
-use futures::{channel::mpsc, SinkExt};
-use sycamore::{futures::spawn_local_scoped, prelude::*};
+use sycamore::prelude::*;
+use tokio::sync::mpsc;
 
 /// The active tab.
 #[derive(PartialEq)]
@@ -86,24 +86,20 @@ fn CreateTab<G: Html>(cx: Scope, props: Props) -> View<G> {
 
     // called when the create button is clicked.
     let on_create = move |_| {
-        let mut ws_write = props.ws_write.clone();
-
         let player_count = *player_count.get();
         let ai_count = *ai_count.get();
         let friends_only = *friends_only.get();
 
-        spawn_local_scoped(cx, async move {
-            ws_write
-                .send(ClientMsg::Create {
-                    ai_count,
-                    // `player_count` stores the total capacity, but the API expects
-                    // the number of human players, so subtract `ai_count`.
-                    player_count: player_count - ai_count,
-                    friends_only,
-                })
-                .await
-                .unwrap();
-        });
+        props
+            .ws_write
+            .send(ClientMsg::Create {
+                ai_count,
+                // `player_count` stores the total capacity, but the API expects
+                // the number of human players, so subtract `ai_count`.
+                player_count: player_count - ai_count,
+                friends_only,
+            })
+            .unwrap();
     };
 
     view! { cx,
@@ -155,14 +151,10 @@ fn JoinTab<G: Html>(cx: Scope, props: Props) -> View<G> {
 
     // called when the user clicks the join button.
     let on_join = move |_| {
-        let mut ws_write = props.ws_write.clone();
-
         log::info!("join clicked");
 
         if let Ok(id_game) = id_game.get().parse::<i32>() {
-            spawn_local_scoped(cx, async move {
-                ws_write.send(ClientMsg::Join(id_game)).await.unwrap();
-            });
+            props.ws_write.send(ClientMsg::Join(id_game)).unwrap();
         } else {
             log::error!("failed to parse game id");
         }

@@ -3,8 +3,18 @@ use crate::{
     pages::live::app_state::AppState,
 };
 use api::routes::live::{ClientMsg, Player};
-use futures::{channel::mpsc, SinkExt};
-use sycamore::{futures::spawn_local_scoped, prelude::*};
+use scrabble::{game::tile, util::pos::Pos};
+use sycamore::prelude::*;
+use tokio::sync::mpsc;
+
+/// a rack tile or board square that has been selected.
+#[derive(Clone, Copy)]
+pub enum Selected {
+    /// A tile on the rack has been selected.
+    RackTile(tile::Tile),
+    /// A board position has been selected.
+    Square(Pos),
+}
 
 /// Props for `Playing`.
 #[derive(Prop)]
@@ -40,10 +50,7 @@ pub fn Playing<'a, G: Html>(cx: Scope<'a>, props: Props<'a>) -> View<G> {
 
     // called when a message is sent.
     let on_msg = move |msg| {
-        spawn_local_scoped(cx, async move {
-            let mut ws_write = ws_write.clone();
-            ws_write.send(ClientMsg::Chat(msg)).await.unwrap();
-        });
+        ws_write.send(ClientMsg::Chat(msg)).unwrap();
     };
 
     // whether it is the connected player's turn.
@@ -53,6 +60,9 @@ pub fn Playing<'a, G: Html>(cx: Scope<'a>, props: Props<'a>) -> View<G> {
 
         matches!(state.next, Some(Player { id_player, .. }) if id_player == state.id_player)
     });
+
+    // the rack or board tile that is selected.
+    let selected: &Signal<Option<Selected>> = create_signal(cx, None);
 
     view! { cx,
         div(class="live") {
@@ -116,9 +126,13 @@ fn Controls<G: Html>(cx: Scope, props: ControlsProps) -> View<G> {
     let place_class = tab_class(ControlTab::Place);
     let pass_class = tab_class(ControlTab::Pass);
 
+    // -- CALLBACKS --
+    let on_pass = |_| {};
+    let on_redraw = |_| {};
+
     view! { cx,
         div(class="controls") {
-            div(class="tabs") {
+            div(class="tabs is-centered") {
                 ul {
                     li(class=(redraw_class.get()), on:click=|_| active_tab.set(ControlTab::Redraw)) { a { "Redraw" } }
                     li(class=(place_class.get()), on:click=|_| active_tab.set(ControlTab::Place)) { a { "Place" } }
@@ -126,11 +140,23 @@ fn Controls<G: Html>(cx: Scope, props: ControlsProps) -> View<G> {
                 }
             }
 
-            (match *active_tab.get() {
-                ControlTab::Redraw => view! { cx, "Redraw" },
-                ControlTab::Place => view! { cx, "Place" },
-                ControlTab::Pass => view! { cx, "Pass" },
-            })
+            section {
+                (match *active_tab.get() {
+                    ControlTab::Redraw => view! { cx,
+                        p { "Select tiles from your rack to redraw" }
+
+                        button(class="button is-dark", on:click=on_redraw) {
+                            "Redraw these tiles"
+                        }
+                    },
+                    ControlTab::Place => view! { cx, "Place" },
+                    ControlTab::Pass => view! { cx,
+                        button(class="button is-dark", on:click=on_pass) {
+                            "Pass your turn"
+                        }
+                    },
+                })
+            }
         }
     }
 }

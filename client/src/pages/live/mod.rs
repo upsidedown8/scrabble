@@ -7,10 +7,11 @@ use crate::{
     requests::live::{connect_and_authenticate, to_msg},
 };
 use api::routes::live::{ClientMsg, LiveError, ServerMsg};
-use futures::{channel::mpsc, SinkExt, StreamExt};
+use futures::{SinkExt, StreamExt};
 use gloo_timers::future::TimeoutFuture;
 use reqwasm::websocket::{futures::WebSocket, Message};
 use sycamore::{futures::spawn_local_scoped, prelude::*, suspense::Suspense};
+use tokio::sync::mpsc;
 
 mod app_state;
 mod create_or_join;
@@ -99,11 +100,11 @@ fn setup(cx: Scope, ws: WebSocket) -> Setup {
     let (mut socket_write, mut socket_read) = ws.split();
 
     // create a queue that forwards messages sent to `ws_write` to the server.
-    let (ws_write, mut ws_read) = mpsc::unbounded();
+    let (ws_write, mut ws_read) = mpsc::unbounded_channel();
 
     // create a queue for dispatch messages. Any messages sent to `dispatch_write`
     // will be forwarded to the dispatch function on the `AppState`.
-    let (mut dispatch_write, mut dispatch_read) = mpsc::unbounded();
+    let (mut dispatch_write, mut dispatch_read) = mpsc::unbounded_channel();
 
     // spawn a task that reads from `socket_read` (messages from server)
     // to forward messages to the dispatch queue (writes to `dispatch_write`).
@@ -127,7 +128,7 @@ fn setup(cx: Scope, ws: WebSocket) -> Setup {
                                     auth.set(None);
                                     navigate("/live");
                                 }
-                                msg => dispatch_write.send(AppMsg::ServerMsg(msg)).await.unwrap(),
+                                msg => dispatch_write.send(AppMsg::ServerMsg(msg)).unwrap(),
                             }
                         }
                         Err(e) => log::error!("failed to deserialize: {e:?}"),
@@ -153,7 +154,7 @@ fn setup(cx: Scope, ws: WebSocket) -> Setup {
     // to the server) and writes to `socket_write`.
     spawn_local_scoped(cx, async move {
         // read from `ws_read`.
-        while let Some(msg) = ws_read.next().await {
+        while let Some(msg) = ws_read.recv().await {
             log::info!("sending message: {msg:?}");
 
             if let Err(e) = socket_write.send(to_msg(&msg)).await {
@@ -166,7 +167,7 @@ fn setup(cx: Scope, ws: WebSocket) -> Setup {
     // function with each received message.
     spawn_local_scoped(cx, async move {
         // read from `dispatch_read`.
-        while let Some(msg) = dispatch_read.next().await {
+        while let Some(msg) = dispatch_read.recv().await {
             // call the dispatch function with each message.
             dispatch(msg);
         }
