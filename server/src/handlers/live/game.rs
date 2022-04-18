@@ -227,6 +227,7 @@ impl Game {
             rack: self.api_rack(player_num),
             scores: self.api_scores(),
             next: self.api_next(),
+            letter_bag_len: self.game.letter_bag_len(),
         });
 
         // send a message to update the players.

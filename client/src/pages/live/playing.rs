@@ -258,7 +258,7 @@ pub fn Playing<'a, G: Html>(cx: Scope<'a>, props: Props<'a>) -> View<G> {
                     selected: selected_tile,
                 }
 
-                p(class="mt-4 has-text-centered has-text-white") {
+                p(class="pb-4 has-text-centered has-text-white") {
                     "There are " (letter_bag_remaining.get()) " tiles remaining"
                 }
             }

@@ -68,6 +68,8 @@ pub enum ServerMsg {
         scores: HashMap<Player, usize>,
         /// The next player (None if the game is over).
         next: Option<Player>,
+        /// The number of tiles remaining in the bag.
+        letter_bag_len: usize,
     },
     /// Contains the reason that the game ended.
     Over(GameOverReason),

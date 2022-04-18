@@ -84,6 +84,7 @@ impl AppState {
                 rack,
                 scores,
                 next,
+                letter_bag_len,
             } => {
                 let is_playing = scores.len() >= capacity;
                 let status = match is_playing {
@@ -111,7 +112,7 @@ impl AppState {
                     rack: create_rc_signal(rack),
                     scores: create_rc_signal(scores),
                     next: create_rc_signal(next),
-                    letter_bag_len: create_rc_signal(100),
+                    letter_bag_len: create_rc_signal(letter_bag_len),
                     is_playing: create_rc_signal(is_playing),
                 }));
             }
