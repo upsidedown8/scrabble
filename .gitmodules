@@ -1,3 +1,0 @@
-[submodule "client/scss/bulma"]
-	path = client/scss/bulma
-	url = https://github.com/jgthms/bulma
