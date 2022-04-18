@@ -25,10 +25,17 @@ Table tbl_game {
 Table tbl_player {
   id_player serial [pk]
   id_game serial [ref: > tbl_game.id_game]
-  id_user serial [ref: > tbl_user.id_user]
-  ai_difficulty text
-  initial_rack text
   is_winner bool
+}
+
+Table tbl_ai_player {
+  id_player serial [pk, ref: > tbl_player.id_player]
+  ai_difficuly text [not null]
+}
+
+Table tbl_human_player {
+  id_player serial [pk, ref: > tbl_player.id_player]
+  id_user serial [ref: > tbl_user.id_user]
 }
 
 Table tbl_play {
