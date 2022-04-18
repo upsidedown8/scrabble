@@ -24,7 +24,7 @@ Table tbl_game {
 
 Table tbl_player {
   id_player serial [pk]
-  id_game serial[ref: > tbl_game.id_game]
+  id_game serial [ref: > tbl_game.id_game]
   id_user serial [ref: > tbl_user.id_user]
   ai_difficulty text
   initial_rack text
@@ -34,7 +34,6 @@ Table tbl_player {
 Table tbl_play {
   id_play serial [pk]
   id_player serial [ref: > tbl_player.id_player]
-  letters_added varchar(7)
 }
 
 Table tbl_tile {
