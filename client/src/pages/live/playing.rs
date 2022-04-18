@@ -44,6 +44,7 @@ pub fn Playing<'a, G: Html>(cx: Scope<'a>, props: Props<'a>) -> View<G> {
     let redraw_tiles = create_ref(cx, state.redraw_tiles.clone());
     let messages = create_ref(cx, state.messages.clone());
     let scores = create_ref(cx, state.scores.clone());
+    let letter_bag_remaining = create_ref(cx, state.letter_bag_len.clone());
 
     // whether the game has started.
     let is_playing = create_ref(cx, state.is_playing.clone());
@@ -255,6 +256,10 @@ pub fn Playing<'a, G: Html>(cx: Scope<'a>, props: Props<'a>) -> View<G> {
                     on_click: on_rack_tile_clicked,
                     tiles: local_rack,
                     selected: selected_tile,
+                }
+
+                p(class="mt-4 has-text-centered has-text-white") {
+                    "There are " (letter_bag_remaining.get()) " tiles remaining"
                 }
             }
 
