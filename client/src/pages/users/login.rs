@@ -41,7 +41,7 @@ pub fn LoginPage<G: Html>(cx: Scope) -> View<G> {
                         token,
                         user_details,
                     }));
-                    navigate("/");
+                    navigate("/live");
                 }
                 Err(e) => {
                     err.set(Some(e));

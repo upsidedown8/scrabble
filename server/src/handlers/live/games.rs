@@ -3,6 +3,7 @@ use crate::{
     fsm::FsmHandle,
     handlers::live::game::{GameHandle, GameMsg},
 };
+use api::routes::live::AiDifficulty;
 use std::{collections::HashMap, ops::Deref, sync::Arc, time::Duration};
 use tokio::{sync::RwLock, time::interval};
 
@@ -89,6 +90,7 @@ impl Games {
     pub async fn insert(
         &mut self,
         ai_count: usize,
+        ai_difficulty: AiDifficulty,
         player_count: usize,
         id_owner: Option<i32>,
     ) -> Option<GameHandle> {
@@ -96,7 +98,8 @@ impl Games {
 
         let db = self.db();
         let fsm = self.fsm();
-        let created = GameHandle::create(db, fsm, ai_count, player_count, id_owner).await;
+        let created =
+            GameHandle::create(db, fsm, ai_count, ai_difficulty, player_count, id_owner).await;
 
         if let Some((id_game, game_handle)) = created {
             self.games.insert(id_game, game_handle.clone());

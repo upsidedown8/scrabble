@@ -45,16 +45,19 @@ pub fn Playing<'a, G: Html>(cx: Scope<'a>, props: Props<'a>) -> View<G> {
     let messages = create_ref(cx, state.messages.clone());
     let scores = create_ref(cx, state.scores.clone());
     let letter_bag_remaining = create_ref(cx, state.letter_bag_len.clone());
+    let show_rules_modal = create_ref(cx, state.show_rules_modal.clone());
 
     // whether the game has started.
-    let is_playing = create_ref(cx, state.is_playing.clone());
+    let is_started = create_ref(cx, state.is_started.clone());
+    let is_over = create_ref(cx, state.is_over.clone());
     let next = state.next.clone();
+
     // whether it is the connected player's turn.
     let is_my_turn = create_memo(cx, move || {
         let next = next.get();
-        let is_playing = *is_playing.get();
+        let is_started = *is_started.get();
 
-        is_playing
+        is_started
             && matches!(next.as_ref(), Some(Player { id_player, .. }) if *id_player == state.id_player)
     });
 
@@ -131,6 +134,8 @@ pub fn Playing<'a, G: Html>(cx: Scope<'a>, props: Props<'a>) -> View<G> {
                     }
                 }
             }
+        } else {
+            selected_tile.set(None);
         }
     };
     // called when a rack tile is clicked.
@@ -219,7 +224,186 @@ pub fn Playing<'a, G: Html>(cx: Scope<'a>, props: Props<'a>) -> View<G> {
         }
     };
 
+    let rules_modal_class = create_memo(cx, || match *show_rules_modal.get() {
+        true => "modal is-active",
+        false => "modal",
+    });
+    let on_close_rules = |_| {
+        show_rules_modal.set(false);
+    };
+
     view! { cx,
+        // This modal displays rules and information about the game.
+        div(class=(rules_modal_class.get())) {
+            div(class="modal-background")
+            div(class="modal-card") {
+                header(class="modal-card-head") {
+                    p(class="modal-card-title") {
+                        "How to play"
+                    }
+                    button(class="delete", on:click=on_close_rules)
+                }
+                section(class="modal-card-body") {
+                    div(class="content") {
+                        h1 { "Rules" }
+                        p {
+                            "View the official rules "
+                            a(href="https://scrabble.hasbro.com/en-us/rules", target="_blank") { "here" }
+                            "."
+                        }
+
+                        h1 { "Joining a game" }
+                        p {
+                            "When you join or create a game you will see this page.
+                            A message at the bottom of the page indicates
+                            the " code { "id_game" } " which can be used on the Join page
+                            by other players to join the current game. Note that if the game
+                            was created with the " code { "Friends only" } " option checked,
+                            only users that have been added as friends can join the game."
+                        }
+
+                        h1 { "Messages" }
+                        p {
+                            "At the bottom of the page is a message box. Typing a message
+                            and pressing enter will send it to other connected players.
+                            Messages from the server will indicate when:"
+
+                            ul {
+                                li { "A play is made" }
+                                li { "A player joins or leaves" }
+                                li { "The game starts or ends" }
+                                li { "You make an illegal play" }
+                            }
+                        }
+
+                        h1 { "Playing" }
+                        h2 { "Premium squares" }
+                        p {
+                            "Hovering over (or clicking on mobile devices) a square will show
+                            the premium for that square (if any). Premium squares are coloured
+                            on the board."
+
+                            table {
+                                thead {
+                                    th { "Abbreviation" }
+                                    th { "Meaning" }
+                                }
+                                tbody {
+                                    tr {
+                                        td { "2L" }
+                                        td { "Double letter" }
+                                    }
+                                    tr {
+                                        td { "3L" }
+                                        td { "Triple letter" }
+                                    }
+                                    tr {
+                                        td { "2W" }
+                                        td { "Double word" }
+                                    }
+                                    tr {
+                                        td { "3W" }
+                                        td { "Triple word" }
+                                    }
+                                }
+                            }
+                        }
+
+                        h2 { "Remaining tile count" }
+                        p {
+                            "A counter under your rack tiles indicates the number of tiles that remain
+                            in the letter bag."
+                        }
+
+                        h2 { "Blank tiles" }
+                        p {
+                            "When you have a blank tile in your rack, you can place it on the board
+                            as you would any other tile. After placing the tile, a dialogue box
+                            will ask for the letter that you wish the tile to represent."
+                        }
+                        p {
+                            "When you see a blank tile on the board, you can hover (or tap on mobile)
+                            the tile to reveal its letter."
+                        }
+
+                        h2 { "Sorting tiles on your rack" }
+                        p {
+                            "To reorder tiles, simply click on one tile in rack to select it, then
+                            click another to swap the pair. (tiles cannot be reordered whilst in
+                            the redraw tab)."
+                        }
+
+                        h2 { "Making a play" }
+                        p {
+                            "When it is your turn, a view with three tabs will
+                            appear that allows you to make a play."
+                        }
+
+                        h3 { "Place tab" }
+                        p {
+                            "Click on a tile in your rack, then an empty board square to place a tile.
+                            If you wish to return a tile to your rack, click on that tile on the board.
+                            To quickly return all placed tiles to your rack, there is a"
+                            code { "Recall these tiles" } " button. Once you are happy with the positions of your
+                            tiles, clicking " code { "Place these tiles" } " will make the play."
+                        }
+
+                        h3 { "Redraw tab" }
+                        p {
+                            "Clicking the " code { "Select all tiles" } " button will move
+                            all tiles from your rack into the redraw area. Clicking tiles in
+                            the redraw area will return them to your rack. If you wish to select
+                            specific tiles to redraw, click on tiles in your rack and they will move
+                            to the redraw area."
+                        }
+                        p {
+                            "Once you have selected the tiles you wish to redraw, clicking the "
+                            code { "Redraw these tiles" } " button will make the play."
+                        }
+
+                        h3 { "Pass tab" }
+                        p {
+                            "Clicking the " code { "Pass" } " button will pass your turn. Note that
+                            after two consecutive passes from any player, the game will end."
+                        }
+
+                        h2 { "Illegal plays" }
+                        p {
+                            "If you make an illegal play, your tiles will return to your rack. A message
+                            at the bottom of the page will indicate the reason that your play was rejected. "
+                        }
+
+                        h2 { "End of your turn" }
+                        p {
+                            "After making your play, the Redraw, Place and Pass tabs will disappear
+                            until it is your turn again."
+                        }
+
+                        h2 { "End of the game" }
+                        p {
+                            "At the end of the game, the final scores will update and a message
+                            indicating the reason for the end of the game will be sent at the bottom
+                            of the page. Players may remain in the game after its end to send messages,
+                            but no further plays can be made. Once the game ends, your statistics will update."
+                        }
+
+                        h2 { "Rejoining a game" }
+                        p {
+                            "If you disconnect from an ongoing game and no other users remain
+                            (AI players do not count) then the game will close permanently within the next
+                            ten seconds. If, however, some users remain in the game, you will be replaced by
+                            an AI player until you rejoin the game."
+                        }
+                    }
+                }
+                footer(class="modal-card-foot") {
+                    button(class="button is-primary", on:click=on_close_rules) {
+                        "Close"
+                    }
+                }
+            }
+        }
+
         // This modal will display when a blank tile is placed on the board.
         div(class=(modal_class.get())) {
             div(class="modal-background")
@@ -259,7 +443,15 @@ pub fn Playing<'a, G: Html>(cx: Scope<'a>, props: Props<'a>) -> View<G> {
                 }
 
                 p(class="pb-4 has-text-centered has-text-white") {
-                    "There are " (letter_bag_remaining.get()) " tiles remaining"
+                    (match *is_started.get() {
+                        false => view! { cx, "Waiting for players" },
+                        true => view! { cx,
+                            (match *is_over.get() {
+                                true => view! { cx, "Game over" },
+                                false => view! { cx, "There are " (letter_bag_remaining.get()) " tiles remaining" }
+                            })
+                        }
+                    })
                 }
             }
 
@@ -337,6 +529,12 @@ pub fn Playing<'a, G: Html>(cx: Scope<'a>, props: Props<'a>) -> View<G> {
             Chat {
                 on_msg: on_chat_msg,
                 messages: messages,
+            }
+
+            div(class="mb-5 p-0 has-background-white has-text-centered") {
+                a(class="button is-primary", on:click=|_| show_rules_modal.set(true)) {
+                    "Help"
+                }
             }
         }
     }

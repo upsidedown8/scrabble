@@ -5,7 +5,7 @@ use self::{
 use crate::auth::{Jwt, Role};
 use api::{
     auth::Token,
-    routes::live::{ClientMsg, LiveError, ServerMsg},
+    routes::live::{AiDifficulty, ClientMsg, LiveError, ServerMsg},
 };
 use futures::{Sink, SinkExt, StreamExt};
 use std::fmt::Debug;
@@ -53,9 +53,21 @@ async fn authenticated(mut ws: WebSocket, jwt: Jwt, games: GamesHandle) {
                     ClientMsg::Join(id_game) => join_game(id_game, ws, jwt, games).await,
                     ClientMsg::Create {
                         ai_count,
+                        ai_difficulty,
                         player_count,
                         friends_only,
-                    } => create_game(ai_count, player_count, friends_only, ws, jwt, games).await,
+                    } => {
+                        create_game(
+                            ai_count,
+                            ai_difficulty,
+                            player_count,
+                            friends_only,
+                            ws,
+                            jwt,
+                            games,
+                        )
+                        .await
+                    }
                     msg => {
                         log::error!("unexpected message: {msg:?}");
                     }
@@ -92,6 +104,7 @@ async fn join_game(id_game: i32, mut ws: WebSocket, jwt: Jwt, games: GamesHandle
 /// Creates a game.
 async fn create_game(
     ai_count: usize,
+    ai_difficulty: AiDifficulty,
     player_count: usize,
     friends_only: bool,
     mut ws: WebSocket,
@@ -119,7 +132,9 @@ async fn create_game(
             false => None,
         };
         // create the game.
-        let game_handle = games_write.insert(ai_count, player_count, id_user).await;
+        let game_handle = games_write
+            .insert(ai_count, ai_difficulty, player_count, id_user)
+            .await;
         drop(games_write);
 
         if let Some(game_handle) = game_handle {

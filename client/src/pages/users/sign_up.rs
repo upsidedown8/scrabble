@@ -44,7 +44,7 @@ pub fn SignUpPage<G: Html>(cx: Scope) -> View<G> {
                         token,
                         user_details,
                     }));
-                    navigate("/");
+                    navigate("/live");
                 }
                 Err(e) => {
                     is_loading.set(false);

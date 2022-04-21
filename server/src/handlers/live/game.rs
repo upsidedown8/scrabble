@@ -46,9 +46,17 @@ impl GameHandle {
         db: Db,
         fsm: FsmHandle,
         ai_count: usize,
+        ai_difficulty: api::routes::live::AiDifficulty,
         player_count: usize,
         id_owner: Option<i32>,
     ) -> Option<(i32, GameHandle)> {
+        // convert the API type to a type that the server can use.
+        let difficulty = match ai_difficulty {
+            api::routes::live::AiDifficulty::Easy => AiDifficulty::Easy,
+            api::routes::live::AiDifficulty::Medium => AiDifficulty::Medium,
+            api::routes::live::AiDifficulty::Hard => AiDifficulty::Hard,
+        };
+
         let total_count = ai_count + player_count;
         // create a queue that allows connected clients to send messages
         // to the game (multiple producers) and the game to receive the
@@ -63,8 +71,6 @@ impl GameHandle {
             .skip(player_count)
             .take(ai_count)
         {
-            let difficulty = AiDifficulty::Medium;
-
             log::trace!("inserting ai player");
 
             // insert a record for each ai player.
@@ -348,7 +354,7 @@ impl Game {
     async fn make_ai_plays(&mut self) {
         // loop until game is over.
         while let Some(to_play) = self.game.to_play() {
-            if let Some(ai) = &self.slots[&to_play].ai() {
+            if let Some(ai) = &self.slots.get(&to_play).and_then(Slot::ai) {
                 let fsm: &FastFsm = &self.fsm;
                 log::trace!("finding next play");
                 let play = ai.next_play(fsm, &self.game);

@@ -90,7 +90,12 @@ pub async fn handle_rejection(rejection: Rejection) -> Result<impl Reply, Infall
             Error::MissingAuthHeader => (StatusCode::NOT_FOUND, "Missing auth header"),
             Error::UsernameOrEmailExists => (StatusCode::FORBIDDEN, "Username or email exists"),
             Error::InvalidUsername => (StatusCode::FORBIDDEN, "Username is invalid"),
-            Error::InvalidPassword => (StatusCode::FORBIDDEN, "Password is too weak"),
+            Error::InvalidPassword => (
+                StatusCode::FORBIDDEN,
+                "Password is too weak.\n\
+                Must contain at least one uppercase and\n\
+                lowercase letter, number and symbol.",
+            ),
             Error::InvalidEmail => (StatusCode::FORBIDDEN, "Email is invalid"),
             Error::Lettre(_)
             | Error::Address(_)

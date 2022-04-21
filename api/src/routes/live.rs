@@ -9,6 +9,17 @@ use scrabble::{
 };
 use serde::{Deserialize, Serialize};
 
+/// The difficulty of an AI player.
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
+pub enum AiDifficulty {
+    /// Easy AI.
+    Easy,
+    /// Medium AI.
+    Medium,
+    /// Hard AI.
+    Hard,
+}
+
 /// Messages sent from the client.
 #[derive(Debug, Serialize, Deserialize)]
 pub enum ClientMsg {
@@ -18,6 +29,8 @@ pub enum ClientMsg {
     Create {
         /// Number of AI players.
         ai_count: usize,
+        /// Difficulty of the AI players.
+        ai_difficulty: AiDifficulty,
         /// Number of human players.
         player_count: usize,
         /// Whether the game is closed to friends of the user

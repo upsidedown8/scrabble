@@ -45,13 +45,15 @@ pub struct PlayingState {
     pub scores: RcSignal<HashMap<Player, usize>>,
     pub next: RcSignal<Option<Player>>,
     pub letter_bag_len: RcSignal<usize>,
-    pub is_playing: RcSignal<bool>,
+    pub is_started: RcSignal<bool>,
+    pub is_over: RcSignal<bool>,
 
     // -- local state --
     pub messages: RcSignal<Vec<Msg>>,
     pub rack: RcSignal<Vec<Tile>>,
     pub placed_tiles: RcSignal<Vec<(Pos, Tile)>>,
     pub redraw_tiles: RcSignal<Vec<Tile>>,
+    pub show_rules_modal: RcSignal<bool>,
 }
 
 impl AppState {
@@ -72,7 +74,7 @@ impl AppState {
                     LiveError::ZeroPlayers => "No players added",
                     LiveError::IllegalPlayerCount => "Incorrect number of players specified",
                     LiveError::FailedToJoin => "Failed to join",
-                    LiveError::InvalidToken => "Provided token was invalid",
+                    LiveError::InvalidToken => "Provided token was invalid. Try logging in again.",
                     _ => "Unexpected message",
                 })));
             }
@@ -86,8 +88,8 @@ impl AppState {
                 next,
                 letter_bag_len,
             } => {
-                let is_playing = scores.len() >= capacity;
-                let status = match is_playing {
+                let is_started = scores.len() >= capacity;
+                let status = match is_started {
                     true => "Playing",
                     false => "Waiting for players",
                 };
@@ -103,6 +105,7 @@ impl AppState {
                     }]),
                     placed_tiles: create_rc_signal(vec![]),
                     redraw_tiles: create_rc_signal(vec![]),
+                    show_rules_modal: create_rc_signal(true),
 
                     // -- shared state --
                     id_game,
@@ -113,7 +116,8 @@ impl AppState {
                     scores: create_rc_signal(scores),
                     next: create_rc_signal(next),
                     letter_bag_len: create_rc_signal(letter_bag_len),
-                    is_playing: create_rc_signal(is_playing),
+                    is_started: create_rc_signal(is_started),
+                    is_over: create_rc_signal(false),
                 }));
             }
             msg => log::error!("unexpected message: {msg:?}"),
@@ -234,7 +238,7 @@ impl AppState {
                 }
             }
             ServerMsg::Over(reason) => {
-                playing.is_playing.set(false);
+                playing.is_over.set(true);
                 self.add_server_msg(format!(
                     "Game over: {}.",
                     match reason {
@@ -244,7 +248,7 @@ impl AppState {
                 ))
             }
             ServerMsg::Starting => {
-                playing.is_playing.set(true);
+                playing.is_started.set(true);
 
                 match playing.next.get().as_ref() {
                     Some(Player { username, .. }) => {

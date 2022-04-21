@@ -22,7 +22,7 @@ pub fn ErrorMsg<'a, G: Html>(cx: Scope<'a>, props: ErrorMsgProps<'a>) -> View<G>
         (match props.err.get().is_some() {
             false => view! { cx, },
             true => view! { cx,
-                article(class="message is-danger mt-3") {
+                article(class="error-msg message is-danger mt-3") {
                     div(class="message-header") {
                         p { "Error" }
                         button(on:click=|_| props.err.set(None), class="delete") {}

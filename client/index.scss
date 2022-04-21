@@ -7,7 +7,11 @@ body {
 
 section {
 	padding: 75px 5%;
-	width: 100vw;
+	width: 100%;
+}
+
+.error-msg {
+	max-width: 480px;
 }
 
 @media screen and (min-width: 1200px) {
