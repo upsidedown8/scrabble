@@ -1,2 +1,5 @@
+# Use a LF character to end lines
 *	text eol=lf
+
+# Any .bin files should be treated as binary data
 *.bin binary

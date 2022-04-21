@@ -1,8 +1,10 @@
+# ignore build directories
 */target/
 */dist/
+
+# ignore .env file
 .env
-*.db
-*.db-wal
-*.db-shm
+
+# ignore public and private key files
 *.rsa
 *.pem

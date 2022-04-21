@@ -6,12 +6,16 @@ use scrabble::{
 use std::{fs::File, io::BufReader};
 
 fn main() {
+    // Open the FSM file.
     let file = File::open("../server/data/fast_fsm.bin").unwrap();
     let rdr = BufReader::new(file);
     let fsm: FastFsm = bincode::deserialize_from(rdr).unwrap();
+
+    // Create an easy AI.
     let ai = Ai::easy();
     let mut game = Game::new(4);
 
+    // Let the AI play itself until the game is over.
     while let GameStatus::ToPlay(_) = game.status() {
         let play = ai.next_play(&fsm, &game);
 
@@ -21,6 +25,7 @@ fn main() {
         }
     }
 
+    // Display the final board state.
     println!("{}", game.board());
     println!("{:#?}", game.status());
 
