@@ -62,12 +62,16 @@ fn Live<G: Html>(cx: Scope, ws: WebSocket) -> View<G> {
     // and a writer that sends messages to the server.
     let Setup { state, ws_write } = setup(cx, ws);
 
+    // Store a value to indicate whether the help message should be shown.
+    let show_modal = create_ref(cx, create_rc_signal(false));
+
     view! { cx,
         (match state.get().as_ref() {
             AppState::Connected(connected) => view! { cx,
                 CreateOrJoin {
                     ws_write: ws_write.clone(),
                     msg: connected.toast.clone(),
+                    show_modal: show_modal.clone(),
                 }
             },
             AppState::Playing(..) => view! { cx,

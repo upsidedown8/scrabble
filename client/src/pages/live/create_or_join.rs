@@ -22,6 +22,8 @@ pub struct Props {
     pub ws_write: mpsc::UnboundedSender<ClientMsg>,
     /// The pop-up message to display.
     pub msg: RcSignal<Option<String>>,
+    /// Whether to show the help modal.
+    pub show_modal: RcSignal<bool>,
 }
 
 /// Allows a user to create or join a game.
@@ -45,7 +47,7 @@ pub fn CreateOrJoin<G: Html>(cx: Scope, props: Props) -> View<G> {
     let msg = props.msg.clone();
 
     // signal for the modal help.
-    let show_modal = create_signal(cx, true);
+    let show_modal = create_ref(cx, props.show_modal.clone());
     let modal_class = create_memo(cx, || match *show_modal.get() {
         true => "modal is-active",
         false => "modal",
