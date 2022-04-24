@@ -38,7 +38,7 @@ pub async fn reset_password(req: &ResetPassword) -> Result<()> {
     Ok(())
 }
 
-/// GET /api/users/reset-password
+/// PUT /api/users/reset-password
 pub async fn reset_with_secret(req: &ResetWithSecret) -> Result<(Token, UserDetails)> {
     let (token, user_details) =
         request("/users/reset-password", Method::GET, Some(req), None).await?;

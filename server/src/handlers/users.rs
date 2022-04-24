@@ -119,7 +119,7 @@ async fn send_reset_email(
         .await
 }
 
-/// GET /api/users/reset-password
+/// PUT /api/users/reset-password
 pub async fn reset_with_secret(
     db: Db,
     with_secret: ResetWithSecret,
