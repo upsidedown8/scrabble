@@ -82,7 +82,7 @@ fn reset_password(db: &Db, mailer: &Mailer) -> BoxedFilter<(impl Reply,)> {
 /// Reset password from secret sent in email link.
 fn reset_with_secret(db: &Db) -> BoxedFilter<(impl Reply,)> {
     warp::path!("reset-password")
-        .and(warp::get())
+        .and(warp::put())
         .and(with(db))
         .and(warp::body::json())
         .and_then(handlers::users::reset_with_secret)
