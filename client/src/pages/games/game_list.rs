@@ -70,16 +70,22 @@ fn ViewList<G: Html>(cx: Scope, list: ListGamesResponse) -> View<G> {
 
                 let start_time = start_time.map(format_datetime).unwrap_or_default();
                 let end_time = end_time.map(format_datetime).unwrap_or_default();
+                // Link to the game page.
                 let game_link = format!("/games/{id_game}/stats");
+
+                let id = match is_over {
+                    false => view! { cx, (id_game) },
+                    // Only link to game stats if the game is over.
+                    true => view! { cx,
+                        a(href=game_link) {
+                            (id_game)
+                        }
+                    },
+                };
 
                 view! { cx,
                     tr {
-                        // Link to the game page.
-                        td {
-                            a(href=game_link) {
-                                (id_game)
-                            }
-                        }
+                        td { (id) }
                         td { (start_time) }
                         td { (end_time) }
                         td { (format_bool(is_over)) }
