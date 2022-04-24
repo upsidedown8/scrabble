@@ -63,7 +63,7 @@ SELECT tbl_user.username,
   AVG(game_summary.total_word_count)::REAL AS avg_words_per_game,
   AVG(game_summary.avg_score_per_tile)::REAL AS avg_score_per_tile,
   (
-    SUM(game_summary.win_count) / COUNT(tbl_game.id_game) * 100.0
+    SUM(game_summary.win_count)::REAL / COUNT(tbl_game.id_game) * 100.0
   )::REAL AS win_percentage
 FROM game_summary,
   tbl_friend_request
