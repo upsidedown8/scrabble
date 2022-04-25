@@ -79,7 +79,7 @@ pub fn CreateOrJoin<G: Html>(cx: Scope, props: Props) -> View<G> {
                             only unless you are a friend of the creator of the game."
                         }
 
-                        h1 { "Creating a a game" }
+                        h1 { "Creating a game" }
                         p {
                             "When creating a game there are four options to configure:"
                             ul {

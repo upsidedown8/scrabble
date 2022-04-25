@@ -63,7 +63,7 @@ fn Live<G: Html>(cx: Scope, ws: WebSocket) -> View<G> {
     let Setup { state, ws_write } = setup(cx, ws);
 
     // Store a value to indicate whether the help message should be shown.
-    let show_modal = create_ref(cx, create_rc_signal(false));
+    let show_modal = create_ref(cx, create_rc_signal(true));
 
     view! { cx,
         (match state.get().as_ref() {
