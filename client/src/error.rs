@@ -30,18 +30,36 @@ impl fmt::Display for Error {
         match self {
             Error::Reqwasm(err) => {
                 log::error!("reqwasm error: {err:?}");
-                writeln!(f, "Request failed")
+                writeln!(
+                    f,
+                    "Request failed.\n\
+                    Check your internet connection."
+                )
             }
             Error::SerdeJson(err) => {
                 log::error!("serde error: {err:?}");
-                writeln!(f, "Failed to deserialize response body")
+                writeln!(
+                    f,
+                    "Failed to deserialize response body.\n\
+                    Try clearing your browser's cache and reloading the page.\n\
+                    This may be a server-side issue."
+                )
             }
             Error::Api(err) => {
                 let ErrorResponse { status, msg } = err;
-
-                writeln!(f, "API error ({status}): {msg}")
+                log::error!("API error ({status}): {msg}");
+                writeln!(f, "Error: {msg}")
             }
-            Error::HttpStatus(status) => writeln!(f, "HTTP status: {status}"),
+            Error::HttpStatus(status) => {
+                log::error!("Bad response from server.");
+                writeln!(
+                    f,
+                    "Failed to deserialize error message.\n\
+                    Try clearing your browser's cache and reloading the page.\n\
+                    This may be a server-side issue.\n\
+                    (Status {status})"
+                )
+            }
             Error::Js(_) => writeln!(f, "WebSocket connection error"),
             Error::WebSocket(_) => writeln!(f, "WebSocket communication error"),
         }
